@@ -1,0 +1,210 @@
+﻿@page "/payment-result"
+@using AutoMapper
+@using System.Text.Json
+@layout Layout.LoginLayout
+@inject NavigationManager Nav
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject IJSRuntime JS
+@inject IKhachHangService apiService
+@inject IHoaDonService HoaDonService
+@inject IMapper _mapper
+<link href="css/Payment.css" rel="stylesheet" />
+
+<div class="payment-result-container">
+    @if (status == "success")
+    {
+        <div class="payment-status-card success">
+            <span class="status-icon">✅</span>
+            <p class="success-message">Thanh toán thành công!</p>
+            @if (!string.IsNullOrEmpty(orderId))
+            {
+                <div class="order-id">Mã đơn hàng: #@orderId</div>
+            }
+            <p>⏳ Bạn sẽ được chuyển về trang bán hàng trong 3 giây...</p>
+        </div>
+    }
+    else if (status == "fail")
+    {
+        <div class="payment-status-card fail">
+            <span class="status-icon">❌</span>
+            <p class="fail-message">Thanh toán thất bại!</p>
+            @if (!string.IsNullOrEmpty(orderId))
+            {
+                <div class="order-id">Mã đơn hàng: #@orderId</div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="payment-status-card error">
+            <span class="status-icon">⚠</span>
+            <p class="error-message">Có lỗi xảy ra khi xác thực thanh toán</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? status { get; set; }
+    [Parameter] public string? orderId { get; set; }
+    private List<GioHangDTO> cartItems = new();
+    private List<ChiTietMonAnDTO> chiTietMonAnList = new();
+    private HoaDonDTO hoadon = new();
+    private decimal TotalAmount => chiTietMonAnList.Sum(item => item.Gia * item.SoLuongDat);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+        }
+        catch (Exception)
+        {
+            
+            throw;
+        }
+    }
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        var vnpStatus = query["vnp_TransactionStatus"];
+        var vnpResponse = query["vnp_ResponseCode"];
+        orderId = query["vnp_TxnRef"];
+
+        if (vnpStatus == "00" && vnpResponse == "00")
+        {
+            status = "success";
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                Nav.NavigateTo("/");
+            });
+        }
+        else
+        {
+            status = "fail";
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                Nav.NavigateTo("/");
+            });
+        }
+    }
+
+    private bool _hasInitialized = false;
+    public string Id = "";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            try
+            {
+                Id = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
+                var checkoutJson = await JS.InvokeAsync<string>("localStorage.getItem", "checkoutItems");
+                if (!string.IsNullOrEmpty(checkoutJson))
+                {
+                    chiTietMonAnList = JsonSerializer.Deserialize<List<ChiTietMonAnDTO>>(checkoutJson) ?? new();
+                }
+                var pendingOrderJson = await JS.InvokeAsync<string>("localStorage.getItem", "pendingOrder");
+                if (!string.IsNullOrEmpty(pendingOrderJson))
+                {
+                    hoadon = JsonSerializer.Deserialize<HoaDonDTO>(pendingOrderJson) ?? new();
+                }
+
+                var uri = Nav.ToAbsoluteUri(Nav.Uri);
+                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                var vnpStatus = query["vnp_TransactionStatus"];
+                var vnpResponse = query["vnp_ResponseCode"];
+                orderId = query["vnp_TxnRef"];
+
+                if (vnpStatus == "00" && vnpResponse == "00")
+                {
+                    status = "success";
+                    await ConfirmOrder(); 
+                    await Task.Delay(3000);
+                    Nav.NavigateTo("/", forceLoad: true);
+                }
+                else
+                {
+                    status = "fail";
+                    await Task.Delay(3000);
+                    Nav.NavigateTo("/", forceLoad: true);
+                }
+
+                _hasInitialized = true;
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
+
+    private async Task ConfirmOrder()
+    {
+        var hoadon1 = new HoaDonDTO
+        {
+            KhachHangId = Id,
+            LoaiHoaDon = "Online",
+            TrangThai = "Chờ xác nhận",
+            TongTien = TotalAmount,
+            TongTienSauKhiGiam = TotalAmount,
+            GhiChu = hoadon.GhiChu,
+            DiaChi = hoadon.DiaChi,
+            HinhThucThanhToanId = hoadon.HinhThucThanhToanId
+        };
+
+        try
+        {
+            var result2 = await apiService.PostAsync<HoaDon, HoaDon>("HoaDon", _mapper.Map<HoaDon>(hoadon1));
+            if (result2 != null)
+            {
+                
+
+                foreach (var item in chiTietMonAnList)
+                {
+                    var hoadonchitiet = new HoaDonChiTietDTO
+                    {
+                        ChiTietMonAnId = item.Id,
+                        HoaDonId = result2.Id,
+                        Soluong = item.SoLuongDat,
+                        ThanhTien = item.Gia * item.SoLuongDat
+                    };
+
+                    var result3 = await apiService.PostAsync<HoaDonChiTiet, HoaDonChiTiet>(
+                        "HoaDonChiTiet", _mapper.Map<HoaDonChiTiet>(hoadonchitiet));
+
+                    if (result3 == null)
+                    {
+                        await HoaDonService.LichSuTrangThai(result3.Id, result2.TrangThai, "Hóa đơn online");
+                    }
+                    var cartJson = await apiService.GetAsync<List<GioHangDTO>>("GioHang");
+                    cartItems = cartJson.Where(x => x.KhachHangid == Id).ToList() ?? new();
+                    var cartItem = cartItems.FirstOrDefault(x => x.ChiTietMonAnId == item.Id);
+                    if (cartItem != null)
+                    {
+                        await apiService.DeleteAsync<string>("GioHang", cartItem.Id);
+                    }
+                }
+            }
+            else
+            {
+            }
+        }
+        catch (Exception ex)
+        {
+            await SafeSwal("error", "Exception", ex.Message);
+        }
+    }
+    private async Task SafeSwal(string icon, string title, string text)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new { icon, title, text });
+        }
+        catch (JSDisconnectedException)
+        {
+            // người dùng đã rời khỏi trang, bỏ qua
+        }
+    }
+}

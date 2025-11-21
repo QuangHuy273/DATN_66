@@ -1,0 +1,349 @@
+﻿
+.container2 {
+    max-width: 1000px;
+    margin: auto;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    margin-top: 60px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    margin-bottom:60px;
+}
+
+h1 {
+    text-align: center;
+    font-size: 3rem;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 16px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+th {
+    background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+    color: white;
+    font-size: 1.1rem;
+}
+
+td img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.quantity {
+    width: 60px;
+    padding: 6px;
+    text-align: center;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+.remove-btn {
+    background: #ff6b6b;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+    .remove-btn:hover {
+        background: #e63946;
+    }
+
+.total {
+    text-align: right;
+    font-size: 1.5rem;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.checkout-btn {
+    display: block;
+    margin: 30px auto 0;
+    background: linear-gradient(45deg, #6bcf7f, #4ecdc4);
+    color: white;
+    border: none;
+    padding: 16px 40px;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .checkout-btn:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+@@media (max-width: 768px) {
+    th, td {
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+
+    .checkout-btn {
+        width: 100%;
+    }
+}
+.quantity-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+    .quantity-control button {
+        width: 35px;
+        height: 35px;
+        border: none;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+        .quantity-control button:hover {
+            transform: translateY(-2px) scale(1.1);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            background: linear-gradient(45deg, #e63946, #f9ca24);
+        }
+
+        .quantity-control button:active {
+            transform: translateY(0) scale(0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .quantity-control button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+            .quantity-control button:disabled:hover {
+                transform: none;
+                box-shadow: none;
+                background: #ccc;
+            }
+
+    .quantity-control input[type="text"] {
+        width: 50px;
+        height: 35px;
+        text-align: center;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+        background: white;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+        .quantity-control input[type="text"]:focus {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+        }
+
+/* Responsive design cho mobile */
+@media (max-width: 768px) {
+    .quantity-control {
+        gap: 8px;
+    }
+
+        .quantity-control button {
+            width: 30px;
+            height: 30px;
+            font-size: 1rem;
+        }
+
+        .quantity-control input[type="text"] {
+            width: 40px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+}
+
+/* Alternative style - more modern flat design */
+.quantity-control.flat button {
+    background: #ff6b6b;
+    border-radius: 8px;
+    font-size: 1.1rem;
+}
+
+    .quantity-control.flat button:hover {
+        background: #e63946;
+        transform: none;
+        box-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
+    }
+
+/* Alternative style - outline buttons */
+.quantity-control.outline button {
+    background: transparent;
+    border: 2px solid #ff6b6b;
+    color: #ff6b6b;
+}
+
+    .quantity-control.outline button:hover {
+        background: #ff6b6b;
+        color: white;
+    }
+/* CSS cho nút thêm sản phẩm khi giỏ hàng trống */
+.add-product-btn {
+    display: inline-block;
+    margin-top: 20px;
+    background: linear-gradient(45deg, #6bcf7f, #4ecdc4);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(75, 207, 127, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+    .add-product-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(75, 207, 127, 0.4);
+        background: linear-gradient(45deg, #5cb874, #45b7aa);
+    }
+
+    .add-product-btn:active {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 0 4px 12px rgba(75, 207, 127, 0.3);
+    }
+
+    /* Hiệu ứng ripple khi click */
+    .add-product-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.4s ease, height 0.4s ease;
+    }
+
+    .add-product-btn:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+/* Style cho cell chứa nút khi giỏ hàng trống */
+td .add-product-btn {
+    margin-top: 10px;
+}
+
+/* Responsive cho mobile */
+@media (max-width: 768px) {
+    .add-product-btn {
+        padding: 12px 25px;
+        font-size: 1rem;
+        width: auto;
+        min-width: 200px;
+    }
+}
+
+/* Alternative style - outline version */
+.add-product-btn.outline {
+    background: transparent;
+    border: 2px solid #6bcf7f;
+    color: #6bcf7f;
+    box-shadow: none;
+}
+
+    .add-product-btn.outline:hover {
+        background: #6bcf7f;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(75, 207, 127, 0.3);
+    }
+
+/* Alternative style - flat design */
+.add-product-btn.flat {
+    background: #6bcf7f;
+    box-shadow: none;
+    border-radius: 8px;
+}
+
+    .add-product-btn.flat:hover {
+        background: #5cb874;
+        transform: none;
+        box-shadow: 0 2px 10px rgba(75, 207, 127, 0.2);
+    }
+
+/* Alternative style - với icon */
+.add-product-btn.with-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+    .add-product-btn.with-icon::after {
+        content: '🛍️';
+        font-size: 1.2rem;
+    }
+
+/* Thêm animation loading khi click */
+.add-product-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+    .add-product-btn.loading::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        margin-left: 10px;
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

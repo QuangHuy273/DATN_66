@@ -1,0 +1,66 @@
+﻿@using System.Security.Claims
+@using API.Models.DTO
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inherits LayoutComponentBase
+@inject ProtectedLocalStorage localStorage
+@inject AppStateService AppState
+@inject IJSRuntime JS
+<link href="css/MainLayout.css" rel="stylesheet" />
+@if (!_hasInitialized)
+{
+    <p class="loading-main-text">Đang tải...</p>
+}
+else
+{
+    @layoutFragment
+}
+
+
+@code {
+    private bool _hasInitialized = false;
+    private RenderFragment? layoutFragment;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            var role = await JS.InvokeAsync<string>("localStorage.getItem", "currentRole");
+            var username = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
+
+            AppState.CurrentRole = role ?? "";
+            AppState.CurrentUserName = username ?? "";
+
+            layoutFragment = BuildLayout();
+            _hasInitialized = true;
+            StateHasChanged();
+        }
+    }
+
+    private RenderFragment BuildLayout() => builder =>
+    {
+        if (AppState.CurrentRole == "Admin")
+        {
+            builder.OpenComponent<LayoutView>(0);
+            builder.AddAttribute(1, "Layout", typeof(Layout.AdminLayout));
+            builder.AddAttribute(2, "ChildContent", (RenderFragment)(builder2 =>
+            {
+                builder2.AddContent(3, Body);
+            }));
+            builder.CloseComponent();
+        }
+        else if (AppState.CurrentRole == "NhanVien")
+        {
+            builder.OpenComponent<LayoutView>(4);
+            builder.AddAttribute(5, "Layout", typeof(Layout.NhanVienLayout));
+            builder.AddAttribute(6, "ChildContent", (RenderFragment)(builder2 =>
+            {
+                builder2.AddContent(7, Body);
+            }));
+            builder.CloseComponent();
+        }
+        else
+        {
+            builder.AddMarkupContent(8, "<div>Bạn không có quyền truy cập trang này</div>");
+        }
+    };
+}

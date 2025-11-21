@@ -1,0 +1,124 @@
+﻿@page "/lienhe"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Jolly - Liên hệ</PageTitle>
+<link href="css/LienHe.css" rel="stylesheet" />
+<section class="contact" id="contact">
+    <div class="container contact-container">
+        <div class="contact-info animate-contact">
+            <h2>📞 Liên hệ với Jolly</h2>
+            <p>Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn.</p>
+            <ul>
+                <li><strong>📱 Hotline:</strong> 1900 1234</li>
+                <li><strong>📧 Email:</strong> hello@jolly.vn</li>
+                <li><strong>📍 Địa chỉ:</strong> 123 Đường ABC, Hà Nội</li>
+            </ul>
+            <div class="map-container">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d7449.3000259383725!2d105.818475!3d21.006662!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135adce7939dd47%3A0x2ef1e98fa11f304c!2zSm9sbGliZWUgVsSpbmggSOG7kw!5e0!3m2!1svi!2sus!4v1753660716771!5m2!1svi!2sus"
+                        width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy">
+                </iframe>
+            </div>
+        </div>
+        <div class="contact-form animate-contact delay">
+            <h3>📝 Gửi tin nhắn</h3>
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success">
+                    @successMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-error">
+                    @errorMessage
+                </div>
+            }
+
+            <EditForm Model="@contactForm" OnValidSubmit="@SubmitContactForm">
+                <DataAnnotationsValidator />
+
+                <InputText @bind-Value="contactForm.FullName"
+                           placeholder="Họ và tên"
+                           class="form-input" />
+                <ValidationMessage For="@(() => contactForm.FullName)" />
+
+                <InputText @bind-Value="contactForm.Email"
+                           placeholder="Email của bạn"
+                           type="email"
+                           class="form-input" />
+                <ValidationMessage For="@(() => contactForm.Email)" />
+
+                <InputTextArea @bind-Value="contactForm.Message"
+                               placeholder="Nội dung tin nhắn"
+                               rows="5"
+                               class="form-input" />
+                <ValidationMessage For="@(() => contactForm.Message)" />
+
+                <button type="submit" class="submit-btn" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span>Đang gửi... ⏳</span>
+                    }
+                    else
+                    {
+                        <span>Gửi ngay 🚀</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</section>
+
+
+@code {
+    private ContactFormModel contactForm = new();
+    private bool isSubmitting = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    public class ContactFormModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
+        [StringLength(100, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập email")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập nội dung tin nhắn")]
+        [StringLength(1000, ErrorMessage = "Tin nhắn không được vượt quá 1000 ký tự")]
+        public string Message { get; set; } = string.Empty;
+    }
+
+    private async Task SubmitContactForm()
+    {
+        isSubmitting = true;
+        successMessage = string.Empty;
+        errorMessage = string.Empty;
+
+        try
+        {
+            // Simulate API call delay
+            await Task.Delay(2000);
+
+            
+            successMessage = "Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi trong thời gian sớm nhất.";
+
+            // Reset form
+            contactForm = new ContactFormModel();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại sau.";
+            // Log the exception
+            Console.WriteLine($"Error submitting contact form: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

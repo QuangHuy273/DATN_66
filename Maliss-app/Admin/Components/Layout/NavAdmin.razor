@@ -1,0 +1,83 @@
+﻿<div class="sidebar">
+    <div class="logo">
+        <img src="img/logo_DoAnVat.png" alt="Logo" style="width: 200px; height: 50px;" />
+    </div>
+
+    <ul>
+        <NavLink class="nav-link" href="/thongke">
+        <li>
+            
+                <span class="menu-label">📊 Thống kê</span>
+            
+        </li>
+        </NavLink>
+
+
+        <NavLink class="nav-link" href="/banhang">
+        <li>
+            
+                <span class="menu-label">🛒 Bán hàng tại quầy</span>
+           
+        </li>
+        </NavLink>
+
+
+        <NavLink class="nav-link" href="/hoadon">
+        <li>
+            
+                <span class="menu-label">📦 Quản lý đơn hàng</span>
+        </li>
+        </NavLink>
+
+
+
+        <li onclick="toggleSubMenu('submenu-sanpham')">
+            <span class="menu-label">👟 Quản lý sản phẩm</span>
+            <span class="arrow">&#9660;</span>
+        </li>
+        <ul id="submenu-sanpham" class="submenu">
+            <NavLink class="nav-link" href="/quanlysanpham"><li><span class="menu-con-label">📦 Sản phẩm</span></li></NavLink>
+            <NavLink class="nav-link" href="/quanlydanhmuc"><li><span class="menu-con-label">🏷️ Quản lý danh mục</span></li></NavLink>
+        </ul>
+
+
+        <NavLink class="nav-link" href="/TraHang">
+ 
+        <li>
+            
+                <span class="menu-label">↩️ Trả hàng</span>
+            
+        </li>
+        </NavLink>
+
+
+        <li onclick="toggleSubMenu('submenu-giamgia')">
+            <span class="menu-label">🏷️ Giảm giá</span>
+            <span class="arrow">&#9660;</span>
+        </li>
+        <ul id="submenu-giamgia" class="submenu">
+            <NavLink class="nav-link" href="/quanlygiamgia"><li><span class="menu-con-label">🎟️ Voucher</span></li></NavLink>
+            <NavLink class="nav-link" href="/DotGiamGia"><li><span class="menu-con-label">📅 Đợt giảm giá</span></li></NavLink>
+        </ul>
+
+
+
+        <li onclick="toggleSubMenu('submenu-taikhoan')">
+            <span class="menu-label">👤 Tài khoản</span>
+            <span class="arrow">&#9660;</span>
+        </li>
+        <ul id="submenu-taikhoan" class="submenu">
+
+            <NavLink class="nav-link" href="/quanlynhanvien"><li><span class="menu-con-label">👨‍💼 Nhân viên</span></li></NavLink>
+
+
+
+            <NavLink class="nav-link" href="/quanlykhachhang"><li><span class="menu-con-label">🧍‍♂️ Khách hàng</span></li></NavLink>
+
+        </ul>
+    </ul>
+</div>
+
+<script src="Js/Nav.js">
+
+</script>

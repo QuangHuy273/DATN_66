@@ -1,0 +1,53 @@
+﻿@page "/account"
+<link href="css/ThongTinCaNhan.css" rel="stylesheet" />
+<div class="container1">
+    <div class="header2">
+        <h1>Tài khoản của tôi</h1>
+        <p>Quản lý thông tin cá nhân và đơn hàng</p>
+    </div>
+
+    <div class="main-content">
+        <div class="sidebar">
+            <div class="profile-section">
+                <div class="profile-avatar">NT</div>
+                <h3>@UserName</h3>
+                <p>@Email</p>
+            </div>
+
+            <nav class="nav-menu">
+                <a class="nav-link @(activeTab=="dashboard" ? "active" : "")" @onclick='() => ChangeTab("dashboard")'>Tổng quan</a>
+                <a class="nav-link @(activeTab=="orders" ? "active" : "")" @onclick='() => ChangeTab("orders")'>Đơn hàng</a>
+                <a class="nav-link @(activeTab=="profile" ? "active" : "")" @onclick='() => ChangeTab("profile")'>Thông tin cá nhân</a>
+                <a class="nav-link @(activeTab=="settings" ? "active" : "")" @onclick='() => ChangeTab("settings")'>Cài đặt</a>
+            </nav>
+        </div>
+
+        <div class="content-area">
+            @if (activeTab == "dashboard")
+            {
+                <Dashboard />
+            }
+            else if (activeTab == "orders")
+            {
+                <Orders />
+            }
+            else if (activeTab == "profile")
+            {
+                <Profile />
+            }
+            else if (activeTab == "settings")
+            {
+                <Settings />
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string activeTab = "dashboard";
+
+    public string UserName { get; set; } = "Nguyễn Văn Thành";
+    public string Email { get; set; } = "thanh@email.com";
+
+    void ChangeTab(string tab) => activeTab = tab;
+}

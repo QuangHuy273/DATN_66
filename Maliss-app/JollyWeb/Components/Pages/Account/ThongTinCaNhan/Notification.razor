@@ -1,0 +1,20 @@
+﻿@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <div class="alert @AlertClass">
+        @Message
+    </div>
+}
+
+@code {
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string Type { get; set; } = "success"; 
+
+    private string AlertClass =>
+        Type switch
+        {
+            "success" => "alert alert-success",
+            "error" => "alert alert-danger",
+            "warning" => "alert alert-warning",
+            _ => "alert alert-info"
+        };
+}

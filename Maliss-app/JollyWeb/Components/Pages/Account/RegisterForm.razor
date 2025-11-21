@@ -1,0 +1,60 @@
+﻿@using System.ComponentModel.DataAnnotations
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject IKhachHangService khachHangService
+@inject ITaiKhoanService taiKhoanService
+@inject IApiService apiService
+@inject IJSRuntime JS
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator  />
+    <ValidationMessage For="() => registerModel.Username" class="text-danger" />
+    <InputText class="form-input" @bind-Value="registerModel.Username" placeholder="Tên đăng nhập" />
+    <ValidationMessage For="() => registerModel.SDT" class="text-danger" />
+    <InputText class="form-input" @bind-Value="registerModel.SDT" placeholder="Số điện thoại" />
+    <ValidationMessage For="() => registerModel.Password" class="text-danger" />
+    <InputText class="form-input" @bind-Value="registerModel.Password" placeholder="Mật khẩu" type="password" />
+    <ValidationMessage For="() => registerModel.RePassword" class="text-danger" />
+    <InputText class="form-input" @bind-Value="registerModel.RePassword" placeholder="Nhập lại Mật khẩu" type="password" />
+    <button class="form-submit" type="submit">Đăng ký</button>
+</EditForm>
+@code {
+    private List<KhachHangDTO> khachHangs = new();
+    private KhachHangDTO khachhang = new();
+    [Parameter] public RegisterModel registerModel { get; set; } = new();
+    [Parameter] public EventCallback<string> OnTabChanged { get; set; }
+    private List<NguoiDungDTO> nguoiDungDTO = new();
+    private TaiKhoanDTO taiKhoanDTO = new();
+    private async Task HandleRegister()
+    {
+        await LocalStorage.SetItemAsync("DangKyIndex", registerModel);
+
+        var exists = await taiKhoanService.CheckTk(registerModel.Username, registerModel.SDT);
+        if (!string.IsNullOrEmpty(exists))
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                toast = true,
+                position = "top",
+                icon = "info",
+                title = exists,
+                showConfirmButton = false,
+                timer = 2000
+            });
+            return;
+        }
+        if (OnTabChanged.HasDelegate)
+        {
+            await OnTabChanged.InvokeAsync("phoneauth:" + registerModel.SDT);
+        }
+        
+    }
+    private async Task VerifyOtpSuccess()
+    {
+        await OnTabChanged.InvokeAsync("registerthongtin");
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        registerModel = await LocalStorage.GetItemAsync<RegisterModel>("DangKyIndex") ?? new();
+        nguoiDungDTO = await apiService.GetAsync<List<NguoiDungDTO>>("NguoiDung") ?? new();
+        
+    }
+}

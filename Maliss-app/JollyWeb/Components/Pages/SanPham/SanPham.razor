@@ -1,0 +1,53 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Nav
+<link href="css/SanPham.css" rel="stylesheet" />
+<div class="product-card" >
+    <div class="infor-card" @onclick='() => Info(monAn)'>
+        <div class="product-img">
+            @if (!string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+            {
+                <img src="@monAn.AnhDaTai" alt="@monAn.Ten" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px;" />
+            }
+            else
+            {
+                @GetProductEmoji(monAn.TheLoai)
+            }
+        </div>
+        <h3>@monAn.Ten</h3>
+        <p>@monAn.ThuongHieu</p>
+        <p>@(string.IsNullOrEmpty(monAn.Mota) ? "Món ăn ngon đặc biệt" : monAn.Mota)</p>
+        <div class="price">@FormatMoney(monAn.Gia)</div>
+    </div>
+    <button class="add-to-cart" @onclick="() => AddToCart(monAn)">Thêm vào giỏ 🛒</button>
+</div>
+<ThemVaoGio @ref="popup" Product="monAn" />
+@code {
+    [Parameter] public MonAnDTO monAn { get; set; }
+    private ThemVaoGio popup;
+    private string FormatMoney(decimal amount)
+    {
+        return string.Format("{0:N0} VND", amount);
+    }
+    private async void AddToCart(MonAnDTO item)
+    {
+        
+        if (popup != null)
+        {
+            await popup.Show();
+        }
+    }
+    private string GetProductEmoji(string? category)
+    {
+        return category switch
+        {
+            "Đồ ăn vặt" => "🍕",
+            "Thức uống" => "🥤",
+            "Đồ ngọt" => "🍭",
+            _ => "🍴"
+        };
+    }
+    private async Task Info(MonAnDTO product)
+    {
+        Nav.NavigateTo($"/ChiTietSanPham/{product.Id}");
+    }
+}

@@ -1,0 +1,68 @@
+﻿@page "/payment-result"
+@layout Layout.LoginLayout
+@inject NavigationManager Nav
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+<link href="css/Payment.css" rel="stylesheet" />
+
+<div class="payment-result-container">
+    @if (status == "success")
+    {
+        <div class="payment-status-card success">
+            <span class="status-icon">✅</span>
+            <p class="success-message">Thanh toán thành công!</p>
+            @if (!string.IsNullOrEmpty(orderId))
+            {
+                <div class="order-id">Mã đơn hàng: #@orderId</div>
+            }
+            <p>⏳ Bạn sẽ được chuyển về trang bán hàng trong 3 giây...</p>
+        </div>
+    }
+    else if (status == "fail")
+    {
+        <div class="payment-status-card fail">
+            <span class="status-icon">❌</span>
+            <p class="fail-message">Thanh toán thất bại!</p>
+            @if (!string.IsNullOrEmpty(orderId))
+            {
+                <div class="order-id">Mã đơn hàng: #@orderId</div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="payment-status-card error">
+            <span class="status-icon">⚠</span>
+            <p class="error-message">Có lỗi xảy ra khi xác thực thanh toán</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? status { get; set; }
+    [Parameter] public string? orderId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        var vnpStatus = query["vnp_TransactionStatus"];
+        var vnpResponse = query["vnp_ResponseCode"];
+        orderId = query["vnp_TxnRef"];
+
+        if (vnpStatus == "00" && vnpResponse == "00")
+        {
+            status = "success";
+            _ = Task.Run(async () =>
+            {
+                await LocalStorage.SetItemAsync("status", status);
+                await Task.Delay(3000);
+                Nav.NavigateTo($"/banhang");
+            });
+        }
+        else
+        {
+            status = "fail";
+        }
+    }
+}

@@ -1,0 +1,66 @@
+﻿<Notification Message="@notificationMessage" Type="@notificationType" />
+<h2>Cài đặt tài khoản</h2>
+
+<EditForm Model="settings" OnValidSubmit="SaveSettings">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Mật khẩu hiện tại</label>
+        <InputText class="form-control" @bind-Value="settings.CurrentPassword" type="password" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Mật khẩu mới</label>
+        <InputText class="form-control" @bind-Value="settings.NewPassword" type="password" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Xác nhận mật khẩu</label>
+        <InputText class="form-control" @bind-Value="settings.ConfirmPassword" type="password" />
+    </div>
+
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input" @bind-Value="settings.EmailNotifications" />
+        <label class="form-check-label">Nhận thông báo qua email</label>
+    </div>
+
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input" @bind-Value="settings.SmsNotifications" />
+        <label class="form-check-label">Nhận thông báo qua SMS</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
+</EditForm>
+
+
+
+@code {
+    private UserSettings settings = new();
+
+    private string notificationMessage = "";
+    private string notificationType = "success";
+
+    private void SaveSettings()
+    {
+        if (settings.NewPassword != settings.ConfirmPassword)
+        {
+            notificationMessage = "Mật khẩu xác nhận không khớp!";
+            notificationType = "error";
+            return;
+        }
+
+        // TODO: gọi API lưu lại cài đặt
+        notificationMessage = "Cập nhật cài đặt thành công!";
+        notificationType = "success";
+    }
+
+    public class UserSettings
+    {
+        public string CurrentPassword { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+        public bool EmailNotifications { get; set; } = true;
+        public bool SmsNotifications { get; set; } = false;
+    }
+}

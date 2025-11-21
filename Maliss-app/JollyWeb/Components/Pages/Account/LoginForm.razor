@@ -1,0 +1,42 @@
+﻿@using API.Models.ViewModels
+@inject ITaiKhoanService taiKhoanService
+@inject IJSRuntime JS
+@inject NavigationManager nav
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationMessage For='() => loginModel.TaiKhoan' class="text-danger" />
+    <InputText class="form-input" placeholder="Email" @bind-Value="loginModel.TaiKhoan" />
+    <ValidationMessage For='() => loginModel.MatKhau' class="text-danger" />
+    <InputText class="form-input" placeholder="Mật khẩu" @bind-Value="loginModel.MatKhau" type="password" />
+
+
+    @(ErrorMessage)
+    <button class="form-submit" type="submit">Đăng nhập</button>
+</EditForm>
+
+@code {
+    private LoginViewModel loginModel = new();
+    private string ErrorMessage = string.Empty;
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var user = await taiKhoanService.Login(loginModel);
+
+            if (user == null)
+            {
+                ErrorMessage = "Tài khoản hoặc mật khẩu không đúng!";
+                return;
+            }
+            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangId", user.Id);
+            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangRole", user.Quyen);
+            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangUserName", user.UserName);
+            nav.NavigateTo(nav.Uri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Lỗi đăng nhập: " + ex.Message;
+        }
+    }
+
+}

@@ -1,0 +1,26 @@
+﻿<h2>Tổng quan tài khoản</h2>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">12</div>
+        <div class="stat-label">Tổng đơn hàng</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Đang xử lý</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">8</div>
+        <div class="stat-label">Đã hoàn thành</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">1</div>
+        <div class="stat-label">Đã hủy</div>
+    </div>
+</div>
+
+<div class="orders-grid">
+    <OrderCard OrderId="#ĐH001234" Status="Đang giao" Date="15/09/2025" Total="1.250.000₫"
+               Products="@(new List<(string, int, string)>{("iPhone 15 Pro Max", 1, "1.250.000₫")})" />
+    <OrderCard OrderId="#ĐH001235" Status="Đang xử lý" Date="17/09/2025" Total="850.000₫"
+               Products="@(new List<(string, int, string)>{("MacBook Air M2", 1, "850.000₫")})" />
+</div>

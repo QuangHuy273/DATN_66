@@ -1,0 +1,139 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using AutoMapper
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject IApiService apiService
+@inject ITaiKhoanService taiKhoanService
+@inject IMapper _mapper
+@inject IJSRuntime JS
+<link href="css/Register.css" rel="stylesheet" />
+<EditForm Model="@nguoiDung" OnSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationMessage For="() => nguoiDung.Ho" class="text-danger" />
+    <label>Họ</label>
+    <InputText class="form-input" @bind-Value="nguoiDung.Ho" />
+
+    <ValidationMessage For="() => nguoiDung.Ten" class="text-danger" />
+    <label>Tên</label>
+    <InputText class="form-input" @bind-Value="nguoiDung.Ten" />
+
+    <ValidationMessage For="() => nguoiDung.NgaySinh" class="text-danger" />
+    <label>Ngày sinh</label>
+    <InputDate class="form-input" @bind-Value="nguoiDung.NgaySinh" />
+
+    <ValidationMessage For="() => nguoiDung.GioiTinh" class="text-danger" />
+    <label>Giới tính</label>
+    <InputSelect class="form-input" @bind-Value="nguoiDung.GioiTinh">
+        <option value="">-- Chọn --</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+        <option value="Khác">Khác</option>
+    </InputSelect>
+
+    <ValidationMessage For="() => nguoiDung.Gmail" class="text-danger" />
+    <label>Email</label>
+    <InputText class="form-input" @bind-Value="nguoiDung.Gmail" type="email" />
+
+    <button class="form-submit" type="submit">Đăng ký</button>
+</EditForm>
+
+
+@code {
+    [Parameter] public EventCallback<string> OnTabChanged { get; set; }
+    private RegisterThongtin nguoiDung = new();
+    private List<NguoiDungDTO> nguoiDungDTO = new();
+    private NguoiDungDTO nguoiDungnew = new();
+    private TaiKhoan  taikhoannew = new();
+    private EditContext editContext;
+    private RegisterModel registerModel { get; set; } = new();
+    private Guid Idnew;
+    private KhachHangDTO khachHangnew;
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(nguoiDung);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        nguoiDungDTO = await apiService.GetAsync<List<NguoiDungDTO>>("NguoiDung") ?? new();
+        registerModel = await LocalStorage.GetItemAsync<RegisterModel>("DangKyIndex") ?? new();
+        var dto = nguoiDungDTO.FirstOrDefault(x => x.Sdt == registerModel.SDT);
+        nguoiDung = dto != null ? new RegisterThongtin
+        {
+            Ho = dto.Ho,
+            Ten = dto.Ten,
+            NgaySinh = dto.NgaySinh,
+            GioiTinh = dto.GioiTinh,
+            Gmail = dto.Gmail
+        } : new RegisterThongtin();
+
+    }
+    private async Task HandleSubmit(EditContext context)
+    {
+        if (!context.Validate()) return;
+        if (nguoiDungDTO.FirstOrDefault(x => x.Sdt == registerModel.SDT) != null)
+        {
+            Idnew = nguoiDungDTO.FirstOrDefault(x => x.Sdt == registerModel.SDT).Id;
+            nguoiDungnew = new NguoiDungDTO()
+                {
+                Ho = nguoiDung.Ho,
+                Ten = nguoiDung.Ten,
+                NgaySinh = nguoiDung.NgaySinh,
+                GioiTinh = nguoiDung.GioiTinh,
+                Gmail = nguoiDung.Gmail
+                };
+            var result = await apiService.PutAsync<NguoiDung>("NguoiDung", _mapper.Map<NguoiDung>(nguoiDungnew));
+        }
+        else
+        {
+            nguoiDungnew = new NguoiDungDTO()
+            {
+                Ho = nguoiDung.Ho,
+                Ten = nguoiDung.Ten,
+                NgaySinh = nguoiDung.NgaySinh,
+                GioiTinh = nguoiDung.GioiTinh,
+                Gmail = nguoiDung.Gmail,
+                Sdt = registerModel.SDT
+            };
+            var result2 = await apiService.PostAsync<NguoiDung, NguoiDung>("NguoiDung", _mapper.Map<NguoiDung>(nguoiDungnew));
+            Idnew = result2.Id;
+            khachHangnew = new KhachHangDTO()
+            {
+                NguoiDungId = Idnew
+            };
+            await apiService.PostAsync<KhachHang, KhachHang>("KhachHang", _mapper.Map<KhachHang>(khachHangnew));
+        }
+        taikhoannew = new TaiKhoan
+        {
+            NguoiDungId = Idnew,
+            UserName = registerModel.Username,
+            Password = registerModel.Password
+        };
+
+        var taiKhoanResult = await taiKhoanService.AddTaiKhoanAsync(taikhoannew);
+        if (taiKhoanResult != null)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "success",
+                text = "Tạo tài khoản thành công",
+                timer = 2000,
+                showConfirmButton = false,
+                position = "top"
+            });
+
+            if (OnTabChanged.HasDelegate)
+                await OnTabChanged.InvokeAsync("login");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "error",
+                text = "Tạo tài khoản thất bại! Vui lòng thử lại sau",
+                timer = 2000,
+                showConfirmButton = false,
+                position = "top"
+            });
+        }
+    
+    }
+}

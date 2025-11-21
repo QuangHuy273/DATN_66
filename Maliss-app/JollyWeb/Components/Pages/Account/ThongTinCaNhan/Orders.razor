@@ -1,0 +1,54 @@
+﻿<h2>Quản lý đơn hàng</h2>
+
+<div class="orders-filter">
+    <InputText @bind-Value="searchText" placeholder="Tìm kiếm đơn hàng..." class="form-control" />
+
+    <select class="form-select" @bind="statusFilter">
+        <option value="">Tất cả trạng thái</option>
+        <option value="processing">Đang xử lý</option>
+        <option value="shipped">Đang giao</option>
+        <option value="completed">Đã hoàn thành</option>
+        <option value="cancelled">Đã hủy</option>
+    </select>
+</div>
+
+<div class="orders-grid">
+    @foreach (var order in FilteredOrders)
+    {
+        <OrderCard OrderId="@order.OrderId"
+                   Status="@order.Status"
+                   Date="@order.Date"
+                   Total="@order.Total"
+                   Products="@order.Products" />
+    }
+</div>
+
+@code {
+    private string searchText = "";
+    private string statusFilter = "";
+
+    private List<OrderDTO> orders = new()
+    {
+        new OrderDTO{ OrderId="#ĐH001234", Status="Đang giao", Date="15/09/2025", Total="1.250.000₫",
+            Products = new() { ("iPhone 15 Pro Max", 1, "1.250.000₫") } },
+        new OrderDTO{ OrderId="#ĐH001235", Status="Đang xử lý", Date="17/09/2025", Total="850.000₫",
+            Products = new() { ("MacBook Air M2", 1, "850.000₫") } },
+        new OrderDTO{ OrderId="#ĐH001236", Status="Đã hủy", Date="01/08/2025", Total="500.000₫",
+            Products = new() { ("Apple Watch SE", 1, "500.000₫") } }
+    };
+
+    private IEnumerable<OrderDTO> FilteredOrders =>
+        orders.Where(o =>
+            (string.IsNullOrWhiteSpace(searchText) || o.OrderId.Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(statusFilter) || o.Status.Contains(statusFilter, StringComparison.OrdinalIgnoreCase))
+        );
+
+    public class OrderDTO
+    {
+        public string OrderId { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string Date { get; set; } = "";
+        public string Total { get; set; } = "";
+        public List<(string, int, string)> Products { get; set; } = new();
+    }
+}

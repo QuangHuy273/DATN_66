@@ -1,0 +1,101 @@
+﻿@inject IJSRuntime JS
+
+<div class="navbar-content">
+    <div class="navbar-left">
+        <div class="logo" @onclick='() => Navigation.NavigateTo("/")'><img src="https://github.com/khai520/SD_47_Jolly/blob/main/Img/logo_DoAnVat.png?raw=true" width="50px" alt="Alternate Text" /></div>
+        <div class="nav-links">
+            <a href="">Trang chủ</a>
+            <a href="SanPham">Sản phẩm</a>
+            <a href="">Khuyến mãi</a>
+            <a href="lienhe">Liên hệ</a>
+        </div>
+    </div>
+    <div class="navbar-center">
+        <input type="text" placeholder="🔍 Tìm sản phẩm..." class="search-box" />
+    </div>
+    <div class="navbar-right">
+        @if (!string.IsNullOrWhiteSpace(username))
+        {
+            @username
+            <button class="auth-btn logout" @onclick="Logout">Đăng xuất</button>
+        } 
+        else
+        {
+            <button class="auth-btn" @onclick='() => { initialAuthTab = "login"; showAuthModal = true; }'>Đăng nhập</button>
+            <button class="auth-btn register" @onclick='() => { initialAuthTab = "register"; showAuthModal = true; }'>Đăng ký</button>
+        }
+        
+
+        <div class="cart-icon" @onclick="GoToCart">
+            🛒
+            @if (CartCount > 0)
+            {
+                <span class="cart-badge">@CartCount</span>
+            }
+        </div>
+    </div>
+</div>
+
+<JollyWeb.Components.Pages.Account.AuthModal Visible="showAuthModal"
+                                             OnClose="() => Close()"  
+                                             InitialTab="@initialAuthTab" />
+@code {
+    [Inject] NavigationManager Navigation { get; set; }
+    private int CartCount = 0;
+    private bool showAuthModal = false;
+    private string initialAuthTab = "login";
+
+    private void ShowAuthModal(string tab)
+    {
+        initialAuthTab = tab;
+        showAuthModal = true;
+    }
+    private bool _hasInitialized = false;
+    public string username  = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !_hasInitialized)
+        {
+            var role = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangRole");
+            username = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangUserName");
+
+            _hasInitialized = true;
+            StateHasChanged();
+        }
+    }
+    private async Task Close()
+    {
+        showAuthModal = false;
+    }
+    private void GoToCart() {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            ShowAuthModal("login");
+        }
+        else
+        {
+            Navigation.NavigateTo("/giohang");
+        }
+    }
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangId" );
+        await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangRole");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangUserName");
+
+        username = "";
+
+        if (Navigation.Uri != "https://localhost:7084/checkout")
+        {
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        }
+        else
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        
+    }
+
+}

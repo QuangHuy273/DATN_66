@@ -1,0 +1,24 @@
+﻿
+.swal-success .swal2-popup {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 16px;
+}
+
+
+.swal-error .swal2-popup {
+    background-color: #f44336;
+    color: white;
+    font-size: 16px;
+}
+
+
+.swal2-icon.swal2-success {
+    border-color: white;
+    color: white;
+}
+
+.swal2-icon.swal2-error {
+    border-color: white;
+    color: white;
+}

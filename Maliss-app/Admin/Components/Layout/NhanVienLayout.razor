@@ -1,0 +1,58 @@
+﻿@using API.Models.DTO
+@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JSRuntime
+
+<link href="css/Sidebar.css" rel="stylesheet" />
+<style>
+    .dropdown-avatar {
+        padding: 12px 18px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .dropdown-item {
+        padding: 12px 18px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+</style>
+
+<div class="page">
+    <div class="sidebar">
+        <NavNhanVien />
+    </div>
+    <div class="main">
+        <div class="header2">
+            <div class="user-area">
+                <span class="bell" id="bell">
+                    🔔<span class="badge">2</span>
+                    <div class="dropdown-bell" id="dropdownBell" style="display:none;">
+                        <div class="bell-title">Thông báo mới</div>
+                        <hr>
+                        <div class="dropdown-item">Thông báo 1</div>
+                        <div class="dropdown-item">Thông báo 2</div>
+                    </div>
+                </span>
+                <img class="avatar" id="avatar" src="https://randomuser.me/api/portraits/women/44.jpg" alt="user" />
+                <div class="dropdown-avatar" id="dropdownAvatar" style="display:none;">
+                    <div class="dropdown-item">Thông tin tài khoản</div>
+                    <div class="dropdown-item">Đăng xuất</div>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            @Body
+        </div>
+    </div>
+</div>
+
+
+
+
+
+@code {
+
+}

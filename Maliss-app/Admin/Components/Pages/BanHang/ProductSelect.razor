@@ -1,0 +1,202 @@
+﻿@inject IApiService apiService
+@inject IChiTietMonAnService GetChiTietMonAnService
+@inject IJSRuntime JS
+@if (Visible)
+{
+    <div class="customer-select-overlay"></div>
+    <div class="product-select-box">
+        <div class="product-select-list">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label class="filter-label">Kích Cỡ:</label>
+                    <select @bind="selectedKichCo" class="filter-select">
+                        <option value="" selected></option>
+                        @foreach (var kc in allKichCo)
+                        {
+                            <option value="@kc">@kc</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label class="filter-label">Nguyên Liệu:</label>
+                    <select @bind="selectedNguyenLieu" class="filter-select">
+                        <option value="" selected></option>
+                        @foreach (var nl in allNguyenLieu)
+                        {
+                            <option value="@nl">@nl</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label class="filter-label">Loại Vị:</label>
+                    <select @bind="selectedLoaiVi" class="filter-select">
+                        <option value="" selected></option>
+                        @foreach (var lv in allLoaiVi)
+                        {
+                            <option value="@lv">@lv</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label class="filter-label">Tìm Kiếm:</label>
+                    <input type="text" placeholder="Nhập tên món ăn..." @bind="searchText" @bind:event="oninput" class="filter-input" />
+                </div>
+            </div>
+
+            @if (Products.Where(p => IsMatchAllFilters(p)).Any())
+            {
+                @foreach (var monAnGroup in Products
+                        .Where(p => IsMatchAllFilters(p))
+                        .GroupBy(p => p.Ten))
+                {
+                    <div class="product-group">
+                        <h4 class="product-title">@monAnGroup.Key</h4>
+
+                        @foreach (var product in monAnGroup)
+                        {
+                            <div class="product-select-item">
+                                <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")" class="order-img" alt="@product.Ten" />
+                                <div class="item-info">
+                                    <div class="order-size">Vị: <strong>@product.LoaiVi</strong></div>
+                                    <div class="order-size">Cỡ: <strong>@product.KichCo</strong></div>
+                                    <div class="order-size">Nguyên Liệu: <strong>@product.NguyenLieu</strong></div>
+                                    <div class="order-price">Giá: <strong>@FormatMoney(product.Gia)</strong></div>
+                                </div>
+                                <div class="order-qty">
+                                    <button @onclick="@(() => ChangeQty(product, -1))">-</button>
+                                    <input type="number" value="@product.SoLuongDat" readonly />
+                                    <button @onclick="@(() => ChangeQty(product, 1))">+</button>
+                                </div>
+                                <div class="order-total">@FormatMoney(product.Gia * product.SoLuongDat)</div>
+                                <button class="add-btn" @onclick="@(() => AddToOrder(product))">Thêm</button>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-notice">Không có sản phẩm nào phù hợp.</div>
+            }
+
+        </div>
+        <button class="close-customer-select" @onclick="Close">Đóng</button>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<ChiTietMonAnDTO> OnAddProduct { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private List<MonAnDTO> allProducts = new();
+    private List<ChiTietMonAnDTO> Products = new();
+    private string selectedDongGoi = string.Empty;
+    private List<string> allDongGoi = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
+        var allproduct = await GetChiTietMonAnService.GetAll();
+        Products = allproduct?.Where(p => p.Soluong >= 1 && p.TrangThai == true && allProducts.FirstOrDefault(m => m.Id == p.MonAnId && m.TrangThai == true) != null).ToList() ?? new();
+
+        allKichCo = Products.Select(p => p.KichCo)
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Distinct().OrderBy(s => s).ToList();
+
+        allNguyenLieu = Products.Select(p => p.NguyenLieu)
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .Distinct().OrderBy(s => s).ToList();
+
+        allLoaiVi = Products.Select(p => p.LoaiVi)
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Distinct().OrderBy(s => s).ToList();
+
+        selectedKichCo = "";
+        selectedNguyenLieu = "";
+        selectedLoaiVi = "";
+    }
+
+
+    private async void ChangeQty(ChiTietMonAnDTO g, int delta)
+    {
+
+        if (delta < 0 && g.SoLuongDat <= 1)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                toast = true,
+                position = "top-end",
+                icon = "info",
+                title = "Không thể giảm dưới 1",
+                showConfirmButton = false,
+                timer = 2000
+            });
+            return;
+        }
+
+
+        if (delta > 0 && g.SoLuongDat >= g.Soluong)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                toast = true,
+                position = "top-end",
+                icon = "info",
+                title = "Số lượng tối đa đã đạt",
+                showConfirmButton = false,
+                timer = 2000
+            });
+            return;
+        }
+
+
+        g.SoLuongDat += delta;
+
+
+        g.SoLuongDat = Math.Clamp(g.SoLuongDat, 1, g.Soluong);
+
+        StateHasChanged();
+    }
+
+
+
+    private async Task AddToOrder(ChiTietMonAnDTO item)
+    {
+        await OnAddProduct.InvokeAsync(item);
+        await OnClose.InvokeAsync();
+    }
+
+    private void Close()
+    {
+        OnClose.InvokeAsync();
+    }
+
+    private string FormatMoney(decimal amount)
+    {
+        return string.Format("{0:N0} VND", amount);
+    }
+    private string selectedKichCo = string.Empty;
+    private string selectedNguyenLieu = string.Empty;
+    private string selectedLoaiVi = string.Empty;
+    private string searchText = string.Empty;
+
+    private List<string> allKichCo = new();
+    private List<string> allNguyenLieu = new();
+    private List<string> allLoaiVi = new();
+
+
+
+    private bool IsMatchAllFilters(ChiTietMonAnDTO p)
+    {
+        bool matchKichCo = string.IsNullOrWhiteSpace(selectedKichCo) || p.KichCo == selectedKichCo;
+        bool matchNguyenLieu = string.IsNullOrWhiteSpace(selectedNguyenLieu) || p.NguyenLieu == selectedNguyenLieu;
+        bool matchLoaiVi = string.IsNullOrWhiteSpace(selectedLoaiVi) || p.LoaiVi == selectedLoaiVi;
+        bool matchSearch = string.IsNullOrWhiteSpace(searchText) || (p.Ten?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+
+        return matchKichCo && matchNguyenLieu && matchLoaiVi && matchSearch;
+    }
+
+}

@@ -1,0 +1,58 @@
+﻿<h2>Thông tin cá nhân</h2>
+
+<EditForm Model="user" OnValidSubmit="SaveProfile">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Họ và tên</label>
+        <InputText class="form-control" @bind-Value="user.FullName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="user.Email" type="email" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Số điện thoại</label>
+        <InputText class="form-control" @bind-Value="user.Phone" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Địa chỉ</label>
+        <InputTextArea class="form-control" @bind-Value="user.Address" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+</EditForm>
+
+<Notification Message="@notificationMessage" Type="@notificationType" />
+
+@code {
+    private UserProfile user = new()
+    {
+        FullName = "Nguyễn Văn Thành",
+        Email = "thanh@email.com",
+        Phone = "0912345678",
+        Address = "Hà Nội, Việt Nam"
+    };
+
+    private string notificationMessage = "";
+    private string notificationType = "success";
+
+    private void SaveProfile()
+    {
+        // TODO: gọi API để lưu lại thông tin
+        notificationMessage = "Cập nhật thông tin cá nhân thành công!";
+        notificationType = "success";
+    }
+
+    public class UserProfile
+    {
+        public string FullName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Address { get; set; } = "";
+    }
+}

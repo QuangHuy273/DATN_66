@@ -1,0 +1,508 @@
+﻿@using AutoMapper
+@inject IJSRuntime JSRuntime
+@inject IChiTietMonAnService ChiTietMonAn
+@inject IApiService apiService
+@inject IMapper _mapper
+<link href="css/ThemVaoGio.css" rel="stylesheet" />
+<div class="modal @(IsVisible ? "show" : "")" style="display:@(IsVisible ? "block" : "none")">
+    <div class="modal-content">
+        <span class="close" @onclick="Close">&times;</span>
+
+        @if (ChiTietList?.Any() == true)
+        {
+            <section class="product-detail">
+                <div class="container content-container">
+                    <div class="container detail-container">
+
+                        <!-- Hình ảnh -->
+                        <div class="product-image">
+
+                            @if (!string.IsNullOrEmpty(selectedImage))
+                            {
+                                <img src="@selectedImage" alt="@ProductName" class="main-image" />
+                            }
+                            else
+                            {
+                                <img src="https://via.placeholder.com/500x500.png?text=@Uri.EscapeDataString(ProductName)"
+                                     alt="@ProductName" class="main-image" />
+                            }
+                            @if (displayedImages?.Any() == true)
+                            {
+                                <div class="thumbnail-list">
+                                    @foreach (var img in displayedImages)
+                                    {
+                                        <img src="@img"
+                                             alt="@ProductName"
+                                             class="thumbnail @(selectedImage == img ? "active" : "")"
+                                             @onclick="() => ChangeImage(img)" />
+                                    }
+                                </div>
+                            }
+                        </div>
+
+
+
+
+                        <!-- Thông tin -->
+                        <div class="product-info">
+                            <h2 class="detail-title">@ProductName</h2>
+
+                            <!-- Giá -->
+                            @if (selectedChiTiet != null)
+                            {
+                                <div class="detail-price">
+                                    @if (selectedChiTiet.GiaGiam > 0 && selectedChiTiet.GiaGiam < selectedChiTiet.Gia)
+                                    {
+                                        <span class="original-price">@selectedChiTiet.Gia.ToString("N0")₫</span>
+                                        <span class="sale-price">@selectedChiTiet.GiaGiam.ToString("N0")₫</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Giá: @selectedChiTiet.Gia.ToString("N0")₫</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="detail-price">
+                                    <span>Giá từ: @FilteredGia.FirstOrDefault().ToString("N0")₫ đến @FilteredGia.LastOrDefault().ToString("N0")₫</span>
+                                </div>
+                            }
+
+
+                            <!-- Mô tả -->
+                            @if (!string.IsNullOrEmpty(ProductDescription))
+                            {
+                                <p class="detail-description">@ProductDescription</p>
+                            }
+
+                            <!-- Lựa chọn chi tiết -->
+                            <div class="options-container">
+                                <!-- Hương vị -->
+                                <div class="option-group flavor-group">
+                                    <label class="option-label">
+                                        <span class="emoji">📂</span>
+                                        Hương vị:
+                                    </label>
+                                    <div class="select-wrapper">
+                                        <select class="custom-select flavor-select" @bind-Value="selectedLoaiVi" @bind-Value:event="onchange">
+                                            <option value="">-- Chọn hương vị --</option>
+                                            @foreach (var v in FilteredLoaiVi)
+                                            {
+                                                <option value="@v">@v</option>
+                                            }
+                                        </select>
+                                        <div class="select-arrow">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="6,9 12,15 18,9"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Kích cỡ -->
+                                <div class="option-group size-group">
+                                    <label class="option-label">
+                                        <span class="emoji">📏</span>
+                                        Kích cỡ:
+                                    </label>
+                                    <div class="select-wrapper">
+                                        <select class="custom-select size-select" @bind-Value="selectedKichCo" @bind-Value:event="onchange">
+                                            <option value="">-- Chọn kích cỡ --</option>
+                                            @foreach (var s in FilteredKichCo)
+                                            {
+                                                <option value="@s">@s</option>
+                                            }
+                                        </select>
+                                        <div class="select-arrow">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="6,9 12,15 18,9"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Nguyên liệu -->
+                                <div class="option-group material-group">
+                                    <label class="option-label">
+                                        <span class="emoji">📦</span>
+                                        Nguyên liệu:
+                                    </label>
+                                    <div class="select-wrapper">
+                                        <select class="custom-select material-select" @bind-Value="selectedNguyenLieu" @bind-Value:event="onchange">
+                                            <option value="">-- Chọn nguyên liệu --</option>
+                                            @foreach (var p in FilteredNguyenLieu)
+                                            {
+                                                <option value="@p">@p</option>
+                                            }
+                                        </select>
+                                        <div class="select-arrow">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="6,9 12,15 18,9"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Số lượng -->
+                            @if (selectedChiTiet != null)
+                            {
+                                <div class="quantity-selector">
+                                    <label>Số lượng:</label>
+                                    <div class="quantity-controls">
+                                        <button type="button" @onclick="DecreaseQuantity" disabled="@(selectedQuantity <= 1)">-</button>
+                                        <input type="number" @bind="selectedQuantity" min="1" max="@selectedChiTiet.Soluong" />
+                                        <button type="button" @onclick="IncreaseQuantity" disabled="@(selectedQuantity >= selectedChiTiet.Soluong)">+</button>
+                                    </div>
+                                    <span class="stock-info">(@selectedChiTiet.Soluong có sẵn)</span>
+                                </div>
+
+                                <button class="add-to-cart"
+                                        @onclick="AddToCart"
+                                        disabled="@(!selectedChiTiet.TrangThai || selectedChiTiet.Soluong <= 0)">
+                                    @if (selectedChiTiet.TrangThai && selectedChiTiet.Soluong > 0)
+                                    {
+                                        <text>🛒 Thêm vào giỏ</text>
+                                    }
+                                    else
+                                    {
+                                        <text>❌ Hết hàng</text>
+                                    }
+                                </button>
+                            }
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+            <p>Không tìm thấy sản phẩm</p>
+        }
+    </div>
+</div>
+<JollyWeb.Components.Pages.Account.AuthModal Visible="showAuthModal"
+                                             OnClose="() => showAuthModal = false"
+                                             InitialTab="@initialAuthTab" />
+@code {
+    [Parameter] public MonAnDTO? Product { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public bool IsVisible { get; set; } = false;
+
+    private List<ChiTietMonAnDTO> ChiTietList = new();
+    private ChiTietMonAnDTO? selectedChiTiet;
+
+    private string? _selectedLoaiVi;
+    private string? selectedLoaiVi
+    {
+        get => _selectedLoaiVi;
+        set
+        {
+            if (_selectedLoaiVi != value)
+            {
+                _selectedLoaiVi = value;
+                ApplyFilters();
+            }
+        }
+    }
+    private string? _selectedKichCo;
+    private string? selectedKichCo
+    {
+        get => _selectedKichCo;
+        set
+        {
+            if (_selectedKichCo != value)
+            {
+                _selectedKichCo = value;
+                ApplyFilters();
+            }
+        }
+    }
+
+    private string? _selectedNguyenLieu;
+    private string? selectedNguyenLieu
+    {
+        get => _selectedNguyenLieu;
+        set
+        {
+            if (_selectedNguyenLieu != value)
+            {
+                _selectedNguyenLieu = value;
+                ApplyFilters();
+            }
+        }
+    }
+    private List<string> FilteredLoaiVi = new();
+    private List<string> FilteredKichCo = new();
+    private List<string> FilteredNguyenLieu = new();
+    private List<string> displayedImages = new();
+    private string? selectedImage;
+    private string? ProductName;
+    private string? ProductDescription;
+
+    private int selectedQuantity = 1;
+    private bool isLoading = true;
+
+    private List<decimal> FilteredGia = new();
+    private bool showAuthModal = false;
+    private string initialAuthTab = "login";
+    private void ShowAuthModal(string tab)
+    {
+        initialAuthTab = tab;
+        showAuthModal = true;
+    }
+
+    private void IncreaseQuantity()
+    {
+        if (selectedChiTiet != null && selectedQuantity < selectedChiTiet.Soluong)
+        {
+            selectedQuantity++;
+        }
+    }
+
+    private void DecreaseQuantity()
+    {
+        if (selectedQuantity > 1)
+        {
+            selectedQuantity--;
+        }
+    }
+
+
+    public async Task Show()
+    {
+        if (Product == null) return;
+
+        IsVisible = true;
+        StateHasChanged(); 
+
+
+        ChiTietList = await LoadChiTiet(Product.Id);
+        ProductName = Product.Ten;
+        ProductDescription = Product.Mota;
+        FilteredLoaiVi = ChiTietList.Select(c => c.LoaiVi).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+        FilteredKichCo = ChiTietList.Select(c => c.KichCo).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+        FilteredNguyenLieu = ChiTietList.Select(c => c.NguyenLieu).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+        displayedImages = ChiTietList.SelectMany(c => c.DanhSachAnh).DistinctBy(a => a.DuongDan).Select(x => x.DuongDan).ToList();
+        FilteredGia = ChiTietList.OrderBy(x => x.Gia).Select(c => c.Gia).ToList();
+        selectedImage = displayedImages.FirstOrDefault();
+
+        StateHasChanged(); 
+    }
+
+
+    private async Task<List<ChiTietMonAnDTO>> LoadChiTiet(string id)
+    {
+
+        var ctma = await ChiTietMonAn.GetChiTiet(id);
+
+
+        ChiTietList = ctma.Where(x => x.TrangThai == true).ToList();
+
+        return ChiTietList;
+    }
+
+    private void ApplyFilters()
+    {
+        // Lọc các chi tiết dựa trên các thuộc tính đã chọn
+        var filtered = ChiTietList.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(selectedLoaiVi))
+            filtered = filtered.Where(c => c.LoaiVi == selectedLoaiVi);
+
+        if (!string.IsNullOrEmpty(selectedKichCo))
+            filtered = filtered.Where(c => c.KichCo == selectedKichCo);
+
+        if (!string.IsNullOrEmpty(selectedNguyenLieu))
+            filtered = filtered.Where(c => c.NguyenLieu == selectedNguyenLieu);
+
+        // Cập nhật danh sách dropdown dựa trên bộ lọc hiện tại (loại vị)
+        FilteredLoaiVi = ChiTietList
+            .Where(c => (string.IsNullOrEmpty(selectedKichCo) || c.KichCo == selectedKichCo)
+                     && (string.IsNullOrEmpty(selectedNguyenLieu) || c.NguyenLieu == selectedNguyenLieu))
+            .Select(c => c.LoaiVi)
+            .Where(v => !string.IsNullOrEmpty(v))
+            .Distinct()
+            .ToList();
+
+        // Cập nhật danh sách dropdown dựa trên bộ lọc hiện tại (kích cỡ)
+        FilteredKichCo = ChiTietList
+            .Where(c => (string.IsNullOrEmpty(selectedLoaiVi) || c.LoaiVi == selectedLoaiVi)
+                     && (string.IsNullOrEmpty(selectedNguyenLieu) || c.NguyenLieu == selectedNguyenLieu))
+            .Select(c => c.KichCo)
+            .Where(v => !string.IsNullOrEmpty(v))
+            .Distinct()
+            .ToList();
+
+        // Cập nhật danh sách dropdown dựa trên bộ lọc hiện tại (nguyên liệu)
+        FilteredNguyenLieu = ChiTietList
+            .Where(c => (string.IsNullOrEmpty(selectedLoaiVi) || c.LoaiVi == selectedLoaiVi)
+                     && (string.IsNullOrEmpty(selectedKichCo) || c.KichCo == selectedKichCo))
+            .Select(c => c.NguyenLieu)
+            .Where(v => !string.IsNullOrEmpty(v))
+            .Distinct()
+            .ToList();
+
+        FilteredGia = filtered
+            .Select(c => c.GiaGiam > 0 && c.GiaGiam < c.Gia ? c.GiaGiam : c.Gia)
+            .Distinct()
+            .OrderBy(g => g) 
+            .ToList();
+
+        // Nếu chọn đầy đủ 3 thuộc tính -> chọn chi tiết chính xác
+        if (!string.IsNullOrEmpty(selectedLoaiVi)
+            && !string.IsNullOrEmpty(selectedKichCo)
+            && !string.IsNullOrEmpty(selectedNguyenLieu))
+        {
+            selectedChiTiet = ChiTietList.FirstOrDefault(c =>
+                c.LoaiVi == selectedLoaiVi &&
+                c.KichCo == selectedKichCo &&
+                c.NguyenLieu == selectedNguyenLieu
+            );
+
+            displayedImages = selectedChiTiet?.DanhSachAnh?.Select(a => a.DuongDan).ToList() ?? new();
+        }
+        else
+        {
+            // Nếu chưa chọn đủ 3 -> không gán selectedChiTiet
+            selectedChiTiet = null;
+
+            // Gom tất cả ảnh của các chi tiết khớp với bộ lọc hiện tại
+            displayedImages = filtered
+                .SelectMany(c => c.DanhSachAnh ?? new List<AnhDTO>())
+                .Select(a => a.DuongDan)
+                .Distinct()
+                .ToList();
+        }
+
+        // Ảnh chính = ảnh đầu tiên trong danh sách ảnh
+        selectedImage = displayedImages.FirstOrDefault();
+
+        // Reset số lượng về 1 khi thay đổi chi tiết
+        selectedQuantity = 1;
+    }
+
+    private void Close()
+    {
+        IsVisible = false;
+        ResetState();
+        OnClose.InvokeAsync(null);
+    }
+
+    private void ResetState()
+    {
+        selectedLoaiVi = null;
+        selectedKichCo = null;
+        selectedNguyenLieu = null;
+
+        ChiTietList = new List<ChiTietMonAnDTO>();
+
+        selectedChiTiet = null;
+
+
+        FilteredLoaiVi = new List<string>();
+        FilteredKichCo = new List<string>();
+        FilteredNguyenLieu = new List<string>();
+
+
+        displayedImages = new List<string>();
+        selectedImage = null;
+
+
+        ProductName = null;
+        ProductDescription = null;
+
+
+        selectedQuantity = 1;
+
+
+        isLoading = true;
+    }
+    private bool _hasInitialized = false;
+    public string Id = "";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !_hasInitialized)
+        {
+            Id = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
+
+            _hasInitialized = true;
+            StateHasChanged();
+        }
+    }
+    private List<GioHangDTO> cartItems = new();
+    private async Task AddToCart()
+    {
+        if (selectedChiTiet == null) return;
+        if (!string.IsNullOrEmpty(Id))
+        {
+            var cartJson = await apiService.GetAsync<List<GioHangDTO>>("GioHang");
+            cartItems = cartJson.Where(x => x.KhachHangid == Id).ToList() ?? new();
+
+            var existingItem = cartItems.FirstOrDefault(c => c.ChiTietMonAnId == selectedChiTiet.Id);
+
+            if (existingItem != null)
+            {
+                int newQuantity = existingItem.Soluong + selectedQuantity;
+
+                if (newQuantity > selectedChiTiet.Soluong)
+                {
+                    newQuantity = selectedChiTiet.Soluong;
+                }
+
+                existingItem.Soluong = newQuantity;
+                existingItem.TongGia = existingItem.Soluong * selectedChiTiet.Gia;
+
+                var updateResult = await apiService.PutAsync<GioHang>(
+                    "GioHang", _mapper.Map<GioHang>(existingItem));
+
+                if (updateResult != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", $"Đã cập nhật giỏ hàng: {existingItem.Soluong} sản phẩm {ProductName} ({selectedChiTiet.LoaiVi} {selectedChiTiet.KichCo} {selectedChiTiet.NguyenLieu})");
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Lỗi khi cập nhật giỏ hàng!");
+                }
+            }
+            else
+            {
+                var newgiohang = new GioHangDTO()
+                {
+                    ChiTietMonAnId = selectedChiTiet.Id,
+                    Soluong = selectedQuantity,
+                    KhachHangid = Id,
+                    TongGia = selectedChiTiet.Gia * selectedQuantity
+                };
+
+                var result3 = await apiService.PostAsync<GioHang, GioHang>("GioHang", _mapper.Map<GioHang>(newgiohang));
+                if (result3 != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", $"Đã thêm {selectedQuantity} {ProductName} ({selectedChiTiet.LoaiVi} {selectedChiTiet.KichCo} {selectedChiTiet.NguyenLieu}) vào giỏ hàng!");
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Lỗi khi thêm vào giỏ hàng!");
+                }
+            }
+            Close();
+        }
+        else
+        {
+            ShowAuthModal("login");
+        }
+        
+    }
+    private void ChangeImage(string duongDan)
+    {
+        selectedImage = duongDan;
+    }
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        ApplyFilters();
+    }
+}

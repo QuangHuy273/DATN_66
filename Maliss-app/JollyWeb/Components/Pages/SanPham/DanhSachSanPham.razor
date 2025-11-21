@@ -1,0 +1,209 @@
+﻿ @page "/SanPham"
+@using API.Models.DTO
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Nav
+@inject IMonAnService monAnService
+@inject IChiTietMonAnService chiTietMonAnService
+<PageTitle>Jolly - Đồ Ăn Vặt Ngon</PageTitle>
+
+<link href="css/DanhSachSanPham.css" rel="stylesheet" />
+
+<main>
+    <section class="products-with-filter" id="products">
+        <div class="container1">
+            <div class="product-layout">
+                <!-- Cột trái: Bộ lọc -->
+                <aside class="product-filters">
+                    <h3>Bộ lọc</h3>
+                    <div class="filter-group">
+                        <label>🔍 Tìm kiếm</label>
+                        <input type="text" placeholder="Tìm món..." @bind="searchKeyword" @oninput="OnSearchInput" />
+                    </div>
+
+                    <div class="filter-group">
+                        <label>🏷️ Thể loại</label>
+                        <select @bind="selectedCategoryValue">
+                            <option value="">Tất cả</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>🏢 Thương hiệu</label>
+                        <select @bind="selectedBrandValue">
+                            <option value="">Tất cả</option>
+                            @foreach (var brand in brands)
+                            {
+                                <option value="@brand">@brand</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>💰 Mức giá</label>
+                        <input type="range" min="@minPrice" max="@maxPrice" step="5000" @bind="priceFilter" @oninput="OnPriceChange" />
+                        <span id="priceLabel">Tối đa: @(priceFilter.ToString("N0"))₫</span>
+                    </div>
+                </aside>
+
+                <!-- Cột phải: Danh sách sản phẩm -->
+                <div class="product-grid">
+                    @if (filteredProducts?.Any() == true)
+                    {
+                        @foreach (var product in filteredProducts)
+                        {
+
+                            <SanPham monAn="product"/>
+                            
+                        }
+                    }
+                    else
+                    {
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                            <p style="font-size: 1.5rem; color: #666;">Không tìm thấy sản phẩm nào phù hợp</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@code {
+    private List<MonAnDTO> products = new();
+    private List<MonAnDTO> filteredProducts = new();
+
+    // Filter properties
+    private string searchKeyword = "";
+    private string selectedCategory = "";
+    private string selectedBrand = "";
+    private string selectedSupplier = "";
+    private string selectedPackaging = "";
+    private decimal priceFilter = 100000;
+    private decimal minPrice = 10000;
+    private decimal maxPrice = 100000;
+
+    // Filter options
+    private List<string> categories = new();
+    private List<string> brands = new();
+    private List<string> packagings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        var monAns = await monAnService.GetAll() ?? new();
+        var ctma = await chiTietMonAnService.GetAll() ?? new();
+
+
+        products = monAns
+            .Where(mon => mon.TrangThai == true &&
+                        ctma.Any(c => c.MonAnId == mon.Id 
+                                    && c.TrangThai == true 
+                                    && c.Soluong > 0))
+            .ToList();
+
+        InitializeFilterOptions();
+        ApplyFilters();
+    }
+
+    private void InitializeFilterOptions()
+    {
+        categories = products.Where(p => !string.IsNullOrEmpty(p.TheLoai))
+                           .Select(p => p.TheLoai!)
+                           .Distinct()
+                           .OrderBy(c => c)
+                           .ToList();
+
+        brands = products.Where(p => !string.IsNullOrEmpty(p.ThuongHieu))
+                        .Select(p => p.ThuongHieu!)
+                        .Distinct()
+                        .OrderBy(b => b)
+                        .ToList();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredProducts = products.Where(product =>
+        {
+
+            if (!string.IsNullOrEmpty(searchKeyword) &&
+                !product.Ten.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!string.IsNullOrEmpty(selectedCategory) &&
+                product.TheLoai != selectedCategory)
+                return false;
+
+            if (!string.IsNullOrEmpty(selectedBrand) &&
+                product.ThuongHieu != selectedBrand)
+                return false;
+
+            if (product.Gia > priceFilter)
+                return false;
+
+            return true;
+        }).ToList();
+
+        StateHasChanged();
+    }
+
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchKeyword = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private async Task OnPriceChange(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal newPrice))
+        {
+            priceFilter = newPrice;
+            ApplyFilters();
+        }
+    }
+
+
+    private string _selectedCategory = "";
+    private string selectedCategoryValue
+    {
+        get => _selectedCategory;
+        set
+        {
+            _selectedCategory = value;
+            selectedCategory = value;
+            ApplyFilters();
+        }
+    }
+
+    private string _selectedBrand = "";
+    private string selectedBrandValue
+    {
+        get => _selectedBrand;
+        set
+        {
+            _selectedBrand = value;
+            selectedBrand = value;
+            ApplyFilters();
+        }
+    }
+
+    private string _selectedPackaging = "";
+    private string selectedPackagingValue
+    {
+        get => _selectedPackaging;
+        set
+        {
+            _selectedPackaging = value;
+            selectedPackaging = value;
+            ApplyFilters();
+        }
+    }
+}

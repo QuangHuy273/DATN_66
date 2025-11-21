@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet @rendermode="@InteractiveServer" />
+</head>
+
+<body>
+    <Routes @rendermode="@InteractiveServer" />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+        // Firebase config
+        const firebaseConfig = {
+          apiKey: "AIzaSyCgZIisokmJEu5ybpETjblcA_qTVsYOIL8",
+          authDomain: "jollyweb-f9872.firebaseapp.com",
+          projectId: "jollyweb-f9872",
+          storageBucket: "jollyweb-f9872.firebasestorage.app",
+          messagingSenderId: "490932851985",
+          appId: "1:490932851985:web:1c31057b9458aeb4f3e8b0",
+          measurementId: "G-25CX5QLY03"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+
+        let appVerifier;
+
+        window.setupRecaptcha = function () {
+          appVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible'
+          });
+        };
+
+        window.sendOTP = async function (phoneNumber) {
+          try {
+            const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+            window.confirmationResult = confirmationResult;
+            return "OTP sent";
+          } catch (error) {
+            return "Error: " + error.message;
+          }
+        };
+
+        window.verifyOTP = async function (code) {
+          try {
+            const result = await window.confirmationResult.confirm(code);
+            return "Verified: " + result.user.phoneNumber;
+          } catch (error) {
+            return "Invalid OTP: " + error.message;
+          }
+        };
+    </script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {
+            DotNet.invokeMethodAsync('Jolly Web', 'OnGoogleLogin', response.credential);
+        }
+    </script>
+
+</body>
+
+</html>

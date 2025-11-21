@@ -1,0 +1,240 @@
+﻿@page "/giohang"
+@using System.Text.Json
+@using AutoMapper
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject IApiService apiService
+@inject IChiTietMonAnService ChiTietMonAn
+@inject IMapper _mapper
+<PageTitle>Giỏ Hàng | Jolly</PageTitle>
+
+<link href="css/GioHang.css" rel="stylesheet" />
+
+<div class="container2">
+    <h1>🛒 Giỏ Hàng Của Bạn</h1>
+
+    @if (isLoading)
+    {
+        <div class="loading">Đang tải giỏ hàng...</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Chọn</th>
+                    <th>Ảnh</th>
+                    <th>Sản phẩm</th>
+                    <th>Giá</th>
+                    <th>Số lượng</th>
+                    <th>Thành tiền</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (item, index) in chiTietMonAn
+                            .Where(x => x.TrangThai && x.SoLuongDat > 0)
+                            .Select((item, index) => (item, index)))
+                {
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   @bind="item.IsSelected" />
+                        </td>
+                        <td>
+                            <img src="@(string.IsNullOrEmpty(item.DanhSachAnh?.FirstOrDefault()?.DuongDan)
+                                                             ? "https://via.placeholder.com/60"
+                                                             : item.DanhSachAnh?.FirstOrDefault()?.DuongDan)"
+                         alt="@item.Ten" />
+                </td>
+                <td>@item.Ten</td>
+                <td>@FormatCurrency(item.Gia)</td>
+                <td>
+                    <div class="quantity-control">
+                        <button @onclick="() => ChangeQuantity(index, -1)">-</button>
+                        <input type="text" value="@item.SoLuongDat" readonly />
+                        <button @onclick="() => ChangeQuantity(index, 1)">+</button>
+                    </div>
+                </td>
+                <td>@FormatCurrency(item.SoLuongDat * item.Gia)</td>
+                <td>
+                    <button class="remove-btn" @onclick="@(async () => await RemoveItem(index))">
+                        Xóa
+                    </button>
+                </td>
+            </tr>
+                        }
+            </tbody>
+
+
+        </table>
+
+        <div class="total">
+            Tổng: @FormatCurrency(GetTotalAmount())
+        </div>
+
+        <button class="checkout-btn" @onclick="Checkout">
+            Tiến hành thanh toán
+        </button>
+    }
+</div>
+
+@code {
+    private List<GioHangDTO> cartItems = new();
+
+    private List<ChiTietMonAnDTO> chiTietMonAn = new();
+    private bool isLoading = true;
+
+    private bool _hasInitialized = false;
+    public string Id = "";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !_hasInitialized)
+        {
+            Id = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
+
+            await LoadCartFromLocalStorage();
+
+            _hasInitialized = true;
+            StateHasChanged();
+        }
+    }
+
+
+
+    private async Task LoadCartFromLocalStorage()
+    {
+        try
+        {
+            
+            var cartJson = await apiService.GetAsync<List<GioHangDTO>>("GioHang");
+            cartItems = cartJson.Where(x => x.KhachHangid == Id).ToList() ?? new();
+            var ctma = await ChiTietMonAn.GetAll();
+            var chiTietIds = cartItems.Select(c => c.ChiTietMonAnId).ToList();
+            chiTietMonAn = ctma.Where(c => chiTietIds.Contains(c.Id)).ToList() ?? new();
+            foreach (var c in chiTietMonAn)
+            {
+                var cartItem = cartItems.FirstOrDefault(g => g.ChiTietMonAnId == c.Id);
+                if (cartItem != null)
+                {
+                    c.SoLuongDat = cartItem.Soluong;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading cart: {ex.Message}");
+            cartItems = new List<GioHangDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveCartToLocalStorage()
+    {
+        try
+        {
+            var cartJson = JsonSerializer.Serialize(cartItems);
+            await JS.InvokeVoidAsync("localStorage.setItem", "cart", cartJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving cart: {ex.Message}");
+        }
+    }
+
+    private async Task ChangeQuantity(int index, int step)
+    {
+        if (index < 0 || index >= chiTietMonAn.Count)
+            return;
+
+        var item = chiTietMonAn[index];
+        var newQuantity = item.SoLuongDat + step;
+
+        if (newQuantity < 1)
+            newQuantity = 1;
+        else if (newQuantity > item.Soluong)
+            newQuantity = item.Soluong;
+
+        item.SoLuongDat = newQuantity;
+
+        var cartItem = cartItems.FirstOrDefault(c => c.ChiTietMonAnId == item.Id);
+        if (cartItem != null)
+        {
+            cartItem.Soluong = newQuantity;
+            Update(cartItem);
+        }
+
+        await SaveCartToLocalStorage();
+        StateHasChanged();
+    }
+
+
+
+    private async Task RemoveItem(int index)
+    {
+        if (index >= 0 && index < chiTietMonAn.Count)
+        {
+            var item = chiTietMonAn[index];
+
+            if (item != null)
+            {
+                Remove(cartItems.FirstOrDefault(c => c.ChiTietMonAnId == item.Id));
+            }
+            chiTietMonAn.RemoveAt(index);
+            cartItems.RemoveAll(c => c.ChiTietMonAnId == item.Id);
+            await SaveCartToLocalStorage();
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task Checkout()
+    {
+        var selectedItems = chiTietMonAn
+            .Where(x => x.IsSelected && x.SoLuongDat > 0)
+            .ToList();
+
+        if (!selectedItems.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
+            return;
+        }
+
+        var selectedJson = JsonSerializer.Serialize(selectedItems);
+        await JS.InvokeVoidAsync("localStorage.setItem", "checkoutItems", selectedJson);
+
+        Navigation.NavigateTo("/checkout");
+    }
+
+
+
+
+    private async void Remove(GioHangDTO existingItem)
+    {
+        var updateResult = await apiService.DeleteAsync<string>(
+                    "GioHang", existingItem.Id);
+    }
+
+    private async void Update(GioHangDTO existingItem)
+    {
+        var updateResult = await apiService.PutAsync<GioHang>(
+                    "GioHang", _mapper.Map<GioHang>(existingItem));
+    }
+    private string FormatCurrency(decimal amount)
+    {
+        return amount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) + "₫";
+    }
+
+    private decimal GetTotalAmount()
+    {
+        return chiTietMonAn
+            .Where(x => x.IsSelected)
+            .Sum(item => item.Gia * item.SoLuongDat);
+    }
+
+}

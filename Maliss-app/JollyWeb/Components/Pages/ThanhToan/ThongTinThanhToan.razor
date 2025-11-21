@@ -1,0 +1,504 @@
+﻿@page "/checkout"
+@using System.Globalization
+@using System.ComponentModel.DataAnnotations
+@using API.HeThong.IHeThong
+@using API.Models.ViewModels.BanHang
+@using System.Text.Json
+@inject IXuLyDiaChi xuLyDiaChi
+@inject NavigationManager Nav
+@inject IChiTietMonAnService ChiTietMonAnService
+@inject IJSRuntime JS
+@inject IKhachHangService apiService
+@using AutoMapper
+@inject IHoaDonService HoaDonService
+@inject IMapper _mapper
+@inject IVnPayService vnPayService
+@implements IDisposable
+<PageTitle>Checkout - Đặt hàng</PageTitle>
+
+<link href="css/ThongTinThanhToan.css" rel="stylesheet" />
+@if (chiTietMonAnList.Count == 0)
+{
+    <div>Vui lòng đăng nhập trước khi mua hàng</div>
+}
+else
+{
+    <div class="container">
+        <div class="checkout-form">
+            <div class="form-title">
+                Thông tin giao hàng
+                <button type="button" class="address-btn" @onclick="() => IsAddressModalVisible = true">CHỌN ĐỊA CHỈ</button>
+            </div>
+
+            <EditForm Model="checkoutModel" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="required">*</span>Họ và tên</label>
+                        <InputText @bind-Value="@checkoutModel.FullName" disabled class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label><span class="required">*</span>Số điện thoại</label>
+                        <InputText @bind-Value="@checkoutModel.PhoneNumber" disabled class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-row address-row">
+                    <div class="form-group">
+                        <label><span class="required">*</span>Tỉnh/thành phố</label>
+                        <InputSelect @bind-Value="checkoutModel.Province" disabled class="form-control">
+                            <option value="">Chọn Tỉnh</option>
+                            @foreach (var t in TinhThanh)
+                            {
+                                <option value="@t.Ten">@t.Ten</option>
+                            }
+                        </InputSelect>
+
+                        <ValidationMessage For="@(() => checkoutModel.Province)" />
+                    </div>
+                    <div class="form-group">
+                        <label><span class="required">*</span>Quận/huyện</label>
+                        <InputSelect @bind-Value="checkoutModel.District" disabled class="form-control">
+                            <option value="">Chọn quận/huyện</option>
+                            @foreach (var h in HuyenXa)
+                            {
+                                <option value="@h.Ten">@h.Ten</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => checkoutModel.District)" />
+                    </div>
+                    <div class="form-group">
+                        <label><span class="required">*</span>Xã/thị trấn</label>
+                        <InputSelect @bind-Value="checkoutModel.Ward" disabled class="form-control">
+                            <option value="">Chọn xã/thị trấn</option>
+                            @foreach (var x in XaPhuong)
+                            {
+                                <option value="@x.Ten">@x.Ten</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => checkoutModel.Ward)" />
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label><span class="required">*</span>Địa chỉ cụ thể</label>
+                    <InputText @bind-Value="checkoutModel.SpecificAddress" required disabled class="form-control" />
+                    <ValidationMessage For="@(() => checkoutModel.SpecificAddress)" />
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Ghi chú</label>
+                    <InputTextArea @bind-Value="checkoutModel.Notes" placeholder="Nhập ghi chú đơn hàng..." />
+                </div>
+
+                <div class="payment-section">
+                    <div class="payment-title">Phương thức thanh toán</div>
+                    <div class="payment-options">
+                        <div class="payment-option @(checkoutModel.PaymentMethod == "cod" ? "selected" : "")"
+                             @onclick='() => SelectPayment("cod")'>
+                            <div class="payment-icon cod">📦</div>
+                            <span>Thanh toán khi nhận hàng</span>
+                        </div>
+                        <div class="payment-option @(checkoutModel.PaymentMethod == "vnpay" ? "selected" : "")"
+                             @onclick='() => SelectPayment("vnpay")'>
+                            <div class="payment-icon vnpay">💳</div>
+                            <span>Thanh toán ngay</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success">@successMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(infoMessage))
+                {
+                    <div class="alert alert-info">@infoMessage</div>
+                }
+
+                <button type="submit" class="submit-btn">HOÀN THÀNH ĐẶT HÀNG</button>
+            </EditForm>
+
+            <a href="/giohang" class="back-link">
+                ← Quay lại giỏ hàng
+            </a>
+        </div>
+
+        <div class="order-summary">
+            @foreach (var item in chiTietMonAnList)
+            {
+                <div class="product-item">
+                    <div class="quantity-badge">@item.SoLuongDat</div>
+                    <img src="@(string.IsNullOrEmpty(item.DanhSachAnh?.FirstOrDefault()?.DuongDan)
+                        ? "https://via.placeholder.com/60"
+                        : item.DanhSachAnh.First().DuongDan)"
+                 alt="@item.Ten" class="product-image" />
+            <div class="product-info">
+                <h4>@item.Ten</h4>
+                <div class="product-size">Loại: @item.KichCo</div>
+            </div>
+            <div class="product-price">
+                @(item.Gia.ToString("N0", new System.Globalization.CultureInfo("vi-VN"))) ₫
+            </div>
+        </div>
+                }
+
+            <div class="summary-row total">
+                <span>Tổng số tiền</span>
+                <span>@TotalAmount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) ₫</span>
+            </div>
+        </div>
+
+    </div>
+    <ChonDiaChi Visible="@IsAddressModalVisible"
+                OnAddressSelected="HandleAddressSelected"
+                OnClose="@(() => IsAddressModalVisible = false)" />
+}
+
+@code {
+    private CheckoutModel checkoutModel = new();
+    private string discountCode = "";
+    private int discountAmount = 0;
+    private int shippingFee = 34000;
+    private DateTime deliveryDate;
+    private string successMessage = "";
+    private string infoMessage = "";
+    private bool IsAddressModalVisible = false;
+    private List<DiaChiNhap> TinhThanh = new();
+    private List<DiaChiNhap> HuyenXa = new();
+    private List<DiaChiNhap> XaPhuong = new();
+    private List<GioHangDTO> cartItems = new();
+    private List<HinhThucThanhToanDTO> hinhThucThanhToanDTOs = new();
+    private List<ChiTietMonAnDTO> chiTietMonAnList = new();
+    private KhachHangDTO khachHang = new();
+
+    private bool isLoading = true;
+    private bool _hasInitialized = false;
+    private bool _disposed = false;
+    public string Id = "";
+
+    protected override void OnInitialized()
+    {
+        deliveryDate = DateTime.Now.AddDays(3);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            try
+            {
+                Id = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
+
+                var checkoutJson = await JS.InvokeAsync<string>("localStorage.getItem", "checkoutItems");
+                if (!string.IsNullOrEmpty(checkoutJson))
+                {
+                    try
+                    {
+                        chiTietMonAnList = JsonSerializer.Deserialize<List<ChiTietMonAnDTO>>(checkoutJson) ?? new();
+                    }
+                    catch
+                    {
+                        chiTietMonAnList = new();
+                    }
+                }
+
+                var pendingJson = await JS.InvokeAsync<string>("localStorage.getItem", "pendingOrder");
+                if (!string.IsNullOrEmpty(pendingJson))
+                {
+                    try
+                    {
+                        var pending = JsonSerializer.Deserialize<HoaDonDTO>(pendingJson);
+                        if (pending != null)
+                        {
+                            hoadon = pending;
+                        }
+                    }
+                    catch {  }
+                }
+
+                await LoadServerData();
+
+                _hasInitialized = true;
+                StateHasChanged();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        TinhThanh = await xuLyDiaChi.ParseDiaChiAsync("wwwroot/Files/ThanhPho.txt");
+    }
+
+    private async Task LoadServerData()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(Id))
+            {
+                var khachhang = await apiService.GetAll();
+                if (khachhang != null)
+                {
+                    khachHang = khachhang.FirstOrDefault(x => x.Id == Id) ?? new();
+                    // fill checkoutModel name & phone
+                    checkoutModel.FullName = string.IsNullOrWhiteSpace(khachHang.HoTen) ? $"{khachHang.Ho} {khachHang.Ten}".Trim() : khachHang.HoTen;
+                    checkoutModel.PhoneNumber = khachHang.Sdt ?? "";
+                }
+
+                var httt = await apiService.GetAsync<List<HinhThucThanhToanDTO>>("HinhThucThanhToan");
+                if (httt != null)
+                {
+                    hinhThucThanhToanDTOs = httt;
+                } 
+
+                var cartJson = await apiService.GetAsync<List<GioHangDTO>>("GioHang");
+                if (cartJson != null)
+                {
+                    cartItems = cartJson.Where(x => x.KhachHangid == Id).ToList();
+                }
+                else
+                {
+                    cartItems = new();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi khi LoadServerData: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectPayment(string paymentType)
+    {
+        checkoutModel.PaymentMethod = paymentType;
+        StateHasChanged();
+    }
+
+    private HoaDonDTO hoadon = new();
+
+    private async Task ConfirmOrder()
+    {
+        if (_disposed) return;
+
+        try
+        {
+            var result2 = await apiService.PostAsync<HoaDon, HoaDon>("HoaDon", _mapper.Map<HoaDon>(hoadon));
+            if (result2 != null)
+            {
+                
+
+                foreach (var item in chiTietMonAnList)
+                {
+                    var hoadonchitiet = new HoaDonChiTietDTO()
+                    {
+                        ChiTietMonAnId = item.Id,
+                        HoaDonId = result2.Id,
+                        Soluong = item.SoLuongDat,
+                        ThanhTien = item.Gia * item.SoLuongDat,
+                    };
+
+                    var result3 = await apiService.PostAsync<HoaDonChiTiet, HoaDonChiTiet>("HoaDonChiTiet", _mapper.Map<HoaDonChiTiet>(hoadonchitiet));
+                    if (result3 != null)
+                    {
+                        await HoaDonService.LichSuTrangThai(result3.Id, result2.TrangThai, "Hóa đơn online");
+                    }
+
+                    var cartItem = cartItems.FirstOrDefault(x => x.ChiTietMonAnId == item.Id);
+                    if (cartItem != null)
+                    {
+                        await apiService.DeleteAsync<string>("GioHang", cartItem.Id);
+                    }
+                }
+
+                await SafeSwal("success", "Thành công", "Đơn hàng đã được ghi nhận.");
+                await SafeLocalStorageRemove("pendingOrder");
+                await SafeLocalStorageRemove("checkoutItems");
+            }
+            else
+            {
+                await SafeSwal("warning", "Lỗi!", "Có lỗi khi lưu đơn hàng.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[POST] Exception on HoaDon: {ex.Message}");
+            await SafeSwal("error", "Lỗi", "Có lỗi khi lưu đơn hàng.");
+        }
+
+        await SafeNavigateTo("/", true);
+    }
+
+    private async Task SafeSwal(string icon, string title, string text)
+    {
+        if (_disposed) return;
+        try
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new { icon, title, text });
+        }
+        catch (JSDisconnectedException) { }
+        catch (Exception) { }
+    }
+
+    private async Task SafeLocalStorageRemove(string key)
+    {
+        if (_disposed) return;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", key);
+        }
+        catch (JSDisconnectedException) { }
+        catch (Exception) { }
+    }
+
+    private async Task SafeLocalStorageSetString(string key, string value)
+    {
+        if (_disposed) return;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", key, value);
+        }
+        catch (JSDisconnectedException) { }
+        catch (Exception) { }
+    }
+
+    private async Task SafeNavigateTo(string url, bool forceLoad = false)
+    {
+        if (_disposed) return;
+        try
+        {
+            Nav.NavigateTo(url, forceLoad);
+        }
+        catch (JSDisconnectedException) { }
+        catch (Exception) { }
+    }
+
+    private decimal TotalAmount => chiTietMonAnList.Sum(item => item.Gia * item.SoLuongDat);
+
+    private async Task HandleSubmit()
+    {
+        if (!await ValidateCheckout())
+            return;
+
+        hoadon = new HoaDonDTO()
+        {
+            KhachHangId = Id,
+            LoaiHoaDon = "Online",
+            TrangThai = "Chờ xác nhận",
+            TongTien = TotalAmount,
+            TongTienSauKhiGiam = TotalAmount,
+            GhiChu = checkoutModel.Notes,
+            DiaChi = checkoutModel.SpecificAddress + ", " + checkoutModel.Ward + ", " + checkoutModel.District + ", " + checkoutModel.Province
+        };
+
+        if (checkoutModel.PaymentMethod == "cod")
+        {
+            var hinhThuc = hinhThucThanhToanDTOs.FirstOrDefault(x => x.Ten == "Tiền mặt");
+            if (hinhThuc != null)
+            {
+                hoadon.HinhThucThanhToanId = hinhThuc.Id;
+            }
+            await ConfirmOrder();
+        }
+        else if (checkoutModel.PaymentMethod == "vnpay")
+        {
+            var hinhThuc = hinhThucThanhToanDTOs.FirstOrDefault(x => x.Ten == "VNPay");
+            if (hinhThuc != null)
+            {
+                hoadon.HinhThucThanhToanId = hinhThuc.Id;
+            }
+            var json = JsonSerializer.Serialize(hoadon);
+            await SafeLocalStorageSetString("pendingOrder", json);
+
+            var orderId = DateTime.Now.Ticks.ToString();
+            var paymentUrl = vnPayService.CreatePaymentUrl(TotalAmount, orderId, "Thanh toán hóa đơn Jolly");
+            await SafeNavigateTo(paymentUrl, true);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<bool> ValidateCheckout()
+    {
+        if (chiTietMonAnList == null || chiTietMonAnList.Count == 0)
+        {
+            await SafeSwal("warning", "Chưa thêm sản phẩm", "Đơn hàng chưa được thêm sản phẩm.");
+            return false;
+        }
+
+        // Họ tên
+        if (string.IsNullOrWhiteSpace(checkoutModel.FullName))
+        {
+            await SafeSwal("warning", "Thiếu dữ liệu", "Họ và tên là bắt buộc.");
+            return false;
+        }
+
+        // Số điện thoại
+        if (string.IsNullOrWhiteSpace(checkoutModel.PhoneNumber))
+        {
+            await SafeSwal("warning", "Thiếu dữ liệu", "Số điện thoại là bắt buộc.");
+            return false;
+        }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(checkoutModel.PhoneNumber, @"^\d{9,11}$"))
+        {
+            await SafeSwal("warning", "Không hợp lệ", "Số điện thoại không hợp lệ (9–11 chữ số).");
+            return false;
+        }
+
+        // Địa chỉ
+        if (string.IsNullOrWhiteSpace(checkoutModel.Province) ||
+            string.IsNullOrWhiteSpace(checkoutModel.District) ||
+            string.IsNullOrWhiteSpace(checkoutModel.Ward))
+        {
+            await SafeSwal("warning", "Thiếu dữ liệu", "Chưa chọn đầy đủ tỉnh/thành phố, quận/huyện, xã/phường.");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(checkoutModel.SpecificAddress))
+        {
+            await SafeSwal("warning", "Thiếu dữ liệu", "Vui lòng nhập địa chỉ cụ thể.");
+            return false;
+        }
+
+        // Phương thức thanh toán
+        if (string.IsNullOrWhiteSpace(checkoutModel.PaymentMethod))
+        {
+            await SafeSwal("warning", "Thiếu dữ liệu", "Chưa chọn phương thức thanh toán.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void HandleAddressSelected(DiaChi diaChi)
+    {
+        Tinh = diaChi.Tinh;
+        checkoutModel.Province = Tinh;
+        var tinh = TinhThanh.FirstOrDefault(t => t.Ten == Tinh);
+        HuyenXa = tinh?.Con ?? new();
+        Huyen = diaChi.QuanHuyen;
+        checkoutModel.District = Huyen;
+        var huyen = HuyenXa.FirstOrDefault(h => h.Ten == Huyen);
+        XaPhuong = huyen?.Con ?? new();
+        Phuong = diaChi.XaPhuong;
+        checkoutModel.Ward = Phuong;
+        checkoutModel.SpecificAddress = diaChi.DiaChiCuThe;
+    }
+
+    private string Tinh = "";
+    private string Huyen = "";
+    private string Phuong = "";
+
+    public void Dispose()
+    {
+        _disposed = true;
+    }
+}

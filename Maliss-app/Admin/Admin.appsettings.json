@@ -1,0 +1,19 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=.;Initial Catalog=Jolly;Trusted_Connection=True;Integrated Security=True;TrustServerCertificate=True"
+  },
+  "DetailedErrors": true,
+  "VnPay": {
+    "TmnCode": "E3QQUILQ",
+    "HashSecret": "FCS5AI4QIUIDM1RPYKZ6NOMC4XGYGKAE",
+    "BaseUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+    "ReturnUrl": "https://hungry-numbers-post.loca.lt/vnpay_return"
+  }
+}

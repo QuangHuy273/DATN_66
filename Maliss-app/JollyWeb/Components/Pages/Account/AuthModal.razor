@@ -1,0 +1,69 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<link href="css/Account.css" rel="stylesheet" />
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public string InitialTab { get; set; } = "login";
+
+    private string activeTab;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible)
+        {
+            activeTab = InitialTab;
+        }
+    }
+
+    private async Task Close()
+    {
+        await LocalStorage.RemoveItemAsync("DangKyIndex");
+        await OnClose.InvokeAsync();
+    }
+
+    private void HandleTabChange(string tab)
+    {
+        activeTab = tab;
+        StateHasChanged();
+    }
+}
+@if (Visible)
+{
+    <div class="auth-modal-overlay" @onclick="Close">
+        <div class="auth-modal" @onclick:stopPropagation="true">
+            <div class="auth-modal-header">
+                <button class="@((activeTab == "login" ? "active-tab" : ""))"
+                        @onclick='() => activeTab = "login"'>
+                    Đăng nhập
+                </button>
+                <button class="@((activeTab == "register" ? "active-tab" : ""))"
+                        @onclick='() => activeTab = "register"'>
+                    Đăng ký
+                </button>
+                <button class="close-btn" @onclick="Close">×</button>
+            </div>
+            <div class="auth-modal-body">
+                @if (activeTab == "login")
+                {
+                    <LoginForm />
+                }
+                else if (activeTab == "register")
+                {
+                    <RegisterForm OnTabChanged="HandleTabChange" />
+                }
+                else if (activeTab.StartsWith("phoneauth"))
+                {
+                    var phone = activeTab.Split(':')[1];
+                    <PhoneAuth PhoneNumber="@phone" 
+                                OnTabChanged="HandleTabChange"/>
+                }
+                else if (activeTab == "registerthongtin")
+                {
+                    <RegisterThongTin OnTabChanged="HandleTabChange" />
+                }
+            </div>
+        </div>
+    </div>
+}
+

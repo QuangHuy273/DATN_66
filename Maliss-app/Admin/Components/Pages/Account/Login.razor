@@ -1,0 +1,131 @@
+﻿@page "/"
+@layout Layout.LoginLayout
+@inject NavigationManager Navigation
+@inject Admin.Service.IService.ITaiKhoanService taiKhoanService
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ProtectedLocalStorage localStorage
+@inject AppStateService AppState
+@inject IJSRuntime JS
+
+@using System.ComponentModel.DataAnnotations
+@using API.Models.ViewModels
+@using API.Models.DTO
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+
+
+<link href="css/Login.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<PageTitle>Login</PageTitle>
+<div class="signup-container">
+    <EditForm Model="Input" OnValidSubmit="LoginUserAsync"
+              FormName="login">
+        <DataAnnotationsValidator />
+        <h2 style="text-align:center;">Login</h2>
+            
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @ErrorMessage
+            </div>
+        }
+
+        <div class="text-box">
+            <InputText @bind-Value="Input.TaiKhoan"
+                       id="Input.UserName"
+                       class="login-text"
+                       autocomplete="username"
+                       aria-required="true"
+                       placeholder="UserName" />
+            <ValidationMessage For="() => Input.TaiKhoan"
+                               class="text-danger" />
+        </div>
+
+
+        <!-- Password với icon con mắt -->
+        <div>
+            <InputText type="password"
+                       @bind-Value="Input.MatKhau"
+                       id="Input.Password"
+                       class="form-control login-text"
+                       autocomplete="current-password"
+                       placeholder="Password" />
+            <ValidationMessage For="() => Input.MatKhau" class="text-danger" />
+        </div>
+
+        <div>
+            <button class="login-text" type="submit">
+                Login
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+
+
+@code {
+    [CascadingParameter]
+    private HttpContext? httpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    private LoginViewModel Input { get; set; } = new();
+    private bool _hasRendered = false;
+
+    private string ErrorMessage = string.Empty;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasRendered)
+        {
+            _hasRendered = true;
+
+            await JS.InvokeAsync<string>("localStorage.removeItem", "currentRole");
+            await JS.InvokeAsync<string>("localStorage.removeItem", "currentUserName");
+            StateHasChanged();
+        }
+
+    }
+
+    public async Task LoginUserAsync()
+    {
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            var user = await taiKhoanService.Login(Input);
+
+            if (user == null )
+            {
+                ErrorMessage = "Tài khoản hoặc mật khẩu không đúng!";
+                return;
+            }
+            await JS.InvokeVoidAsync("localStorage.setItem", "currentId", user.Id);
+            await JS.InvokeVoidAsync("localStorage.setItem", "currentRole", user.Quyen);
+            await JS.InvokeVoidAsync("localStorage.setItem", "currentUserName", user.UserName);
+
+
+            AppState.CurrentRole = user.Quyen;
+            AppState.CurrentUserName = user.UserName;
+
+            Navigation.NavigateTo(user.Quyen switch
+            {
+                "Admin" => "/thongke",
+                "NhanVien" => "/banhang",
+                _ => "/"
+            });
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Lỗi đăng nhập: " + ex.Message;
+        }
+    }
+
+
+
+}

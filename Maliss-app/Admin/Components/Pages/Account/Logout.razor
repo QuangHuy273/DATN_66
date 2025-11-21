@@ -1,0 +1,19 @@
+﻿@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+<button @onclick="HandleLogout">Đăng xuất</button>
+
+@code {
+    [Inject] NavigationManager NavigationManager { get; set; }
+    [Inject] IHttpContextAccessor HttpContextAccessor { get; set; }
+
+    private async Task HandleLogout()
+    {
+        Console.WriteLine("Xóa");
+        var context = HttpContextAccessor.HttpContext;
+        if (context != null)
+        {
+            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            NavigationManager.NavigateTo("/", true);
+        }
+    }
+}

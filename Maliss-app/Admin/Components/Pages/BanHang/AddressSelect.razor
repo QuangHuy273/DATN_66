@@ -1,0 +1,59 @@
+﻿
+@if (Visible && Addresses != null)
+{
+    <div class="address-select-overlay"></div>
+    <div class="address-select-box">
+        <h3 style="margin-top: 0; color: #ff9800;">Chọn địa chỉ giao hàng</h3>
+
+        <div class="address-select-list">
+            @if (Addresses.Count == 0)
+            {
+                <div style="color:#999;">Khách hàng chưa có địa chỉ</div>
+            }
+            else
+            {
+                @foreach (var address in Addresses)
+                {
+                    <div class="address-select-item" @onclick="() => SelectAddress(address)">
+                        <div class="address-icon">
+                            @(address.TrangThai ? "🏠" : "📍")
+                        </div>
+                        <div class="address-details">
+                            <div class="address-label">@address.Tinh</div>
+                            <div class="address-text">@address.DiaChiCuThe</div>
+                            @if (address.TrangThai)
+                            {
+                                <span class="address-default">Mặc định</span>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <button class="close-address-select" @onclick="Close">Đóng</button>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+
+    // Danh sách địa chỉ đầu vào
+    [Parameter] public List<DiaChiDTO> Addresses { get; set; } = new();
+
+    // Sự kiện chọn địa chỉ
+    [Parameter] public EventCallback<DiaChiDTO> OnAddressSelected { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task SelectAddress(DiaChiDTO diaChi)
+    {
+        await OnAddressSelected.InvokeAsync(diaChi);
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+}
