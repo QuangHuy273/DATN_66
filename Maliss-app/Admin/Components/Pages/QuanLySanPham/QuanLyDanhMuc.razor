@@ -1,1 +1,836 @@
-﻿
+﻿@page "/quanlydanhmuc"
+@using Admin.Service.IService
+@using API.Models.DTO
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Quản Lý Danh Mục</PageTitle>
+
+<link href="css/QuanLyDanhMuc.css" rel="stylesheet" />
+
+<style>
+    .stats-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+    }
+
+        .stats-card div:first-child {
+            font-size: 16px;
+            font-weight: 500;
+            color: #555;
+        }
+
+    .stats-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: #4a6cf7;
+        text-align: center;
+        width: 100%;
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #d4d7dd;
+            background: #fafafa;
+            font-size: 15px;
+            transition: 0.2s ease;
+        }
+
+            .search-box input:focus {
+                outline: none;
+                border-color: #4a6cf7;
+                box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+            }
+
+    .btn-search {
+        padding: 10px 18px;
+        background: #4a6cf7;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: 0.2s ease;
+    }
+
+        .btn-search:hover {
+            background: #3a58d4;
+            transform: translateY(-1px);
+        }
+
+        .btn-search:active {
+            transform: translateY(0);
+        }
+</style>
+
+<div class="quan-ly-danh-muc-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="bi bi-folder2-open"></i>
+                Quản Lý Danh Mục
+            </h1>
+            <p class="page-subtitle">Quản lý các danh mục sản phẩm: Vị, Kích cỡ, Nhà cung cấp, Nguyên liệu</p>
+        </div>
+    </div>
+
+    <div class="content-wrapper">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn @(activeTab == "loaivi" ? "active" : "")" @onclick='() => SwitchTab("loaivi")'>
+                <i class="bi bi-tag"></i>
+                <span>🏷️ Loại Vị</span>
+            </button>
+            <button class="tab-btn @(activeTab == "kichco" ? "active" : "")" @onclick='() => SwitchTab("kichco")'>
+                <i class="bi bi-rulers"></i>
+                <span>📏 Kích Cỡ</span>
+            </button>
+            <button class="tab-btn @(activeTab == "nhacungcap" ? "active" : "")" @onclick='() => SwitchTab("nhacungcap")'>
+                <i class="bi bi-building"></i>
+                <span>🏢 Nhà Cung Cấp</span>
+            </button>
+            <button class="tab-btn @(activeTab == "nguyenlieu" ? "active" : "")" @onclick='() => SwitchTab("nguyenlieu")'>
+                <i class="bi bi-box-seam"></i>
+                <span>🥗 Nguyên Liệu</span>
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            @if (isLoading)
+            {
+                <div class="loading-state">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Đang tải dữ liệu...</p>
+                </div>
+            }
+            else
+            {
+                <!-- Loại Vị Tab -->
+                @if (activeTab == "loaivi")
+                {
+                    <div class="stats-card">
+                        <div>Tổng</div>
+                        <div class="stats-number">@(loaiVis?.Count ?? 0)</div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm kiếm vị..."
+                               @bind="searchText"
+                               @bind:event="oninput" />
+
+                        <button class="btn-search" @onclick="Search">🔍 TÌM</button>
+                    </div>
+
+                    <div class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Danh Sách Loại Vị</h3>
+                            <button class="btn btn-primary" @onclick="ShowAddLoaiVi">
+                                <i class="bi bi-plus-circle"></i> Thêm Mới
+                            </button>
+                        </div>
+                        @RenderTable(filteredLoaiVis.ToList(), EditLoaiVi, DeleteLoaiVi)
+                    </div>
+                }
+
+                <!-- Kích Cỡ Tab -->
+                @if (activeTab == "kichco")
+                {
+                    <div class="stats-card">
+                        <div>Tổng</div>
+                        <div class="stats-number">@(kichCos?.Count ?? 0)</div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm kiếm cỡ..."
+                               @bind="searchText"
+                               @bind:event="oninput" />
+
+                        <button class="btn-search" @onclick="Search">🔍 TÌM</button>
+                    </div>
+
+                    <div class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Danh Sách Kích Cỡ</h3>
+                            <button class="btn btn-primary" @onclick="ShowAddKichCo">
+                                <i class="bi bi-plus-circle"></i> Thêm Mới
+                            </button>
+                        </div>
+                        @RenderTable(filteredKichCos.ToList(), EditKichCo, DeleteKichCo)
+                    </div>
+                }
+
+                <!-- Nhà Cung Cấp Tab -->
+                @if (activeTab == "nhacungcap")
+                {
+                    <div class="stats-card">
+                        <div>Tổng</div>
+                        <div class="stats-number">@(nhaCungCaps?.Count ?? 0)</div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm kiếm NCC..."
+                               @bind="searchText"
+                               @bind:event="oninput" />
+
+                        <button class="btn-search" @onclick="Search">🔍 TÌM</button>
+                    </div>
+                    <div class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Danh Sách Nhà Cung Cấp</h3>
+                            <button class="btn btn-primary" @onclick="ShowAddNhaCungCap">
+                                <i class="bi bi-plus-circle"></i> Thêm Mới
+                            </button>
+                        </div>
+                        @RenderTable(filteredNhaCungCaps.ToList(), EditNhaCungCap, DeleteNhaCungCap)
+                    </div>
+                }
+
+                <!-- Nguyên Liệu Tab -->
+                @if (activeTab == "nguyenlieu")
+                {
+                    <div class="stats-card">
+                        <div>Tổng</div>
+                        <div class="stats-number">@(nguyenLieus?.Count ?? 0)</div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm kiếm nguyên liệu..."
+                               @bind="searchText"
+                               @bind:event="oninput" />
+
+                        <button class="btn-search" @onclick="Search">🔍 TÌM</button>
+                    </div>
+                    <div class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Danh Sách Nguyên Liệu</h3>
+                            <button class="btn btn-primary" @onclick="ShowAddNguyenLieu">
+                                <i class="bi bi-plus-circle"></i> Thêm Mới
+                            </button>
+                        </div>
+                        @RenderTable(filteredDongGois.ToList(), EditNguyenLieu, DeleteNguyenLieu)
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Category Form Modal -->
+@if (showFormModal)
+{
+    <div class="modal-backdrop fade show" style="display: block;" @onclick="CancelEdit"></div>
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(IsNewItem() ? "Thêm Mới" : "Sửa") @GetItemTypeName()
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CancelEdit"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" @bind="itemName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mô Tả</label>
+                        <textarea class="form-control" rows="3" @bind="itemMota"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Hủy</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveItem">
+                        <i class="bi bi-check"></i> Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<LoaiViDTO> loaiVis = new();
+    private List<KichCoDTO> kichCos = new();
+    private List<NhaCungCapDTO> nhaCungCaps = new();
+    private List<DongGoiDTO> nguyenLieus = new();
+
+    private string activeTab = "loaivi";
+    private bool isLoading = true;
+    private bool showFormModal = false;
+    private string currentItemType = "";
+
+    private object? editingItem = null;
+    private string itemName = "";
+    private string itemMota = "";
+    private string searchText = "";
+
+    private IEnumerable<LoaiViDTO> filteredLoaiVis =>
+         string.IsNullOrWhiteSpace(searchText)
+         ? loaiVis
+         : loaiVis.Where(x => x.Ten.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<KichCoDTO> filteredKichCos =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? kichCos
+        : kichCos.Where(x => x.Ten.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<NhaCungCapDTO> filteredNhaCungCaps =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? nhaCungCaps
+        : nhaCungCaps.Where(x => x.Ten.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<DongGoiDTO> filteredDongGois =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? nguyenLieus
+        : nguyenLieus.Where(x => x.Ten.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+    private void Search()
+    {
+        // Không cần gì thêm vì filteredLoaiVis tự động cập nhật
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var tasks = new List<Task>
+            {
+                LoadLoaiVi(),
+                LoadKichCo(),
+                LoadNhaCungCap(),
+                LoadNguyenLieu()
+            };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadLoaiVi()
+    {
+        try
+        {
+            loaiVis = await ApiService.GetAsync<List<LoaiViDTO>>("LoaiVi") ?? new List<LoaiViDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading LoaiVi: {ex.Message}");
+            loaiVis = new List<LoaiViDTO>();
+        }
+    }
+
+    private async Task LoadKichCo()
+    {
+        try
+        {
+            kichCos = await ApiService.GetAsync<List<KichCoDTO>>("KichCo") ?? new List<KichCoDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading KichCo: {ex.Message}");
+            kichCos = new List<KichCoDTO>();
+        }
+    }
+
+    private async Task LoadNhaCungCap()
+    {
+        try
+        {
+            nhaCungCaps = await ApiService.GetAsync<List<NhaCungCapDTO>>("NhaCungCap") ?? new List<NhaCungCapDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NhaCungCap: {ex.Message}");
+            nhaCungCaps = new List<NhaCungCapDTO>();
+        }
+    }
+
+    private async Task LoadNguyenLieu()
+    {
+        try
+        {
+            nguyenLieus = await ApiService.GetAsync<List<DongGoiDTO>>("NguyenLieu") ?? new List<DongGoiDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NguyenLieu: {ex.Message}");
+            nguyenLieus = new List<DongGoiDTO>();
+        }
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    // Loại Vị
+    private void ShowAddLoaiVi()
+    {
+        currentItemType = "LoaiVi";
+        editingItem = new LoaiViDTO { Id = Guid.Empty, Ten = string.Empty };
+        itemName = "";
+        itemMota = "";
+        showFormModal = true;
+    }
+
+    private void EditLoaiVi(Guid id)
+    {
+        var item = loaiVis.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            currentItemType = "LoaiVi";
+            editingItem = new LoaiViDTO { Id = item.Id, Ten = item.Ten, Mota = item.Mota };
+            itemName = item.Ten;
+            itemMota = item.Mota ?? "";
+            showFormModal = true;
+        }
+    }
+
+    private async Task DeleteLoaiVi(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa loại vị này không?"))
+        {
+            var result = await ApiService.DeleteAsync<Guid>("LoaiVi", id);
+            if (result)
+            {
+                await LoadLoaiVi();
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa thất bại!");
+            }
+        }
+    }
+
+    // Kích Cỡ
+    private void ShowAddKichCo()
+    {
+        currentItemType = "KichCo";
+        editingItem = new KichCoDTO { Id = Guid.Empty, Ten = string.Empty };
+        itemName = "";
+        itemMota = "";
+        showFormModal = true;
+    }
+
+    private void EditKichCo(Guid id)
+    {
+        var item = kichCos.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            currentItemType = "KichCo";
+            editingItem = new KichCoDTO { Id = item.Id, Ten = item.Ten, Mota = item.Mota };
+            itemName = item.Ten;
+            itemMota = item.Mota ?? "";
+            showFormModal = true;
+        }
+    }
+
+    private async Task DeleteKichCo(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa kích cỡ này không?"))
+        {
+            var result = await ApiService.DeleteAsync<Guid>("KichCo", id);
+            if (result)
+            {
+                await LoadKichCo();
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa thất bại!");
+            }
+        }
+    }
+
+    // Nhà Cung Cấp
+    private void ShowAddNhaCungCap()
+    {
+        currentItemType = "NhaCungCap";
+        editingItem = new NhaCungCapDTO { Id = Guid.Empty, Ten = string.Empty };
+        itemName = "";
+        itemMota = "";
+        showFormModal = true;
+    }
+
+    private void EditNhaCungCap(Guid id)
+    {
+        var item = nhaCungCaps.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            currentItemType = "NhaCungCap";
+            editingItem = new NhaCungCapDTO { Id = item.Id, Ten = item.Ten, Mota = item.Mota };
+            itemName = item.Ten;
+            itemMota = item.Mota ?? "";
+            showFormModal = true;
+        }
+    }
+
+    private async Task DeleteNhaCungCap(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa nhà cung cấp này không?"))
+        {
+            var result = await ApiService.DeleteAsync<Guid>("NhaCungCap", id);
+            if (result)
+            {
+                await LoadNhaCungCap();
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa thất bại!");
+            }
+        }
+    }
+
+    // Nguyên Liệu
+    private void ShowAddNguyenLieu()
+    {
+        currentItemType = "NguyenLieu";
+        editingItem = new DongGoiDTO { Id = Guid.Empty, Ten = string.Empty };
+        itemName = "";
+        itemMota = "";
+        showFormModal = true;
+    }
+
+    private void EditNguyenLieu(Guid id)
+    {
+        var item = nguyenLieus.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            currentItemType = "NguyenLieu";
+            editingItem = new DongGoiDTO { Id = item.Id, Ten = item.Ten, Mota = item.Mota };
+            itemName = item.Ten;
+            itemMota = item.Mota ?? "";
+            showFormModal = true;
+        }
+    }
+
+    private async Task DeleteNguyenLieu(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa nguyên liệu này không?"))
+        {
+            var result = await ApiService.DeleteAsync<Guid>("NguyenLieu", id);
+            if (result)
+            {
+                await LoadNguyenLieu();
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa thất bại!");
+            }
+        }
+    }
+
+    private async Task SaveItem()
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            await JS.InvokeVoidAsync("alert", "Vui lòng nhập tên!");
+            return;
+        }
+
+        try
+        {
+            bool result = false;
+            bool isNew = false;
+
+            switch (currentItemType)
+            {
+                case "LoaiVi":
+                    var loaiVi = editingItem as LoaiViDTO;
+                    if (loaiVi != null)
+                    {
+                        loaiVi.Ten = itemName;
+                        loaiVi.Mota = itemMota;
+                        isNew = loaiVi.Id == Guid.Empty;
+                        if (isNew)
+                        {
+                            var created = await ApiService.PostAsync<LoaiViDTO, LoaiViDTO>("LoaiVi", loaiVi);
+                            result = created != null;
+                        }
+                        else
+                        {
+                            result = await ApiService.PutAsync("LoaiVi", loaiVi);
+                        }
+                    }
+                    break;
+
+                case "KichCo":
+                    var kichCo = editingItem as KichCoDTO;
+                    if (kichCo != null)
+                    {
+                        kichCo.Ten = itemName;
+                        kichCo.Mota = itemMota;
+                        isNew = kichCo.Id == Guid.Empty;
+                        if (isNew)
+                        {
+                            var created = await ApiService.PostAsync<KichCoDTO, KichCoDTO>("KichCo", kichCo);
+                            result = created != null;
+                        }
+                        else
+                        {
+                            result = await ApiService.PutAsync("KichCo", kichCo);
+                        }
+                    }
+                    break;
+
+                case "NhaCungCap":
+                    var nhaCungCap = editingItem as NhaCungCapDTO;
+                    if (nhaCungCap != null)
+                    {
+                        nhaCungCap.Ten = itemName;
+                        nhaCungCap.Mota = itemMota;
+                        isNew = nhaCungCap.Id == Guid.Empty;
+                        if (isNew)
+                        {
+                            var created = await ApiService.PostAsync<NhaCungCapDTO, NhaCungCapDTO>("NhaCungCap", nhaCungCap);
+                            result = created != null;
+                        }
+                        else
+                        {
+                            result = await ApiService.PutAsync("NhaCungCap", nhaCungCap);
+                        }
+                    }
+                    break;
+
+                case "NguyenLieu":
+                    var nguyenLieu = editingItem as DongGoiDTO;
+                    if (nguyenLieu != null)
+                    {
+                        nguyenLieu.Ten = itemName;
+                        nguyenLieu.Mota = itemMota;
+                        isNew = nguyenLieu.Id == Guid.Empty;
+                        if (isNew)
+                        {
+                            var created = await ApiService.PostAsync<DongGoiDTO, DongGoiDTO>("NguyenLieu", nguyenLieu);
+                            result = created != null;
+                        }
+                        else
+                        {
+                            result = await ApiService.PutAsync("NguyenLieu", nguyenLieu);
+                        }
+                    }
+                    break;
+            }
+
+            if (result)
+            {
+                await LoadData();
+                showFormModal = false;
+                editingItem = null;
+                itemName = "";
+                itemMota = "";
+                await JS.InvokeVoidAsync("alert", isNew ? "Thêm thành công!" : "Cập nhật thành công!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Lưu thất bại! Vui lòng kiểm tra lại thông tin.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi lưu!");
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showFormModal = false;
+        editingItem = null;
+        currentItemType = "";
+        itemName = "";
+        itemMota = "";
+    }
+
+    private bool IsNewItem()
+    {
+        return editingItem switch
+        {
+            LoaiViDTO dto => dto.Id == Guid.Empty,
+            KichCoDTO dto => dto.Id == Guid.Empty,
+            NhaCungCapDTO dto => dto.Id == Guid.Empty,
+            DongGoiDTO dto => dto.Id == Guid.Empty,
+            _ => true
+        };
+    }
+
+    private string GetItemTypeName()
+    {
+        return currentItemType switch
+        {
+            "LoaiVi" => "Loại Vị",
+            "KichCo" => "Kích Cỡ",
+            "NhaCungCap" => "Nhà Cung Cấp",
+            "NguyenLieu" => "Nguyên Liệu",
+            _ => ""
+        };
+    }
+}
+
+<!-- Render Table Helper -->
+@code {
+    private RenderFragment RenderTable<T>(List<T> items, Action<Guid> onEdit, Func<Guid, Task> onDelete) where T : class
+    {
+        return builder =>
+        {
+            if (items == null || !items.Any())
+            {
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "empty-state");
+                builder.OpenElement(2, "i");
+                builder.AddAttribute(3, "class", "bi bi-inbox");
+                builder.CloseElement();
+                builder.OpenElement(4, "p");
+                builder.AddContent(5, "Chưa có dữ liệu");
+                builder.CloseElement();
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(6, "div");
+                builder.AddAttribute(7, "class", "table-container");
+                builder.OpenElement(8, "table");
+                builder.AddAttribute(9, "class", "table table-hover");
+
+                // Header
+                builder.OpenElement(10, "thead");
+                builder.OpenElement(11, "tr");
+                builder.OpenElement(12, "th");
+                builder.AddContent(13, "STT");
+                builder.CloseElement();
+                builder.OpenElement(14, "th");
+                builder.AddContent(15, "Tên");
+                builder.CloseElement();
+                builder.OpenElement(16, "th");
+                builder.AddContent(17, "Mô Tả");
+                builder.CloseElement();
+                builder.OpenElement(18, "th");
+                builder.AddAttribute(19, "class", "text-end");
+                builder.AddContent(20, "Thao Tác");
+                builder.CloseElement();
+                builder.CloseElement();
+                builder.CloseElement();
+
+                // Body
+                builder.OpenElement(21, "tbody");
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    var id = GetItemId(item);
+                    var name = GetItemName(item);
+                    var mota = GetItemMota(item);
+
+                    builder.OpenElement(22, "tr");
+                    builder.OpenElement(23, "td");
+                    builder.AddContent(24, i + 1);
+                    builder.CloseElement();
+                    builder.OpenElement(25, "td");
+                    builder.OpenElement(26, "strong");
+                    builder.AddContent(27, name);
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    builder.OpenElement(28, "td");
+                    builder.AddContent(29, mota);
+                    builder.CloseElement();
+                    builder.OpenElement(30, "td");
+                    builder.AddAttribute(31, "class", "text-end");
+                    builder.OpenElement(32, "div");
+                    builder.AddAttribute(33, "class", "action-buttons");
+                    builder.OpenElement(34, "button");
+                    builder.AddAttribute(35, "class", "btn btn-sm btn-info");
+                    builder.AddAttribute(36, "onclick", EventCallback.Factory.Create(this, () => onEdit(id)));
+                    builder.AddAttribute(37, "title", "Sửa");
+                    builder.OpenElement(38, "i");
+                    builder.AddAttribute(39, "class", "bi bi-pencil");
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    builder.OpenElement(40, "button");
+                    builder.AddAttribute(41, "class", "btn btn-sm btn-danger");
+                    builder.AddAttribute(42, "onclick", EventCallback.Factory.Create(this, async () => await onDelete(id)));
+                    builder.AddAttribute(43, "title", "Xóa");
+                    builder.OpenElement(44, "i");
+                    builder.AddAttribute(45, "class", "bi bi-trash");
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    builder.CloseElement();
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+                builder.CloseElement();
+                builder.CloseElement();
+            }
+        };
+    }
+
+    private string GetItemName(object item)
+    {
+        return item switch
+        {
+            LoaiViDTO dto => dto.Ten,
+            KichCoDTO dto => dto.Ten,
+            NhaCungCapDTO dto => dto.Ten,
+            DongGoiDTO dto => dto.Ten,
+            _ => ""
+        };
+    }
+
+    private string GetItemMota(object item)
+    {
+        return item switch
+        {
+            LoaiViDTO dto => dto.Mota ?? "-",
+            KichCoDTO dto => dto.Mota ?? "-",
+            NhaCungCapDTO dto => dto.Mota ?? "-",
+            DongGoiDTO dto => dto.Mota ?? "-",
+            _ => "-"
+        };
+    }
+
+    private Guid GetItemId(object item)
+    {
+        return item switch
+        {
+            LoaiViDTO dto => dto.Id,
+            KichCoDTO dto => dto.Id,
+            NhaCungCapDTO dto => dto.Id,
+            DongGoiDTO dto => dto.Id,
+            _ => Guid.Empty
+        };
+    }
+}

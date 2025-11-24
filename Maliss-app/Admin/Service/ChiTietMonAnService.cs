@@ -30,12 +30,12 @@ namespace Admin.Service
                 return new List<ChiTietMonAnDTO>();
             }
         }
+
         public async Task<List<ChiTietMonAnDTO>> GetAll()
         {
-
             try
             {
-                    var response = await _httpclient.GetAsync("ChiTietMonAn/all");
+                var response = await _httpclient.GetAsync("ChiTietMonAn/all");
                 if (response.IsSuccessStatusCode)
                 {
                     var data = await response.Content.ReadFromJsonAsync<List<ChiTietMonAnDTO>>();
@@ -49,5 +49,31 @@ namespace Admin.Service
             }
         }
 
+        public async Task<ChiTietMonAnDTO?> GetById(Guid id)
+        {
+            try
+            {
+                return await GetbyId<ChiTietMonAnDTO, Guid>(id, "ChiTietMonAn");
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public async Task<ChiTietMonAnDTO?> Create(ChiTietMonAnDTO chiTietMonAn)
+        {
+            return await PostAsync<ChiTietMonAnDTO, ChiTietMonAnDTO>("ChiTietMonAn", chiTietMonAn);
+        }
+
+        public async Task<bool> Update(ChiTietMonAnDTO chiTietMonAn)
+        {
+            return await PutAsync("ChiTietMonAn", chiTietMonAn);
+        }
+
+        public async Task<bool> Delete(Guid id)
+        {
+            return await DeleteAsync("ChiTietMonAn", id);
+        }
     }
 }
