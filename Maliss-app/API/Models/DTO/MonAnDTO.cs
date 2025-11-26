@@ -1,8 +1,11 @@
-﻿namespace API.Models.DTO
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace API.Models.DTO
 {
     public class MonAnDTO
     {
         public string? Id { get; set; }
+        [Required]
         public required string Ten { get; set; }
         public Guid? TheLoaiId { get; set; }
         public string? TheLoai { get; set; }

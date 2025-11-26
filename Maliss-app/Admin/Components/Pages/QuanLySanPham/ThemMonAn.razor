@@ -1,1 +1,1086 @@
-﻿
+@page "/quan-ly-san-pham/them-mon-an"
+@page "/quan-ly-san-pham/them-mon-an/{Id}"
+@page "/quanlysanpham/them-mon-an"
+@page "/quanlysanpham/them-mon-an/{Id}"
+@using Admin.Service.IService
+@using API.Models.DTO
+@using Microsoft.AspNetCore.Components.Forms
+@inject IMonAnService MonAnService
+@inject IChiTietMonAnService ChiTietMonAnService
+@inject IApiService ApiService
+@inject IUploadService UploadService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>@(string.IsNullOrEmpty(Id) ? "Thêm Món Ăn" : "Sửa Món Ăn")</PageTitle>
+
+<link href="css/ThemMonAn.css" rel="stylesheet" />
+
+<div class="them-mon-an-container">
+    <div class="header-section">
+        <h2>@(string.IsNullOrEmpty(Id) ? "Thêm Món Ăn Mới" : "Sửa Món Ăn")</h2>
+        <button class="btn btn-secondary" @onclick="QuayLai">
+            <i class="bi bi-arrow-left"></i> Quay Lại
+        </button>
+    </div>
+
+    <EditForm Model="@monAn" OnValidSubmit="@LuuMonAn">
+        <DataAnnotationsValidator />
+        <div class="form-container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="id">Mã Món Ăn <span class="text-danger">*</span></label>
+                        <InputText id="id" class="form-control" @bind-Value="monAn.Id" disabled="@(!string.IsNullOrEmpty(Id))" />
+                        <ValidationMessage For="@(() => monAn.Id)" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="ten">Tên Món Ăn <span class="text-danger">*</span></label>
+                        <InputText id="ten" class="form-control" @bind-Value="monAn.Ten" />
+                        <ValidationMessage For="@(() => monAn.Ten)" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="theLoai">Thể Loại</label>
+                        <div class="input-group">
+                            <InputSelect id="theLoai" class="form-select" @bind-Value="selectedTheLoaiId">
+                                <option value="">-- Chọn Thể Loại --</option>
+                                @foreach (var tl in theLoais)
+                                {
+                                    <option value="@tl.Id">@tl.Ten</option>
+                                }
+                            </InputSelect>
+                            <button type="button" class="btn btn-outline-success" title="Quản lý thể loại" @onclick="() => showCrudTheLoaiModal = true">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="thuongHieu">Thương Hiệu</label>
+                        <div class="input-group">
+                            <InputSelect id="thuongHieu" class="form-select" @bind-Value="selectedThuongHieuId">
+                                <option value="">-- Chọn Thương Hiệu --</option>
+                                @foreach (var th in thuongHieus)
+                                {
+                                    <option value="@th.Id">@th.Ten</option>
+                                }
+                            </InputSelect>
+                            <button type="button" class="btn btn-outline-success" title="Quản lý thương hiệu" @onclick="() => showCrudThuongHieuModal = true">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="mota">Mô Tả</label>
+                <InputTextArea id="mota" class="form-control" rows="4" @bind-Value="monAn.Mota" />
+            </div>
+
+            <div class="form-group">
+                <label for="anhMonAn">Ảnh Món Ăn</label>
+                <InputFile id="anhMonAn" class="form-control" OnChange="OnAnhMonAnSelected" accept="image/*" />
+                <small class="form-text text-muted">Chọn ảnh cho món ăn (JPG, PNG, tối đa 5MB)</small>
+                @if (!string.IsNullOrEmpty(monAn.AnhDaTai))
+                {
+                    <div class="mt-2">
+                        <img src="@monAn.AnhDaTai" alt="Ảnh món ăn" class="img-preview" />
+                        <button type="button" class="btn btn-sm btn-danger mt-2" @onclick="XoaAnhMonAn">
+                            <i class="bi bi-trash"></i> Xóa ảnh
+                        </button>
+                    </div>
+                }
+                @if (isUploadingAnhMonAn)
+                {
+                    <div class="mt-2">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        <span>Đang tải ảnh lên...</span>
+                    </div>
+                }
+            </div>
+
+            <hr class="my-4" />
+            <h4 class="mb-3">Chi Tiết Món Ăn</h4>
+            
+            <div class="chi-tiet-section">
+                @for (int i = 0; i < chiTietMonAns.Count; i++)
+                {
+                    var index = i;
+                    <div class="card mb-3 chi-tiet-item">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Chi Tiết @(index + 1)</h6>
+                            <button type="button" class="btn btn-sm btn-danger" @onclick="async () => await XoaChiTiet(index)">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Loại Vị</label>
+                                        <div class="input-group">
+                                            <InputSelect class="form-select" @bind-Value="chiTietMonAns[index].LoaiViId">
+                                                <option value="">-- Chọn Loại Vị --</option>
+                                                @foreach (var lv in loaiVis)
+                                                {
+                                                    <option value="@lv.Id">@lv.Ten</option>
+                                                }
+                                            </InputSelect>
+                                            <button type="button" class="btn btn-outline-success" title="Quản lý loại vị" @onclick="() => { selectedChiTietIndex = index; showCrudLoaiViModal = true; }">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Kích Cỡ</label>
+                                        <div class="input-group">
+                                            <InputSelect class="form-select" @bind-Value="chiTietMonAns[index].KichCoId">
+                                                <option value="">-- Chọn Kích Cỡ --</option>
+                                                @foreach (var kc in kichCos)
+                                                {
+                                                    <option value="@kc.Id">@kc.Ten</option>
+                                                }
+                                            </InputSelect>
+                                            <button type="button" class="btn btn-outline-success" title="Quản lý kích cỡ" @onclick="() => { selectedChiTietIndex = index; showCrudKichCoModal = true; }">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nhà Cung Cấp</label>
+                                        <div class="input-group">
+                                            <InputSelect class="form-select" @bind-Value="chiTietMonAns[index].NhaCungCapId">
+                                                <option value="">-- Chọn Nhà Cung Cấp --</option>
+                                                @foreach (var ncc in nhaCungCaps)
+                                                {
+                                                    <option value="@ncc.Id">@ncc.Ten</option>
+                                                }
+                                            </InputSelect>
+                                            <button type="button" class="btn btn-outline-success" title="Quản lý nhà cung cấp" @onclick="() => { selectedChiTietIndex = index; showCrudNhaCungCapModal = true; }">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nguyên Liệu</label>
+                                        <div class="input-group">
+                                            <InputSelect class="form-select" @bind-Value="chiTietMonAns[index].NguyenLieuId">
+                                                <option value="">-- Chọn Nguyên Liệu --</option>
+                                                @foreach (var nl in nguyenLieus)
+                                                {
+                                                    <option value="@nl.Id">@nl.Ten</option>
+                                                }
+                                            </InputSelect>
+                                            <button type="button" class="btn btn-outline-success" title="Quản lý nguyên liệu" @onclick="() => { selectedChiTietIndex = index; showCrudNguyenLieuModal = true; }">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Số Lượng <span class="text-danger">*</span></label>
+                                        <InputNumber class="form-control" @bind-Value="chiTietMonAns[index].Soluong" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Giá <span class="text-danger">*</span></label>
+                                        <InputNumber class="form-control" @bind-Value="chiTietMonAns[index].Gia" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Số Ngày Sử Dụng <span class="text-danger">*</span></label>
+                                        <InputNumber class="form-control" @bind-Value="chiTietMonAns[index].SoNgayHSD" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Trạng Thái</label>
+                                        <InputSelect class="form-select" @bind-Value="chiTietTrangThaiStrings[index]">
+                                            <option value="true">Hoạt động</option>
+                                            <option value="false">Tạm dừng</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label>Ảnh Chi Tiết Món Ăn</label>
+                                        <InputFile class="form-control" OnChange="@((e) => OnAnhChiTietSelected(e, index))" accept="image/*" multiple />
+                                        <small class="form-text text-muted">Chọn nhiều ảnh cho chi tiết món ăn (JPG, PNG, tối đa 5MB mỗi ảnh)</small>
+                                        @if (chiTietMonAns[index].DanhSachAnh != null && chiTietMonAns[index].DanhSachAnh.Any())
+                                        {
+                                            <div class="mt-2 d-flex flex-wrap gap-2">
+                                                @foreach (var anh in chiTietMonAns[index].DanhSachAnh)
+                                                {
+                                                    <div class="position-relative" style="width: 150px; height: 150px;">
+                                                        <img src="@anh.DuongDan" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;" />
+                                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 5px;" @onclick="() => XoaAnhChiTiet(index, anh.Id)">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        @if (isUploadingAnhChiTiet[index])
+                                        {
+                                            <div class="mt-2">
+                                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                                <span>Đang tải ảnh lên...</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <button type="button" class="btn btn-outline-primary" @onclick="ThemChiTietMoi">
+                    <i class="bi bi-plus-circle"></i> Thêm Chi Tiết Món Ăn
+                </button>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        <span> Đang lưu...</span>
+                    }
+                    else
+                    {
+                        <span>Lưu</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving">
+                    Hủy
+                </button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+
+    private MonAnDTO monAn = new MonAnDTO
+    {
+        Ten = string.Empty,
+        TrangThai = false
+    };
+
+    private List<TheLoaiDTO> theLoais = new();
+    private List<ThuongHieuDTO> thuongHieus = new();
+    private List<LoaiViDTO> loaiVis = new();
+    private List<KichCoDTO> kichCos = new();
+    private List<NhaCungCapDTO> nhaCungCaps = new();
+    private List<DongGoiDTO> nguyenLieus = new();
+    
+    private Guid? selectedTheLoaiId;
+    private Guid? selectedThuongHieuId;
+    private List<ChiTietMonAnDTO> chiTietMonAns = new();
+    private List<string> chiTietTrangThaiStrings = new();
+    
+    private bool isSaving = false;
+    private bool isLoading = true;
+    private bool showCrudTheLoaiModal = false;
+    private bool showCrudThuongHieuModal = false;
+    private bool showCrudLoaiViModal = false;
+    private bool showCrudKichCoModal = false;
+    private bool showCrudNhaCungCapModal = false;
+    private bool showCrudNguyenLieuModal = false;
+    private int selectedChiTietIndex = 0;
+    private bool isUploadingAnhMonAn = false;
+    private Dictionary<int, bool> isUploadingAnhChiTiet = new();
+    private string? monAnImageFileName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllDropdowns();
+        
+        if (!string.IsNullOrEmpty(Id))
+        {
+            await LoadMonAn();
+            await LoadChiTietMonAn();
+        }
+        else
+        {
+            await GenerateId();
+            ThemChiTietMoi(); // Thêm một chi tiết mặc định
+        }
+        
+        isLoading = false;
+    }
+
+    private async Task LoadAllDropdowns()
+    {
+        var tasks = new List<Task>
+        {
+            LoadTheLoai(),
+            LoadThuongHieu(),
+            LoadLoaiVi(),
+            LoadKichCo(),
+            LoadNhaCungCap(),
+            LoadNguyenLieu()
+        };
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task LoadTheLoai()
+    {
+        try
+        {
+            theLoais = await ApiService.GetAsync<List<TheLoaiDTO>>("TheLoai") ?? new List<TheLoaiDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading TheLoai: {ex.Message}");
+            theLoais = new List<TheLoaiDTO>();
+        }
+    }
+
+    private async Task LoadThuongHieu()
+    {
+        try
+        {
+            thuongHieus = await ApiService.GetAsync<List<ThuongHieuDTO>>("ThuongHieu") ?? new List<ThuongHieuDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading ThuongHieu: {ex.Message}");
+            thuongHieus = new List<ThuongHieuDTO>();
+        }
+    }
+
+    private async Task LoadLoaiVi()
+    {
+        try
+        {
+            loaiVis = await ApiService.GetAsync<List<LoaiViDTO>>("LoaiVi") ?? new List<LoaiViDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading LoaiVi: {ex.Message}");
+            loaiVis = new List<LoaiViDTO>();
+        }
+    }
+
+    private async Task LoadKichCo()
+    {
+        try
+        {
+            kichCos = await ApiService.GetAsync<List<KichCoDTO>>("KichCo") ?? new List<KichCoDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading KichCo: {ex.Message}");
+            kichCos = new List<KichCoDTO>();
+        }
+    }
+
+    private async Task LoadNhaCungCap()
+    {
+        try
+        {
+            nhaCungCaps = await ApiService.GetAsync<List<NhaCungCapDTO>>("NhaCungCap") ?? new List<NhaCungCapDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NhaCungCap: {ex.Message}");
+            nhaCungCaps = new List<NhaCungCapDTO>();
+        }
+    }
+
+    private async Task LoadNguyenLieu()
+    {
+        try
+        {
+            nguyenLieus = await ApiService.GetAsync<List<DongGoiDTO>>("NguyenLieu") ?? new List<DongGoiDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NguyenLieu: {ex.Message}");
+            nguyenLieus = new List<DongGoiDTO>();
+        }
+    }
+
+    private async Task LoadMonAn()
+    {
+        if (string.IsNullOrEmpty(Id)) return;
+
+        try
+        {
+            var loaded = await MonAnService.GetById(Id);
+            if (loaded != null)
+            {
+                monAn = loaded;
+                selectedTheLoaiId = monAn.TheLoaiId;
+                selectedThuongHieuId = monAn.ThuongHieuId;
+                monAnImageFileName = ExtractFileName(monAn.AnhDaTai);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading MonAn: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Không thể tải thông tin món ăn!");
+        }
+    }
+
+    private async Task GenerateId()
+    {
+        try
+        {
+            var newId = await MonAnService.GetIdMonAn();
+            if (!string.IsNullOrEmpty(newId))
+            {
+                monAn.Id = newId;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating ID: {ex.Message}");
+        }
+    }
+
+    private async Task LuuMonAn()
+    {
+        isSaving = true;
+        try
+        {
+            monAn.TheLoaiId = selectedTheLoaiId;
+            monAn.ThuongHieuId = selectedThuongHieuId;
+
+            // Lưu món ăn
+            bool result;
+            if (string.IsNullOrEmpty(Id))
+            {
+                var created = await MonAnService.Create(monAn);
+                result = created != null;
+                if (result && created != null)
+                {
+                    monAn.Id = created.Id;
+                }
+            }
+            else
+            {
+                result = await MonAnService.Update(monAn);
+            }
+
+            if (!result)
+            {
+                await JS.InvokeVoidAsync("alert", "Lưu món ăn thất bại!");
+                return;
+            }
+
+            // Lưu chi tiết món ăn
+            if (chiTietMonAns != null && chiTietMonAns.Any())
+            {
+                foreach (var chiTiet in chiTietMonAns)
+                {
+                    try
+                    {
+                        chiTiet.MonAnId = monAn.Id ?? string.Empty;
+                        chiTiet.Ten = monAn.Ten;
+                        
+                        // Cập nhật trạng thái từ string
+                        var index = chiTietMonAns.IndexOf(chiTiet);
+                        if (index < chiTietTrangThaiStrings.Count)
+                        {
+                            chiTiet.TrangThai = bool.Parse(chiTietTrangThaiStrings[index]);
+                        }
+
+                        ChiTietMonAnDTO? createdChiTiet = null;
+                        bool chiTietSaved = false;
+                        
+                        if (chiTiet.Id == Guid.Empty)
+                        {
+                            // Tạo mới chi tiết món ăn
+                            createdChiTiet = await ChiTietMonAnService.Create(chiTiet);
+                            if (createdChiTiet != null && createdChiTiet.Id != Guid.Empty)
+                            {
+                                chiTiet.Id = createdChiTiet.Id;
+                                chiTietSaved = true;
+                                Console.WriteLine($"Đã tạo chi tiết món ăn thành công với Id: {chiTiet.Id}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Lỗi: Không thể tạo chi tiết món ăn. Response: {createdChiTiet?.Id}");
+                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể tạo chi tiết món ăn số {index + 1}!");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            // Cập nhật chi tiết món ăn
+                            chiTietSaved = await ChiTietMonAnService.Update(chiTiet);
+                            if (chiTietSaved)
+                            {
+                                Console.WriteLine($"Đã cập nhật chi tiết món ăn thành công với Id: {chiTiet.Id}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Lỗi: Không thể cập nhật chi tiết món ăn với Id: {chiTiet.Id}");
+                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể cập nhật chi tiết món ăn số {index + 1}!");
+                                return;
+                            }
+                        }
+
+                        // Chỉ lưu ảnh nếu chi tiết đã được lưu thành công
+                        if (chiTietSaved && chiTiet.DanhSachAnh != null && chiTiet.DanhSachAnh.Any())
+                        {
+                            // Lọc ra những ảnh mới (chưa có trong database - có thể kiểm tra bằng cách xem có ChiTietMonAnId chưa)
+                            var anhMoi = chiTiet.DanhSachAnh.Where(a => a.ChiTietMonAnId == null || a.ChiTietMonAnId == Guid.Empty).ToList();
+                            
+                            if (anhMoi.Any())
+                            {
+                                // Cập nhật ChiTietMonAnId cho các ảnh mới
+                                foreach (var anh in anhMoi)
+                                {
+                                    anh.ChiTietMonAnId = chiTiet.Id;
+                                }
+
+                                // Lưu ảnh mới vào database thông qua API
+                                var savedAnhs = await ApiService.PostAsync<List<AnhDTO>, List<AnhDTO>>("Anh/upload-many", anhMoi);
+                                if (savedAnhs == null || !savedAnhs.Any())
+                                {
+                                    Console.WriteLine($"Warning: Không thể lưu ảnh cho chi tiết món ăn {chiTiet.Id}");
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error saving chi tiết món ăn: {ex.Message}");
+                        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                        await JS.InvokeVoidAsync("alert", $"Lỗi khi lưu chi tiết món ăn: {ex.Message}");
+                        return;
+                    }
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", string.IsNullOrEmpty(Id) ? "Thêm món ăn thành công!" : "Cập nhật món ăn thành công!");
+            Navigation.NavigateTo("/quanlysanpham");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving MonAn: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi lưu món ăn!");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task LoadChiTietMonAn()
+    {
+        if (string.IsNullOrEmpty(Id)) return;
+
+        try
+        {
+            var chiTiets = await ChiTietMonAnService.GetChiTiet(Id);
+            if (chiTiets != null && chiTiets.Any())
+            {
+                chiTietMonAns = chiTiets;
+                chiTietTrangThaiStrings = chiTiets.Select(c => c.TrangThai.ToString().ToLower()).ToList();
+                isUploadingAnhChiTiet.Clear();
+                
+                // Khởi tạo isUploadingAnhChiTiet cho từng chi tiết
+                for (int i = 0; i < chiTiets.Count; i++)
+                {
+                    if (chiTietMonAns[i].DanhSachAnh == null)
+                    {
+                        chiTietMonAns[i].DanhSachAnh = new List<AnhDTO>();
+                    }
+                    isUploadingAnhChiTiet[i] = false;
+                }
+
+                if (string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+                {
+                    var firstImageUrl = chiTietMonAns
+                        .SelectMany(ct => ct.DanhSachAnh ?? new List<AnhDTO>())
+                        .Select(a => a.DuongDan)
+                        .FirstOrDefault(url => !string.IsNullOrWhiteSpace(url));
+
+                    if (!string.IsNullOrWhiteSpace(firstImageUrl))
+                    {
+                        monAn.AnhDaTai = firstImageUrl;
+                        monAnImageFileName = ExtractFileName(firstImageUrl);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading ChiTietMonAn: {ex.Message}");
+        }
+    }
+
+    private void ThemChiTietMoi()
+    {
+        var index = chiTietMonAns.Count;
+        chiTietMonAns.Add(new ChiTietMonAnDTO
+        {
+            Id = Guid.Empty,
+            MonAnId = monAn.Id ?? string.Empty,
+            Ten = monAn.Ten,
+            Soluong = 0,
+            Gia = 0,
+            SoNgayHSD = 0,
+            TrangThai = false,
+            DanhSachAnh = new List<AnhDTO>()
+        });
+        chiTietTrangThaiStrings.Add("false");
+        isUploadingAnhChiTiet[index] = false;
+    }
+
+    private async Task XoaChiTiet(int index)
+    {
+        if (index >= 0 && index < chiTietMonAns.Count)
+        {
+            var anhList = chiTietMonAns[index].DanhSachAnh?.ToList();
+            if (anhList != null && anhList.Count > 0)
+            {
+                foreach (var anh in anhList)
+                {
+                    await RemoveAnhFromChiTietAsync(index, anh);
+                }
+            }
+
+            chiTietMonAns.RemoveAt(index);
+            if (index < chiTietTrangThaiStrings.Count)
+            {
+                chiTietTrangThaiStrings.RemoveAt(index);
+            }
+            if (isUploadingAnhChiTiet.ContainsKey(index))
+            {
+                isUploadingAnhChiTiet.Remove(index);
+            }
+        }
+    }
+
+    private async Task OnAnhMonAnSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null)
+        {
+            return;
+        }
+
+        isUploadingAnhMonAn = true;
+        try
+        {
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                await JS.InvokeVoidAsync("alert", "Ảnh vượt quá dung lượng tối đa 5MB!");
+                return;
+            }
+
+            var uploadResult = await UploadService.UploadImageAsync(
+                file,
+                BuildMaMonAnDescriptor(),
+                BuildMonAnAnhDescriptor());
+            if (uploadResult == null)
+            {
+                await JS.InvokeVoidAsync("alert", "Tải ảnh món ăn thất bại, vui lòng thử lại!");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+            {
+                await RemoveMonAnCoverImageAsync(monAn.AnhDaTai);
+    }
+
+            monAn.AnhDaTai = uploadResult.Url;
+            monAnImageFileName = uploadResult.FileName;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading main image: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi tải ảnh món ăn!");
+        }
+        finally
+        {
+            isUploadingAnhMonAn = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task XoaAnhMonAn()
+    {
+        if (string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+        {
+            return;
+        }
+
+        await RemoveMonAnCoverImageAsync(monAn.AnhDaTai);
+        monAn.AnhDaTai = null;
+        monAnImageFileName = null;
+        StateHasChanged();
+    }
+
+    private async Task OnAnhChiTietSelected(InputFileChangeEventArgs e, int index)
+    {
+        if (!IsValidChiTietIndex(index))
+        {
+            return;
+        }
+
+        var files = e.GetMultipleFiles();
+        if (files == null || files.Count == 0)
+        {
+            return;
+        }
+
+        isUploadingAnhChiTiet[index] = true;
+        try
+        {
+            var anhList = EnsureChiTietAnhList(index);
+            foreach (var file in files)
+            {
+                if (file.Size > 5 * 1024 * 1024)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Ảnh {file.Name} vượt quá dung lượng tối đa 5MB!");
+                    continue;
+                }
+
+                var uploadResult = await UploadService.UploadImageAsync(
+                    file,
+                    BuildMaMonAnDescriptor(),
+                    BuildChiTietAnhDescriptor(index));
+                if (uploadResult == null)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Tải ảnh {file.Name} thất bại!");
+                    continue;
+                }
+
+                anhList.Add(new AnhDTO
+                {
+                    Id = Guid.NewGuid(),
+                    Ten = uploadResult.FileName,
+                    DuongDan = uploadResult.Url
+                });
+
+                if (index == 0 && string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+                {
+                    monAn.AnhDaTai = uploadResult.Url;
+                    monAnImageFileName = uploadResult.FileName;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading detail images: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi tải ảnh chi tiết!");
+        }
+        finally
+        {
+            isUploadingAnhChiTiet[index] = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task XoaAnhChiTiet(int index, Guid anhId)
+    {
+        if (!IsValidChiTietIndex(index) || chiTietMonAns[index].DanhSachAnh == null)
+        {
+            return;
+        }
+
+            var anh = chiTietMonAns[index].DanhSachAnh.FirstOrDefault(a => a.Id == anhId);
+        if (anh == null)
+        {
+            return;
+        }
+
+        await RemoveAnhFromChiTietAsync(index, anh);
+
+        if (!string.IsNullOrWhiteSpace(monAn.AnhDaTai) && monAn.AnhDaTai == anh.DuongDan)
+        {
+            var fallback = chiTietMonAns.SelectMany(ct => ct.DanhSachAnh ?? new List<AnhDTO>())
+                                        .FirstOrDefault()?.DuongDan;
+            monAn.AnhDaTai = fallback;
+            monAnImageFileName = ExtractFileName(monAn.AnhDaTai);
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsValidChiTietIndex(int index) => index >= 0 && index < chiTietMonAns.Count;
+
+    private List<AnhDTO> EnsureChiTietAnhList(int index)
+    {
+        if (!IsValidChiTietIndex(index))
+        {
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        chiTietMonAns[index].DanhSachAnh ??= new List<AnhDTO>();
+        return chiTietMonAns[index].DanhSachAnh!;
+    }
+
+    private async Task RemoveMonAnCoverImageAsync(string? coverUrl)
+    {
+        if (string.IsNullOrWhiteSpace(coverUrl))
+        {
+            return;
+        }
+
+        for (int i = 0; i < chiTietMonAns.Count; i++)
+        {
+            var list = chiTietMonAns[i].DanhSachAnh;
+            if (list == null || list.Count == 0)
+            {
+                continue;
+            }
+
+            var anh = list.FirstOrDefault(a => a.DuongDan == coverUrl);
+            if (anh != null)
+            {
+                await RemoveAnhFromChiTietAsync(i, anh);
+                return;
+            }
+        }
+
+        await DeletePhysicalImageAsync(ExtractFileName(coverUrl));
+    }
+
+    private async Task RemoveAnhFromChiTietAsync(int index, AnhDTO anh)
+    {
+        var fileName = GetFileNameFromAnh(anh);
+        if (!string.IsNullOrWhiteSpace(fileName))
+        {
+            await DeletePhysicalImageAsync(fileName);
+        }
+
+                if (anh.ChiTietMonAnId != null && anh.ChiTietMonAnId != Guid.Empty)
+                {
+                    try
+                    {
+                await ApiService.DeleteAsync<Guid>("Anh", anh.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                Console.WriteLine($"Error deleting image record: {ex.Message}");
+                    }
+                }
+                
+        chiTietMonAns[index].DanhSachAnh?.Remove(anh);
+    }
+
+    private string? GetFileNameFromAnh(AnhDTO? anh)
+    {
+        if (anh == null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(anh.Ten))
+        {
+            return anh.Ten;
+        }
+
+        return ExtractFileName(anh.DuongDan);
+    }
+
+    private async Task DeletePhysicalImageAsync(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return;
+        }
+
+        try
+        {
+            await UploadService.DeleteImageAsync(fileName);
+            }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file {fileName}: {ex.Message}");
+        }
+    }
+
+    private string? ExtractFileName(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return System.IO.Path.GetFileName(uri.LocalPath);
+        }
+
+        return System.IO.Path.GetFileName(url);
+    }
+
+    private string? BuildMaMonAnDescriptor()
+    {
+        if (!string.IsNullOrWhiteSpace(monAn.Id))
+        {
+            return monAn.Id;
+        }
+
+        if (!string.IsNullOrWhiteSpace(monAn.Ten))
+        {
+            return monAn.Ten;
+        }
+
+        return null;
+    }
+
+    private string BuildMonAnAnhDescriptor()
+    {
+        if (!string.IsNullOrWhiteSpace(monAn.Ten))
+        {
+            return monAn.Ten;
+        }
+
+        if (!string.IsNullOrWhiteSpace(monAn.Mota))
+        {
+            return monAn.Mota!;
+        }
+
+        return "mon-chinh";
+    }
+
+    private string BuildChiTietAnhDescriptor(int index)
+    {
+        if (!IsValidChiTietIndex(index))
+        {
+            return $"chi-tiet-{index + 1}";
+        }
+
+        var chiTiet = chiTietMonAns[index];
+        var descriptors = new List<string>();
+
+        if (chiTiet.Id != Guid.Empty)
+        {
+            descriptors.Add(chiTiet.Id.ToString());
+        }
+        else
+        {
+            descriptors.Add($"chi-tiet-{index + 1}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(chiTiet.Mota))
+        {
+            descriptors.Add(chiTiet.Mota!);
+        }
+
+        var loaiViTen = loaiVis.FirstOrDefault(l => l.Id == chiTiet.LoaiViId)?.Ten;
+        if (!string.IsNullOrWhiteSpace(loaiViTen))
+        {
+            descriptors.Add(loaiViTen!);
+        }
+
+        var kichCoTen = kichCos.FirstOrDefault(k => k.Id == chiTiet.KichCoId)?.Ten;
+        if (!string.IsNullOrWhiteSpace(kichCoTen))
+        {
+            descriptors.Add(kichCoTen!);
+        }
+
+        return string.Join("-", descriptors);
+    }
+
+    private void QuayLai()
+    {
+        Navigation.NavigateTo("/quanlysanpham");
+    }
+
+    private async Task RefreshTheLoaiDropdown()
+    {
+        showCrudTheLoaiModal = false;
+        await LoadTheLoai();
+        StateHasChanged();
+    }
+
+    private async Task RefreshThuongHieuDropdown()
+    {
+        showCrudThuongHieuModal = false;
+        await LoadThuongHieu();
+        StateHasChanged();
+    }
+
+    private async Task RefreshLoaiViDropdown()
+    {
+        showCrudLoaiViModal = false;
+        await LoadLoaiVi();
+        StateHasChanged();
+    }
+
+    private async Task RefreshKichCoDropdown()
+    {
+        showCrudKichCoModal = false;
+        await LoadKichCo();
+        StateHasChanged();
+    }
+
+    private async Task RefreshNhaCungCapDropdown()
+    {
+        showCrudNhaCungCapModal = false;
+        await LoadNhaCungCap();
+        StateHasChanged();
+    }
+
+    private async Task RefreshNguyenLieuDropdown()
+    {
+        showCrudNguyenLieuModal = false;
+        await LoadNguyenLieu();
+        StateHasChanged();
+    }
+}
+
+@if (showCrudTheLoaiModal)
+{
+    <CrudTheLoaiModal Show="true" OnSuccess="RefreshTheLoaiDropdown" OnCancel="(()=>showCrudTheLoaiModal=false)" />
+}
+
+@if (showCrudThuongHieuModal)
+{
+    <CrudThuongHieuModal Show="true" OnSuccess="RefreshThuongHieuDropdown" OnCancel="(()=>showCrudThuongHieuModal=false)" />
+}
+
+@if (showCrudLoaiViModal)
+{
+    <CrudLoaiViModal Show="true" OnSuccess="RefreshLoaiViDropdown" OnCancel="(()=>showCrudLoaiViModal=false)" />
+}
+
+@if (showCrudKichCoModal)
+{
+    <CrudKichCoModal Show="true" OnSuccess="RefreshKichCoDropdown" OnCancel="(()=>showCrudKichCoModal=false)" />
+}
+
+@if (showCrudNhaCungCapModal)
+{
+    <CrudNhaCungCapModal Show="true" OnSuccess="RefreshNhaCungCapDropdown" OnCancel="(()=>showCrudNhaCungCapModal=false)" />
+}
+
+@if (showCrudNguyenLieuModal)
+{
+    <CrudNguyenLieuModal Show="true" OnSuccess="RefreshNguyenLieuDropdown" OnCancel="(()=>showCrudNguyenLieuModal=false)" />
+}

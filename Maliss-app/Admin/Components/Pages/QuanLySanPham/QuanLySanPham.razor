@@ -1,1 +1,240 @@
-﻿
+@page "/quan-ly-san-pham"
+@page "/quanlysanpham"
+@using Admin.Service.IService
+@using API.Models.DTO
+@inject IMonAnService MonAnService
+@inject IChiTietMonAnService ChiTietMonAnService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Quản Lý Sản Phẩm</PageTitle>
+
+<link href="css/QuanLySanPham.css" rel="stylesheet" />
+
+<div class="quan-ly-san-pham-container">
+    <div class="header-section">
+        <h2>Quản Lý Sản Phẩm</h2>
+        <button class="btn btn-primary" @onclick="ThemMonAnMoi">
+            <i class="bi bi-plus-circle"></i> Thêm Món Ăn Mới
+        </button>
+    </div>
+
+    <div class="search-section">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" 
+                   placeholder="Tìm kiếm sản phẩm..." 
+                   @bind="searchKeyword" 
+                   @oninput="OnSearchInput" 
+                   class="search-input" />
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Tổng Sản Phẩm</div>
+                <div class="stat-value">@totalProducts</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon active">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Đang Hoạt Động</div>
+                <div class="stat-value">@activeProducts</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon inactive">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Tạm Dừng</div>
+                <div class="stat-value">@inactiveProducts</div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    }
+    else if (filteredMonAns == null || !filteredMonAns.Any())
+    {
+        <div class="empty-state">
+            <p>@(string.IsNullOrWhiteSpace(searchKeyword) ? "Chưa có món ăn nào. Hãy thêm món ăn mới!" : "Không tìm thấy sản phẩm nào phù hợp.")</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Mã Món Ăn</th>
+                        <th>Tên Món Ăn</th>
+                        <th>Thể Loại</th>
+                        <th>Thương Hiệu</th>
+                        <th>Giá</th>
+                        <th>Trạng Thái</th>
+                        <th>Mô Tả</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var monAn in filteredMonAns)
+                    {
+                        <tr>
+                            <td>@monAn.Id</td>
+                            <td>@monAn.Ten</td>
+                            <td>@(monAn.TheLoai ?? "Chưa có")</td>
+                            <td>@(monAn.ThuongHieu ?? "Chưa có")</td>
+                            <td>@monAn.Gia.ToString("N0") đ</td>
+                            <td>
+                                <span class="badge @(monAn.TrangThai ? "bg-success" : "bg-secondary")">
+                                    @(monAn.TrangThai ? "Hoạt động" : "Tạm dừng")
+                                </span>
+                            </td>
+                            <td>@GetShortDescription(monAn.Mota)</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-info" @onclick="() => SuaMonAn(monAn.Id)" title="Sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" @onclick="() => ThemChiTiet(monAn.Id)" title="Thêm Chi Tiết">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => XoaMonAn(monAn.Id)" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<MonAnDTO>? monAns;
+    private List<MonAnDTO>? filteredMonAns;
+    private List<ChiTietMonAnDTO>? chiTietMonAns;
+    private bool isLoading = true;
+    private string searchKeyword = string.Empty;
+
+    private int totalProducts => monAns?.Count ?? 0;
+    private int activeProducts => chiTietMonAns?.Count(m => m.TrangThai) ?? 0;
+    private int inactiveProducts => chiTietMonAns?.Count(m => !m.TrangThai) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var monAnTask = MonAnService.GetAll();
+            var chiTietTask = ChiTietMonAnService.GetAll();
+
+            await Task.WhenAll(monAnTask, chiTietTask);
+
+            monAns = monAnTask.Result ?? new List<MonAnDTO>();
+            chiTietMonAns = chiTietTask.Result ?? new List<ChiTietMonAnDTO>();
+
+            ApplySearchFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchKeyword = e.Value?.ToString() ?? string.Empty;
+        ApplySearchFilter();
+    }
+
+    private void ApplySearchFilter()
+    {
+        if (monAns == null)
+        {
+            filteredMonAns = new List<MonAnDTO>();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            filteredMonAns = monAns.ToList();
+        }
+        else
+        {
+            var keyword = searchKeyword.ToLower().Trim();
+            filteredMonAns = monAns.Where(m =>
+                m.Ten?.ToLower().Contains(keyword) == true ||
+                m.TheLoai?.ToLower().Contains(keyword) == true ||
+                m.ThuongHieu?.ToLower().Contains(keyword) == true ||
+                m.Mota?.ToLower().Contains(keyword) == true ||
+                m.Id?.ToLower().Contains(keyword) == true
+            ).ToList();
+        }
+        StateHasChanged();
+    }
+
+    private string GetShortDescription(string? mota)
+    {
+        if (string.IsNullOrEmpty(mota))
+            return "Không có";
+        
+        return mota.Length > 50 ? mota.Substring(0, 50) + "..." : mota;
+    }
+
+    private void ThemMonAnMoi()
+    {
+        Navigation.NavigateTo("/quanlysanpham/them-mon-an");
+    }
+
+    private void SuaMonAn(string id)
+    {
+        Navigation.NavigateTo($"/quanlysanpham/them-mon-an/{id}");
+    }
+
+    private void ThemChiTiet(string monAnId)
+    {
+        Navigation.NavigateTo($"/quanlysanpham/them-chi-tiet-mon-an/{monAnId}");
+    }
+
+    private async Task XoaMonAn(string id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa món ăn này không?"))
+        {
+            var result = await MonAnService.Delete(id);
+            if (result)
+            {
+                await LoadData();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa món ăn thất bại!");
+            }
+        }
+    }
+}
