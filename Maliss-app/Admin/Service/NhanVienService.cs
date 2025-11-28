@@ -28,5 +28,48 @@ namespace Admin.Service
                 return new List<NhanVienDTO>();
             }
         }
+        public async Task<bool> Create(NhanVienDTO dto)
+        {
+            try
+            {
+                var response = await _httpclient.PostAsJsonAsync("nhanvien/create", dto);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        public async Task<bool> ChangeStatus(string id)
+        {
+            var response = await _httpclient.PutAsJsonAsync($"nhanvien/changestatus/{id}", id);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> Update(NhanVienDTO dto)
+        {
+            try
+            {
+                var response = await _httpclient.PutAsJsonAsync("nhanvien/update", dto);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        public async Task<bool> Delete(string id)
+        {
+            var res = await _httpclient.DeleteAsync($"nhanvien/delete/{id}");
+            return res.IsSuccessStatusCode;
+        }
+
     }
 }

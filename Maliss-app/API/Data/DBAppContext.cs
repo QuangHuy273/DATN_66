@@ -18,7 +18,7 @@ namespace API.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
 
-            optionsBuilder.UseSqlServer(@"Data Source=HUY;Initial Catalog=Malis_app;Trusted_Connection=True;Integrated Security=True;TrustServerCertificate=True");
+            optionsBuilder.UseSqlServer(@"Data Source=DESKTOP-DOANBAO\SQLEXPRESS;Initial Catalog=Malis_app;Trusted_Connection=True;Integrated Security=True;TrustServerCertificate=True");
 
             //string dbFilePath = "dbconfig.txt";
             //string Dbcheck = "check.txt";

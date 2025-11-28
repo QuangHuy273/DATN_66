@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\API\API.csproj" />
-    <ProjectReference Include="C:\Users\katar\Downloads\vnpay_cs\vnpay_cs\VNPAY_CS_ASPX\VNPAY_CS_ASPX.csproj" />
+    <ProjectReference Include="C:\Users\Admin\Downloads\vnpay_cs\vnpay_cs\VNPAY_CS_ASPX\VNPAY_CS_ASPX.csproj" />
   </ItemGroup>
 	<ItemGroup>
 		<None Update="appsettings.json">
