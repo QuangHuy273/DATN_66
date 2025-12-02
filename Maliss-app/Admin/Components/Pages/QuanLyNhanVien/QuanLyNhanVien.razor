@@ -1,1 +1,423 @@
-﻿
+﻿@page "/quanlynhanvien"
+@layout Layout.MainLayout
+@inject INhanVienService NhanVienService
+@inject IJSRuntime JS
+
+<link href="css/HoaDon.css" rel="stylesheet" />
+
+<h2 class="text-xl font-semibold mb-4">Quản lý nhân viên</h2>
+
+<div class="search-row mb-3 flex items-center gap-2">
+    <input @bind="TuKhoa" @bind:event="oninput" placeholder="Tìm kiếm theo tên, SĐT, email..." class="form-control" />
+    <button class="btn btn-secondary" @onclick="TaiLai">Tải lại</button>
+    <button class="btn btn-primary" @onclick="() => showAdd = true">+ Thêm nhân viên</button>
+</div>
+
+<table class="table-auto w-full text-sm border">
+    <thead>
+        <tr class="bg-gray-100">
+            <th class="p-2 border">STT</th>
+            <th class="p-2 border">Họ tên</th>
+            <th class="p-2 border">Ngày sinh</th>
+            <th class="p-2 border">Số điện thoại</th>
+            <th class="p-2 border">Email</th>
+            <th class="p-2 border">Chức vụ</th>
+            <th class="p-2 border">Ngày vào làm</th>
+            <th class="p-2 border">Trạng thái</th>
+            <th class="p-2 border">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (DanhSachNhanVien?.Any() == true)
+        {
+            var stt = 1;
+            foreach (var nv in DanhSachNhanVien)
+            {
+                <tr class="border-b">
+                    <td class="p-2">@stt</td>
+                    <td class="p-2">@($"{nv.Ho} {nv.Ten}")</td>
+                    <td class="p-2">@nv.NgaySinh.ToString("dd/MM/yyyy")</td>
+                    <td class="p-2">@nv.Sdt</td>
+                    <td class="p-2">@nv.Gmail</td>
+                    <td class="p-2">@nv.TenChucVu</td>
+                    <td class="p-2">
+                        @nv.NgayVaoLam.ToString("dd/MM/yyyy")
+                    </td>
+                    <td class="p-2">
+                        <span class="badge @(nv.TrangThai ? "badge-green" : "badge-red")">
+                            @(nv.TrangThai ? "Hoạt động" : "Ngừng")
+                        </span>
+                    </td>
+                    <td class="p-2 space-x-1">
+                        <button class="btn-danger" @onclick="() => SuaNhanVien(nv.Id)">Sửa</button>
+                        <button class="btn-view" @onclick="() => XemNhanVien(nv.Id)">Xem</button>
+                        <button class="btn-danger" @onclick="() => DoiTrangThai(nv.Id)">Đổi trạng thái</button>
+                        <button class="btn-danger" @onclick="() => XoaNhanVien(nv.Id)">Xóa</button>
+
+                    </td>
+                </tr>
+                stt++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="9" class="text-center text-gray-500 p-4">Chưa có dữ liệu nhân viên</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@* MODAL THÊM NHÂN VIÊN *@
+@if (showAdd)
+{
+    <div class="modal d-block">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm nhân viên mới</h5>
+                    <button type="button" class="btn-close" @onclick="() => showAdd = false"></button>
+                </div>
+                <div class="modal-body">
+                    @* Form thêm nhân viên *@
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Họ *</label>
+                            <input class="form-control" @bind="addModel.Ho" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Tên *</label>
+                            <input class="form-control" @bind="addModel.Ten" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Số điện thoại *</label>
+                            <input class="form-control" @bind="addModel.Sdt" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input type="email" class="form-control" @bind="addModel.Gmail" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Ngày sinh</label>
+                            <input type="date" class="form-control" @bind="addModel.NgaySinh" @bind:format="yyyy-MM-dd" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Ngày vào làm *</label>
+                            <input type="date" class="form-control"
+                                   @bind="addModel.NgayVaoLam"
+                                   @bind:format="yyyy-MM-dd" />
+
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Chức vụ *</label>
+                        <select class="form-control" @bind="addModel.TenChucVu">
+                            <option value="">-- Chọn chức vụ --</option>
+                            <option value="NhanVien">Nhân viên</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" @bind="addModel.TrangThai" />
+                        <label class="form-check-label">Hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showAdd = false">Hủy</button>
+                    <button class="btn btn-primary" @onclick="SaveNhanVien">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@* MODAL SỬA NHÂN VIÊN *@
+@if (showEdit)
+{
+    <div class="modal d-block">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sửa nhân viên</h5>
+                    <button type="button" class="btn-close" @onclick="() => showEdit = false"></button>
+                </div>
+                <div class="modal-body">
+                    @* Form sửa nhân viên *@
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Họ *</label>
+                            <input class="form-control" @bind="editModel.Ho" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Tên *</label>
+                            <input class="form-control" @bind="editModel.Ten" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Số điện thoại *</label>
+                            <input class="form-control" @bind="editModel.Sdt" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input type="email" class="form-control" @bind="editModel.Gmail" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Ngày sinh</label>
+                            <input type="date" class="form-control" @bind="editModel.NgaySinh" @bind:format="yyyy-MM-dd" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Ngày vào làm *</label>
+                            <input type="date" class="form-control"
+                                   @bind="editModel.NgayVaoLam"
+                                   @bind:format="yyyy-MM-dd" />
+
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Chức vụ *</label>
+                        <select class="form-control" @bind="editModel.TenChucVu">
+                            <option value="">-- Chọn chức vụ --</option>
+                            <option value="NhanVien">Nhân viên</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" @bind="editModel.TrangThai" />
+                        <label class="form-check-label">Hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showEdit = false">Hủy</button>
+                    <button class="btn btn-primary" @onclick="UpdateNhanVien">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@* MODAL XEM NHÂN VIÊN *@
+@if (showView)
+{
+    <div class="modal d-block">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thông tin nhân viên</h5>
+                    <button type="button" class="btn-close" @onclick="() => showView = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Họ</label>
+                            <input class="form-control" @bind="viewModel.Ho" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Tên</label>
+                            <input class="form-control" @bind="viewModel.Ten" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Số điện thoại</label>
+                            <input class="form-control" @bind="viewModel.Sdt" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input class="form-control" @bind="viewModel.Gmail" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Ngày sinh</label>
+                            <input type="date" class="form-control" @bind="viewModel.NgaySinh" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Ngày vào làm</label>
+                            <input type="date" class="form-control"
+                                   @bind="viewModel.NgayVaoLam"
+                                   @bind:format="yyyy-MM-dd"
+                                   readonly />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Chức vụ</label>
+                        <select class="form-control" disabled>
+                            <option value="NhanVien" selected="@("NhanVien" == viewModel.TenChucVu)">Nhân viên</option>
+                            <option value="Admin" selected="@("Admin" == viewModel.TenChucVu)">Admin</option>
+                        </select>
+
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Trạng thái</label>
+                        <input class="form-control" value="@(viewModel.TrangThai ? "Hoạt động" : "Ngừng")" readonly />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="() => showView = false">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private List<NhanVienDTO> DanhSachNhanVien = new();
+    private string TuKhoa;
+
+    private bool showAdd = false;
+    private bool showEdit = false;
+    private bool showView = false;
+
+    private NhanVienDTO addModel = new() { TrangThai = true, NgaySinh = DateTime.Today, NgayVaoLam = DateTime.Today };
+    private NhanVienDTO editModel = new();
+    private NhanVienDTO viewModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TaiLai();
+    }
+
+    private async Task TaiLai()
+    {
+        DanhSachNhanVien = await NhanVienService.GetAll();
+
+        if (!string.IsNullOrWhiteSpace(TuKhoa))
+        {
+            DanhSachNhanVien = DanhSachNhanVien
+                .Where(nv =>
+                    ($"{nv.Ho} {nv.Ten}").Contains(TuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(nv.Sdt) && nv.Sdt.Contains(TuKhoa)) ||
+                    (!string.IsNullOrEmpty(nv.Gmail) && nv.Gmail.Contains(TuKhoa))
+                ).ToList();
+        }
+    }
+
+    private void XemNhanVien(string id)
+    {
+        var nv = DanhSachNhanVien.FirstOrDefault(x => x.Id == id);
+        if (nv == null) return;
+
+        viewModel = new NhanVienDTO
+        {
+            Id = nv.Id,
+            Ho = nv.Ho,
+            Ten = nv.Ten,
+            Sdt = nv.Sdt,
+            Gmail = nv.Gmail,
+            NgaySinh = nv.NgaySinh,
+            NgayVaoLam = nv.NgayVaoLam,
+            TenChucVu = nv.TenChucVu,
+            TrangThai = nv.TrangThai
+        };
+
+        showView = true;
+    }
+
+    private void SuaNhanVien(string id)
+    {
+        var nv = DanhSachNhanVien.FirstOrDefault(x => x.Id == id);
+        if (nv == null) return;
+
+        editModel = new NhanVienDTO
+        {
+            Id = nv.Id,
+            Ho = nv.Ho,
+            Ten = nv.Ten,
+            Sdt = nv.Sdt,
+            Gmail = nv.Gmail,
+            NgaySinh = nv.NgaySinh,
+            NgayVaoLam = nv.NgayVaoLam,
+            TenChucVu = nv.TenChucVu,
+            TrangThai = nv.TrangThai
+        };
+
+        showEdit = true;
+    }
+
+    private async Task UpdateNhanVien()
+    {
+        var ok = await NhanVienService.Update(editModel);
+        if (ok)
+        {
+            showEdit = false;
+            await TaiLai();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Cập nhật nhân viên thất bại!");
+        }
+    }
+
+    private async Task DoiTrangThai(string id)
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn đổi trạng thái nhân viên này?");
+        if (!confirm) return;
+
+        var ok = await NhanVienService.ChangeStatus(id);
+        if (ok)
+        {
+            await TaiLai();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Đổi trạng thái thất bại!");
+        }
+    }
+
+    private async Task SaveNhanVien()
+    {
+        var ok = await NhanVienService.Create(addModel);
+        if (ok)
+        {
+            showAdd = false;
+            await TaiLai();
+            addModel = new NhanVienDTO { TrangThai = true, NgaySinh = DateTime.Today, NgayVaoLam = DateTime.Today };
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Thêm nhân viên thất bại!");
+        }
+    }
+    private async Task XoaNhanVien(string id)
+    {
+        Console.WriteLine($"Xóa nhân viên ID: {id}");
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn xóa nhân viên này?");
+        if (!confirm) return;
+
+        var ok = await NhanVienService.Delete(id);
+        if (ok)
+        {
+            await TaiLai();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Xóa nhân viên thất bại!");
+        }
+    }
+
+
+
+}
