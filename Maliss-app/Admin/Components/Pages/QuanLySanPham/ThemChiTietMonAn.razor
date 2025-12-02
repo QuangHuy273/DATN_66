@@ -19,16 +19,30 @@
 
 <div class="them-chi-tiet-mon-an-container">
     <div class="header-section">
-        <h2>@(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Sửa Chi Tiết Món Ăn")</h2>
-        <button class="btn btn-secondary" @onclick="QuayLai">
+        <h2>
+            <i class="bi bi-@(string.IsNullOrEmpty(Id) ? "plus-circle-fill" : "pencil-square")"></i>
+            @(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Sửa Chi Tiết Món Ăn")
+        </h2>
+        <button class="btn btn-secondary" @onclick="QuayLai" type="button">
             <i class="bi bi-arrow-left"></i> Quay Lại
         </button>
     </div>
 
     @if (isLoading)
     {
-        <div class="loading">
-            <p>Đang tải dữ liệu...</p>
+        <div class="loading" style="display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 80px 20px;">
+            <div style="position: relative;">
+                <span class="spinner-border" role="status" style="width: 4rem; height: 4rem; color: #667eea; border-width: 4px;"></span>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px;">
+                    <i class="bi bi-hourglass-split" style="color: #667eea; animation: pulse 1.5s ease-in-out infinite;"></i>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <p style="margin: 0; font-size: 18px; font-weight: 700; color: #2d3748; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Đang tải dữ liệu...
+                </p>
+                <p style="margin: 8px 0 0; font-size: 14px; color: #718096;">Vui lòng chờ trong giây lát</p>
+            </div>
         </div>
     }
     else
@@ -36,17 +50,31 @@
         <EditForm Model="@chiTietMonAn" OnValidSubmit="@LuuChiTietMonAn">
             <DataAnnotationsValidator />
             <div class="form-container">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="monAnId">Mã Món Ăn</label>
-                            <InputText id="monAnId" class="form-control" @bind-Value="chiTietMonAn.MonAnId" disabled />
-                        </div>
+                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); padding: 24px; border-radius: 16px; border: 2px solid #e2e8f0; margin-bottom: 28px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
+                        <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                            <i class="bi bi-info-circle-fill"></i>
+                        </span>
+                        <h5 style="margin: 0; font-weight: 700; color: #2d3748; font-size: 17px;">Thông Tin Món Ăn</h5>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="ten">Tên Món Ăn</label>
-                            <InputText id="ten" class="form-control" @bind-Value="chiTietMonAn.Ten" disabled />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="monAnId">
+                                    <i class="bi bi-upc-scan"></i>
+                                    Mã Món Ăn
+                                </label>
+                                <InputText id="monAnId" class="form-control" @bind-Value="chiTietMonAn.MonAnId" disabled style="background: #f1f3f5; cursor: not-allowed;" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="ten">
+                                    <i class="bi bi-card-heading"></i>
+                                    Tên Món Ăn
+                                </label>
+                                <InputText id="ten" class="form-control" @bind-Value="chiTietMonAn.Ten" disabled style="background: #f1f3f5; cursor: not-allowed;" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -54,14 +82,20 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="gia">Giá <span class="text-danger">*</span></label>
+                            <label for="gia">
+                                <i class="bi bi-cash-stack"></i>
+                                Giá <span class="text-danger">*</span>
+                            </label>
                             <InputNumber id="gia" class="form-control" @bind-Value="chiTietMonAn.Gia" />
                             <ValidationMessage For="@(() => chiTietMonAn.Gia)" />
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="soLuong">Số Lượng <span class="text-danger">*</span></label>
+                            <label for="soLuong">
+                                <i class="bi bi-box-seam"></i>
+                                Số Lượng <span class="text-danger">*</span>
+                            </label>
                             <InputNumber id="soLuong" class="form-control" @bind-Value="chiTietMonAn.Soluong" />
                             <ValidationMessage For="@(() => chiTietMonAn.Soluong)" />
                         </div>
@@ -71,17 +105,23 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="soNgayHSD">Số Ngày HSD <span class="text-danger">*</span></label>
+                            <label for="soNgayHSD">
+                                <i class="bi bi-calendar-check"></i>
+                                Số Ngày HSD <span class="text-danger">*</span>
+                            </label>
                             <InputNumber id="soNgayHSD" class="form-control" @bind-Value="chiTietMonAn.SoNgayHSD" />
                             <ValidationMessage For="@(() => chiTietMonAn.SoNgayHSD)" />
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="trangThai">Trạng Thái</label>
+                            <label for="trangThai">
+                                <i class="bi bi-toggle-on"></i>
+                                Trạng Thái
+                            </label>
                             <InputSelect id="trangThai" class="form-select" @bind-Value="trangThaiString" @bind-Value:after="OnTrangThaiChanged">
-                                <option value="true">Hoạt động</option>
-                                <option value="false">Tạm dừng</option>
+                                <option value="true">✓ Hoạt động</option>
+                                <option value="false">⊗ Tạm dừng</option>
                             </InputSelect>
                         </div>
                     </div>
@@ -90,9 +130,12 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="nguyenLieu">Nguyên Liệu</label>
+                            <label for="nguyenLieu">
+                                <i class="bi bi-egg-fried"></i>
+                                Nguyên Liệu
+                            </label>
                             <InputSelect id="nguyenLieu" class="form-select" @bind-Value="selectedNguyenLieuId">
-                                <option value="">-- Chọn Nguyên Liệu --</option>
+                                <option value="">🥚 Chọn Nguyên Liệu</option>
                                 @foreach (var nl in nguyenLieus)
                                 {
                                     <option value="@nl.Id">@nl.Ten</option>
@@ -102,9 +145,12 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="nhaCungCap">Nhà Cung Cấp</label>
+                            <label for="nhaCungCap">
+                                <i class="bi bi-truck-front-fill"></i>
+                                Nhà Cung Cấp
+                            </label>
                             <InputSelect id="nhaCungCap" class="form-select" @bind-Value="selectedNhaCungCapId">
-                                <option value="">-- Chọn Nhà Cung Cấp --</option>
+                                <option value="">🚚 Chọn Nhà Cung Cấp</option>
                                 @foreach (var ncc in nhaCungCaps)
                                 {
                                     <option value="@ncc.Id">@ncc.Ten</option>
@@ -117,9 +163,12 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="loaiVi">Loại Vị</label>
+                            <label for="loaiVi">
+                                <i class="bi bi-cup-hot-fill"></i>
+                                Loại Vị
+                            </label>
                             <InputSelect id="loaiVi" class="form-select" @bind-Value="selectedLoaiViId">
-                                <option value="">-- Chọn Loại Vị --</option>
+                                <option value="">☕ Chọn Loại Vị</option>
                                 @foreach (var lv in loaiVis)
                                 {
                                     <option value="@lv.Id">@lv.Ten</option>
@@ -129,9 +178,12 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="kichCo">Kích Cỡ</label>
+                            <label for="kichCo">
+                                <i class="bi bi-rulers"></i>
+                                Kích Cỡ
+                            </label>
                             <InputSelect id="kichCo" class="form-select" @bind-Value="selectedKichCoId">
-                                <option value="">-- Chọn Kích Cỡ --</option>
+                                <option value="">📏 Chọn Kích Cỡ</option>
                                 @foreach (var kc in kichCos)
                                 {
                                     <option value="@kc.Id">@kc.Ten</option>
@@ -142,23 +194,39 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="mota">Mô Tả</label>
-                    <InputTextArea id="mota" class="form-control" rows="4" @bind-Value="chiTietMonAn.Mota" />
+                    <label for="mota">
+                        <i class="bi bi-file-text"></i>
+                        Mô Tả
+                    </label>
+                    <InputTextArea id="mota" class="form-control" rows="4" @bind-Value="chiTietMonAn.Mota" placeholder="Nhập mô tả chi tiết về sản phẩm..." />
                 </div>
 
                 <div class="form-group">
-                    <label>Ảnh Chi Tiết Món Ăn</label>
+                    <label>
+                        <i class="bi bi-images-fill"></i>
+                        Ảnh Chi Tiết Món Ăn
+                    </label>
                     <InputFile class="form-control" OnChange="OnAnhChiTietSelected" accept="image/*" multiple />
                     <small class="form-text text-muted">Chọn nhiều ảnh (JPG, PNG, tối đa 5MB mỗi ảnh)</small>
                     @if (chiTietMonAn.DanhSachAnh != null && chiTietMonAn.DanhSachAnh.Any())
                     {
-                        <div class="mt-2 d-flex flex-wrap gap-2">
-                            @foreach (var anh in chiTietMonAn.DanhSachAnh)
+                        <div class="mt-4 d-flex flex-wrap gap-3" style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 16px; border: 2px dashed #cbd5e0;">
+                            <div style="width: 100%; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">
+                                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                                    <i class="bi bi-collection-fill" style="margin-right: 6px;"></i>@chiTietMonAn.DanhSachAnh.Count ảnh
+                                </span>
+                            </div>
+                            @for (int imgIndex = 0; imgIndex < chiTietMonAn.DanhSachAnh.Count; imgIndex++)
                             {
-                                <div class="position-relative" style="width: 150px; height: 150px;">
-                                    <img src="@anh.DuongDan" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;" />
-                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 5px;" @onclick="async () => await XoaAnhChiTiet(anh.Id)">
-                                        <i class="bi bi-x"></i>
+                                var anh = chiTietMonAn.DanhSachAnh[imgIndex];
+                                var imageNumber = imgIndex + 1;
+                                <div class="position-relative" style="width: 150px; height: 150px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; animation: fadeIn 0.3s ease;">
+                                    <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover; border: none;" title="Click để xem ảnh lớn" />
+                                    <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(102, 126, 234, 0.95); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        #@imageNumber
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 8px; border-radius: 10px; padding: 6px 10px; font-weight: 700; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);" @onclick="async () => await XoaAnhChiTiet(anh.Id)" title="Xóa ảnh này">
+                                        <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </div>
                             }
@@ -166,27 +234,29 @@
                     }
                     @if (isUploadingAnh)
                     {
-                        <div class="mt-2">
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
-                            <span>Đang tải ảnh lên...</span>
+                        <div class="mt-3 d-flex align-items-center gap-3" style="padding: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
+                            <span class="spinner-border spinner-border-sm" role="status" style="color: #667eea;"></span>
+                            <span style="color: #667eea; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
                         </div>
                     }
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                    <button type="submit" class="btn btn-primary" disabled="@isSaving" style="min-width: 160px;">
                         @if (isSaving)
                         {
                             <span class="spinner-border spinner-border-sm" role="status"></span>
-                            <span> Đang lưu...</span>
+                            <span>Đang lưu...</span>
                         }
                         else
                         {
-                            <span>Lưu</span>
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Lưu Thông Tin</span>
                         }
                     </button>
-                    <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving">
-                        Hủy
+                    <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving" style="min-width: 120px;">
+                        <i class="bi bi-x-circle-fill"></i>
+                        Hủy Bỏ
                     </button>
                 </div>
             </div>
@@ -195,9 +265,15 @@
 </div>
 
 @code {
+    
+    // Parameters
+    
     [Parameter] public string MonAnId { get; set; } = string.Empty;
     [Parameter] public string? Id { get; set; }
 
+    
+    // State
+    
     private ChiTietMonAnDTO chiTietMonAn = new ChiTietMonAnDTO
     {
         MonAnId = string.Empty,
@@ -213,16 +289,19 @@
     private List<NhaCungCapDTO> nhaCungCaps = new();
     private List<LoaiViDTO> loaiVis = new();
     private List<KichCoDTO> kichCos = new();
-    
+
     private Guid? selectedNguyenLieuId;
     private Guid? selectedNhaCungCapId;
     private Guid? selectedLoaiViId;
     private Guid? selectedKichCoId;
-    
+
     private bool isSaving = false;
     private bool isLoading = true;
     private bool isUploadingAnh = false;
 
+    
+    // Computed properties
+    
     private string trangThaiString
     {
         get => chiTietMonAn.TrangThai.ToString().ToLower();
@@ -234,19 +313,25 @@
         StateHasChanged();
     }
 
+    
+    // Lifecycle
+    
     protected override async Task OnInitializedAsync()
     {
         await LoadDropdownData();
         await LoadMonAnInfo();
-        
+
         if (!string.IsNullOrEmpty(Id) && Guid.TryParse(Id, out var chiTietId))
         {
             await LoadChiTietMonAn(chiTietId);
         }
-        
+
         isLoading = false;
     }
 
+    
+    // Data loading
+    
     private async Task LoadDropdownData()
     {
         try
@@ -359,6 +444,9 @@
         }
     }
 
+    
+    // Save logic
+    
     private async Task LuuChiTietMonAn()
     {
         isSaving = true;
@@ -408,6 +496,9 @@
         }
     }
 
+    
+    // Image upload & delete
+    
     private async Task OnAnhChiTietSelected(InputFileChangeEventArgs e)
     {
         var files = e.GetMultipleFiles();
@@ -420,6 +511,11 @@
         try
         {
             var anhList = EnsureDanhSachAnh();
+            var chiTietDescriptor = BuildChiTietAnhDescriptor();
+            var maMonAnDescriptor = BuildMaMonAnDescriptor();
+            var startIndex = anhList.Count;
+            var offset = 0;
+
             foreach (var file in files)
             {
                 if (file.Size > 5 * 1024 * 1024)
@@ -428,10 +524,12 @@
                     continue;
                 }
 
+                // Upload ảnh chi tiết với định dạng {MaMonAn}_{CT + số thứ tự chi tiết}_{index}_{timestamp}.ext
                 var uploadResult = await UploadService.UploadImageAsync(
                     file,
-                    BuildMaMonAnDescriptor(),
-                    BuildChiTietAnhDescriptor());
+                    maMonAnDescriptor,
+                    chiTietDescriptor,
+                    startIndex + offset);
                 if (uploadResult == null)
                 {
                     await JS.InvokeVoidAsync("alert", $"Không thể tải ảnh {file.Name}, vui lòng thử lại!");
@@ -444,6 +542,8 @@
                     Ten = uploadResult.FileName,
                     DuongDan = uploadResult.Url
                 });
+
+                offset++;
             }
         }
         catch (Exception ex)
@@ -538,6 +638,9 @@
         }
     }
 
+    
+    // Helpers
+    
     private string? GetFileNameFromAnh(AnhDTO? anh)
     {
         if (anh == null)
@@ -589,12 +692,12 @@
     {
         if (!string.IsNullOrWhiteSpace(chiTietMonAn.MonAnId))
         {
-            return chiTietMonAn.MonAnId;
+            return chiTietMonAn.MonAnId.Trim();
         }
 
         if (!string.IsNullOrWhiteSpace(chiTietMonAn.Ten))
         {
-            return chiTietMonAn.Ten;
+            return chiTietMonAn.Ten.Trim();
         }
 
         return null;
@@ -602,42 +705,26 @@
 
     private string BuildChiTietAnhDescriptor()
     {
-        var descriptors = new List<string>();
-
-        if (chiTietMonAn.Id != Guid.Empty)
-        {
-            descriptors.Add(chiTietMonAn.Id.ToString());
-        }
-        else if (!string.IsNullOrWhiteSpace(chiTietMonAn.Ten))
-        {
-            descriptors.Add(chiTietMonAn.Ten);
-        }
-
-        if (!string.IsNullOrWhiteSpace(chiTietMonAn.Mota))
-        {
-            descriptors.Add(chiTietMonAn.Mota!);
-        }
-
-        var loaiViTen = loaiVis.FirstOrDefault(l => l.Id == chiTietMonAn.LoaiViId)?.Ten;
-        if (!string.IsNullOrWhiteSpace(loaiViTen))
-        {
-            descriptors.Add(loaiViTen!);
-        }
-
-        var kichCoTen = kichCos.FirstOrDefault(k => k.Id == chiTietMonAn.KichCoId)?.Ten;
-        if (!string.IsNullOrWhiteSpace(kichCoTen))
-        {
-            descriptors.Add(kichCoTen!);
-        }
-
-        if (!descriptors.Any())
-        {
-            descriptors.Add("chi-tiet");
-        }
-
-        return string.Join("-", descriptors);
+        // Mặc định chi tiết đầu tiên là CT1, các chi tiết sau tăng dần
+        // Trang thêm/sửa chi tiết đơn lẻ nên ta đánh số 1
+        return "CT1";
     }
 
+    private string GetImageUrlWithCacheBusting(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return string.Empty;
+        }
+
+        // Thêm timestamp để tránh cache ảnh cũ
+        var separator = imageUrl.Contains('?') ? '&' : '?';
+        return $"{imageUrl}{separator}v={DateTime.UtcNow.Ticks}";
+    }
+
+    
+    // Navigation
+    
     private void QuayLai()
     {
         Navigation.NavigateTo("/quanlysanpham");
