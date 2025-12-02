@@ -611,14 +611,21 @@
                 var monanchitiet = await apiService.GetbyId<ChiTietMonAn, Guid>(item.Id, "ChiTietMonAn");
                 if (monanchitiet != null)
                 {
+                    Console.WriteLine(monanchitiet.Soluong +"+" +item.SoLuongDat);
                     monanchitiet.Soluong -= item.SoLuongDat;
-                    var result4 = await apiService.PutAsync<ChiTietMonAn>($"ChiTietMonAn", _mapper.Map<ChiTietMonAn>(monanchitiet));
+                    var result4 = await apiService.PutAsync<ChiTietMonAn>($"ChiTietMonAn", monanchitiet);
                     if (result4)
                     {
 
                     }
                     else
                     {
+                        await JS.InvokeVoidAsync("Swal.fire", new
+                        {
+                            icon = "warning",
+                            title = $"Thất bại",
+                            text = $"Thong bao loi {CurrentOrder.ThongTinHoaDon.TenNguoiNhan} thất bại."
+                        });
                         return;
                     }
                 }

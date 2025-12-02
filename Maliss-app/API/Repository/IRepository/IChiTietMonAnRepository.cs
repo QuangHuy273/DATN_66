@@ -8,5 +8,6 @@ namespace API.Repository.IRepository
         Task<IEnumerable<ChiTietMonAn>> GetMonAnId(string Id);
 
         Task<IEnumerable<ChiTietMonAn>> GetAll();
+       
     }
 }

@@ -100,7 +100,12 @@
     {
         allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
         var allproduct = await GetChiTietMonAnService.GetAll();
+      // lọc theo trạng thái chỉ hoạt động thì mở cái này ra
         Products = allproduct?.Where(p => p.Soluong >= 1 && p.TrangThai == true && allProducts.FirstOrDefault(m => m.Id == p.MonAnId && m.TrangThai == true) != null).ToList() ?? new();
+        // Products = allproduct?
+        // .Where(p => p.Soluong >= 1)
+        // .ToList()
+        //   ?? new();
 
         allKichCo = Products.Select(p => p.KichCo)
                             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -163,11 +168,39 @@
 
 
 
+    // private async Task AddToOrder(ChiTietMonAnDTO item)
+    // {
+    //     await OnAddProduct.InvokeAsync(item);
+    //     await OnClose.InvokeAsync();
+    // }
     private async Task AddToOrder(ChiTietMonAnDTO item)
     {
+        // Gửi item ra ngoài để thêm vào hóa đơn
         await OnAddProduct.InvokeAsync(item);
+
+        // TRỪ TỒN KHO TRỰC TIẾP TRONG DANH SÁCH PRODUCTS
+        var product = Products.FirstOrDefault(p => p.Id == item.Id);
+        if (product != null)
+        {
+            product.Soluong -= product.SoLuongDat;
+
+            // Nếu hết hàng thì ẩn sản phẩm
+            if (product.Soluong <= 0)
+            {
+                product.Soluong = 0;
+            }
+
+            // Reset số lượng đặt cho lần sau
+            product.SoLuongDat = 1;
+        }
+
+        // Cập nhật giao diện
+        StateHasChanged();
+
+        // Đóng popup
         await OnClose.InvokeAsync();
     }
+
 
     private void Close()
     {
