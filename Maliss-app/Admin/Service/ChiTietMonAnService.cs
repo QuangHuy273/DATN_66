@@ -68,7 +68,18 @@ namespace Admin.Service
 
         public async Task<bool> Update(ChiTietMonAnDTO chiTietMonAn)
         {
-            return await PutAsync("ChiTietMonAn", chiTietMonAn);
+            try
+            {
+                Console.WriteLine($"[ChiTietMonAnService] Updating chi tiết with Id: {chiTietMonAn.Id}");
+                var result = await PutAsync("ChiTietMonAn", chiTietMonAn);
+                Console.WriteLine($"[ChiTietMonAnService] Update result: {result}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ChiTietMonAnService] Update error: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<bool> Delete(Guid id)

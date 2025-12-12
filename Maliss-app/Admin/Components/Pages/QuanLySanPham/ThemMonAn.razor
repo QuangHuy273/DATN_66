@@ -639,84 +639,119 @@
             // Lưu chi tiết món ăn
             if (chiTietMonAns != null && chiTietMonAns.Any())
             {
-                foreach (var chiTiet in chiTietMonAns)
+                for (int i = 0; i < chiTietMonAns.Count; i++)
                 {
+                    var chiTiet = chiTietMonAns[i];
                     try
                     {
                         chiTiet.MonAnId = monAn.Id ?? string.Empty;
                         chiTiet.Ten = monAn.Ten;
 
                         // Cập nhật trạng thái từ string
-                        var index = chiTietMonAns.IndexOf(chiTiet);
-                        if (index < chiTietTrangThaiStrings.Count)
+                        if (i < chiTietTrangThaiStrings.Count)
                         {
-                            chiTiet.TrangThai = bool.Parse(chiTietTrangThaiStrings[index]);
+                            chiTiet.TrangThai = bool.Parse(chiTietTrangThaiStrings[i]);
                         }
 
-                        ChiTietMonAnDTO? createdChiTiet = null;
-                        bool chiTietSaved = false;
+                        ChiTietMonAnDTO? savedChiTiet = null;
+                        bool isNewChiTiet = (chiTiet.Id == Guid.Empty);
 
-                        if (chiTiet.Id == Guid.Empty)
+                        if (isNewChiTiet)
                         {
                             // Tạo mới chi tiết món ăn
-                            createdChiTiet = await ChiTietMonAnService.Create(chiTiet);
-                            if (createdChiTiet != null && createdChiTiet.Id != Guid.Empty)
+                            Console.WriteLine($"[DEBUG] Đang tạo chi tiết món ăn mới số {i + 1}...");
+                            savedChiTiet = await ChiTietMonAnService.Create(chiTiet);
+                            
+                            if (savedChiTiet != null && savedChiTiet.Id != Guid.Empty)
                             {
-                                chiTiet.Id = createdChiTiet.Id;
-                                chiTietSaved = true;
-                                Console.WriteLine($"Đã tạo chi tiết món ăn thành công với Id: {chiTiet.Id}");
+                                chiTiet.Id = savedChiTiet.Id;
+                                Console.WriteLine($"[SUCCESS] Đã tạo chi tiết món ăn số {i + 1} với Id: {chiTiet.Id}");
                             }
                             else
                             {
-                                Console.WriteLine($"Lỗi: Không thể tạo chi tiết món ăn. Response: {createdChiTiet?.Id}");
-                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể tạo chi tiết món ăn số {index + 1}!");
+                                Console.WriteLine($"[ERROR] Không thể tạo chi tiết món ăn số {i + 1}");
+                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể tạo chi tiết món ăn số {i + 1}!");
                                 return;
                             }
                         }
                         else
                         {
                             // Cập nhật chi tiết món ăn
-                            chiTietSaved = await ChiTietMonAnService.Update(chiTiet);
-                            if (chiTietSaved)
+                            Console.WriteLine($"[DEBUG] Đang cập nhật chi tiết món ăn số {i + 1} (Id: {chiTiet.Id})...");
+                            
+                            // Tạo DTO clean để update (không bao gồm navigation properties)
+                            var updateDto = new ChiTietMonAnDTO
                             {
-                                Console.WriteLine($"Đã cập nhật chi tiết món ăn thành công với Id: {chiTiet.Id}");
+                                Id = chiTiet.Id,
+                                MonAnId = chiTiet.MonAnId,
+                                Ten = chiTiet.Ten,
+                                Gia = chiTiet.Gia,
+                                Soluong = chiTiet.Soluong,
+                                SoNgayHSD = chiTiet.SoNgayHSD,
+                                TrangThai = chiTiet.TrangThai,
+                                Mota = chiTiet.Mota,
+                                LoaiViId = chiTiet.LoaiViId,
+                                KichCoId = chiTiet.KichCoId,
+                                NguyenLieuId = chiTiet.NguyenLieuId,
+                                NhaCungCapId = chiTiet.NhaCungCapId,
+                                // Không gửi DanhSachAnh trong update này
+                                DanhSachAnh = null
+                            };
+                            
+                            bool updateResult = await ChiTietMonAnService.Update(updateDto);
+                            
+                            if (updateResult)
+                            {
+                                Console.WriteLine($"[SUCCESS] Đã cập nhật chi tiết món ăn số {i + 1}");
                             }
                             else
                             {
-                                Console.WriteLine($"Lỗi: Không thể cập nhật chi tiết món ăn với Id: {chiTiet.Id}");
-                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể cập nhật chi tiết món ăn số {index + 1}!");
+                                Console.WriteLine($"[ERROR] Không thể cập nhật chi tiết món ăn số {i + 1}");
+                                await JS.InvokeVoidAsync("alert", $"Lỗi: Không thể cập nhật chi tiết món ăn số {i + 1}!");
                                 return;
                             }
                         }
 
-                        // Chỉ lưu ảnh nếu chi tiết đã được lưu thành công
-                        if (chiTietSaved && chiTiet.DanhSachAnh != null && chiTiet.DanhSachAnh.Any())
+                        // Lưu ảnh mới nếu có
+                        if (chiTiet.DanhSachAnh != null && chiTiet.DanhSachAnh.Any())
                         {
-                            // Lọc ra những ảnh mới (chưa có trong database - có thể kiểm tra bằng cách xem có ChiTietMonAnId chưa)
-                            var anhMoi = chiTiet.DanhSachAnh.Where(a => a.ChiTietMonAnId == null || a.ChiTietMonAnId == Guid.Empty).ToList();
+                            var anhMoi = chiTiet.DanhSachAnh
+                                .Where(a => a.ChiTietMonAnId == null || a.ChiTietMonAnId == Guid.Empty)
+                                .ToList();
 
                             if (anhMoi.Any())
                             {
-                                // Cập nhật ChiTietMonAnId cho các ảnh mới
+                                Console.WriteLine($"[DEBUG] Đang lưu {anhMoi.Count} ảnh mới cho chi tiết số {i + 1}...");
+                                
                                 foreach (var anh in anhMoi)
                                 {
                                     anh.ChiTietMonAnId = chiTiet.Id;
                                 }
 
-                                // Lưu ảnh mới vào database thông qua API
-                                var savedAnhs = await ApiService.PostAsync<List<AnhDTO>, List<AnhDTO>>("Anh/upload-many", anhMoi);
-                                if (savedAnhs == null || !savedAnhs.Any())
+                                try
                                 {
-                                    Console.WriteLine($"Warning: Không thể lưu ảnh cho chi tiết món ăn {chiTiet.Id}");
+                                    var savedAnhs = await ApiService.PostAsync<List<AnhDTO>, List<AnhDTO>>("Anh/upload-many", anhMoi);
+                                    if (savedAnhs != null && savedAnhs.Any())
+                                    {
+                                        Console.WriteLine($"[SUCCESS] Đã lưu {savedAnhs.Count} ảnh cho chi tiết số {i + 1}");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"[WARNING] Không thể lưu ảnh cho chi tiết số {i + 1}");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"[ERROR] Lỗi khi lưu ảnh: {ex.Message}");
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error saving chi tiết món ăn: {ex.Message}");
-                        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                        await JS.InvokeVoidAsync("alert", $"Lỗi khi lưu chi tiết món ăn: {ex.Message}");
+                        Console.WriteLine($"[ERROR] Exception khi lưu chi tiết số {i + 1}: {ex.Message}");
+                        Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+                        await JS.InvokeVoidAsync("alert", $"Lỗi khi lưu chi tiết món ăn số {i + 1}: {ex.Message}");
                         return;
                     }
                 }
@@ -759,9 +794,56 @@
 
     private async Task XoaChiTiet(int index)
     {
-        if (index >= 0 && index < chiTietMonAns.Count)
+        if (index < 0 || index >= chiTietMonAns.Count)
         {
-            var anhList = chiTietMonAns[index].DanhSachAnh?.ToList();
+            return;
+        }
+
+        var chiTiet = chiTietMonAns[index];
+        
+        // Nếu chi tiết đã được lưu vào database (có Id hợp lệ), cần xóa từ database
+        if (chiTiet.Id != Guid.Empty)
+        {
+            // Xác nhận trước khi xóa
+            var confirmed = await JS.InvokeAsync<bool>("confirm", 
+                $"Bạn có chắc chắn muốn xóa chi tiết món ăn này không?");
+            
+            if (!confirmed)
+            {
+                return;
+            }
+
+            try
+            {
+                // Xóa tất cả ảnh của chi tiết trước
+                var anhList = chiTiet.DanhSachAnh?.ToList();
+                if (anhList != null && anhList.Count > 0)
+                {
+                    foreach (var anh in anhList)
+                    {
+                        await RemoveAnhFromChiTietAsync(index, anh);
+                    }
+                }
+
+                // Xóa chi tiết từ database
+                var deleteResult = await ChiTietMonAnService.Delete(chiTiet.Id);
+                if (!deleteResult)
+                {
+                    await JS.InvokeVoidAsync("alert", "Không thể xóa chi tiết món ăn từ database!");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting chi tiết món ăn: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", $"Lỗi khi xóa chi tiết món ăn: {ex.Message}");
+                return;
+            }
+        }
+        else
+        {
+            // Nếu chi tiết chưa được lưu, chỉ cần xóa ảnh và xóa khỏi danh sách local
+            var anhList = chiTiet.DanhSachAnh?.ToList();
             if (anhList != null && anhList.Count > 0)
             {
                 foreach (var anh in anhList)
@@ -769,17 +851,29 @@
                     await RemoveAnhFromChiTietAsync(index, anh);
                 }
             }
-
-            chiTietMonAns.RemoveAt(index);
-            if (index < chiTietTrangThaiStrings.Count)
-            {
-                chiTietTrangThaiStrings.RemoveAt(index);
-            }
-            if (isUploadingAnhChiTiet.ContainsKey(index))
-            {
-                isUploadingAnhChiTiet.Remove(index);
-            }
         }
+
+        // Xóa khỏi danh sách local
+        chiTietMonAns.RemoveAt(index);
+        if (index < chiTietTrangThaiStrings.Count)
+        {
+            chiTietTrangThaiStrings.RemoveAt(index);
+        }
+        if (isUploadingAnhChiTiet.ContainsKey(index))
+        {
+            isUploadingAnhChiTiet.Remove(index);
+        }
+
+        // Cập nhật lại index cho các chi tiết còn lại trong dictionary
+        var keysToUpdate = isUploadingAnhChiTiet.Keys.Where(k => k > index).ToList();
+        foreach (var key in keysToUpdate)
+        {
+            var value = isUploadingAnhChiTiet[key];
+            isUploadingAnhChiTiet.Remove(key);
+            isUploadingAnhChiTiet[key - 1] = value;
+        }
+
+        StateHasChanged();
     }
 
     

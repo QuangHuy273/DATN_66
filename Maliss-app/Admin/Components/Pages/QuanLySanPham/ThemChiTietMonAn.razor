@@ -458,37 +458,75 @@
             chiTietMonAn.LoaiViId = selectedLoaiViId;
             chiTietMonAn.KichCoId = selectedKichCoId;
 
-            bool result;
-            ChiTietMonAnDTO? createdChiTiet = null;
-            if (string.IsNullOrEmpty(Id))
+            bool isNewChiTiet = string.IsNullOrEmpty(Id) || chiTietMonAn.Id == Guid.Empty;
+            bool result = false;
+
+            if (isNewChiTiet)
             {
-                createdChiTiet = await ChiTietMonAnService.Create(chiTietMonAn);
-                result = createdChiTiet != null;
-                if (createdChiTiet != null)
+                Console.WriteLine("[DEBUG] Đang tạo chi tiết món ăn mới...");
+                var createdChiTiet = await ChiTietMonAnService.Create(chiTietMonAn);
+                result = createdChiTiet != null && createdChiTiet.Id != Guid.Empty;
+                
+                if (result)
                 {
                     chiTietMonAn.Id = createdChiTiet.Id;
+                    Console.WriteLine($"[SUCCESS] Đã tạo chi tiết món ăn với Id: {chiTietMonAn.Id}");
+                }
+                else
+                {
+                    Console.WriteLine("[ERROR] Không thể tạo chi tiết món ăn");
                 }
             }
             else
             {
-                result = await ChiTietMonAnService.Update(chiTietMonAn);
+                Console.WriteLine($"[DEBUG] Đang cập nhật chi tiết món ăn (Id: {chiTietMonAn.Id})...");
+                
+                // Tạo DTO clean để update
+                var updateDto = new ChiTietMonAnDTO
+                {
+                    Id = chiTietMonAn.Id,
+                    MonAnId = chiTietMonAn.MonAnId,
+                    Ten = chiTietMonAn.Ten,
+                    Gia = chiTietMonAn.Gia,
+                    Soluong = chiTietMonAn.Soluong,
+                    SoNgayHSD = chiTietMonAn.SoNgayHSD,
+                    TrangThai = chiTietMonAn.TrangThai,
+                    Mota = chiTietMonAn.Mota,
+                    LoaiViId = chiTietMonAn.LoaiViId,
+                    KichCoId = chiTietMonAn.KichCoId,
+                    NguyenLieuId = chiTietMonAn.NguyenLieuId,
+                    NhaCungCapId = chiTietMonAn.NhaCungCapId,
+                    DanhSachAnh = null
+                };
+                
+                result = await ChiTietMonAnService.Update(updateDto);
+                
+                if (result)
+                {
+                    Console.WriteLine("[SUCCESS] Đã cập nhật chi tiết món ăn");
+                }
+                else
+                {
+                    Console.WriteLine("[ERROR] Không thể cập nhật chi tiết món ăn");
+                }
             }
 
             if (result)
             {
                 await LuuAnhChiTiet();
-                await JS.InvokeVoidAsync("alert", string.IsNullOrEmpty(Id) ? "Thêm chi tiết món ăn thành công!" : "Cập nhật chi tiết món ăn thành công!");
+                await JS.InvokeVoidAsync("alert", isNewChiTiet ? "Thêm chi tiết món ăn thành công!" : "Cập nhật chi tiết món ăn thành công!");
                 Navigation.NavigateTo("/quanlysanpham");
             }
             else
             {
-                await JS.InvokeVoidAsync("alert", "Lưu chi tiết món ăn thất bại!");
+                await JS.InvokeVoidAsync("alert", "Lưu chi tiết món ăn thất bại! Vui lòng kiểm tra dữ liệu và thử lại.");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving ChiTietMonAn: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi lưu chi tiết món ăn!");
+            Console.WriteLine($"[ERROR] Exception khi lưu chi tiết món ăn: {ex.Message}");
+            Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+            await JS.InvokeVoidAsync("alert", $"Đã xảy ra lỗi khi lưu chi tiết món ăn: {ex.Message}");
         }
         finally
         {
