@@ -51,5 +51,62 @@ namespace ViewAPI.Controllers
             var dto = _mapper.Map<IEnumerable<ChiTietMonAnDTO>>(result);
             return Ok(dto);
         }
+
+        /// <summary>
+        /// Lấy chi tiết món ăn đang hoạt động theo MonAnId (dành cho khách hàng)
+        /// Chỉ trả về các chi tiết có TrangThai = true và Soluong > 0
+        /// </summary>
+        [HttpGet("active/{monAnId}")]
+        public async Task<ActionResult<IEnumerable<ChiTietMonAnDTO>>> GetActiveDetailsByMonAnId(string monAnId)
+        {
+            try
+            {
+                var allDetails = await chiTietMonAn.GetMonAnId(monAnId);
+                
+                // Lọc chỉ các chi tiết đang active và còn hàng
+                var activeDetails = allDetails
+                    .Where(ct => ct.TrangThai == true && ct.Soluong > 0)
+                    .OrderBy(ct => ct.Gia) // Sắp xếp theo giá tăng dần
+                    .ToList();
+
+                if (!activeDetails.Any())
+                {
+                    return NotFound("Không tìm thấy chi tiết sản phẩm đang bán");
+                }
+
+                var dto = _mapper.Map<IEnumerable<ChiTietMonAnDTO>>(activeDetails);
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Lấy tất cả chi tiết món ăn đang hoạt động (dành cho khách hàng)
+        /// </summary>
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<ChiTietMonAnDTO>>> GetAllActiveDetails()
+        {
+            try
+            {
+                var allDetails = await chiTietMonAn.GetAll();
+                
+                var activeDetails = allDetails
+                    .Where(ct => ct.TrangThai == true && 
+                                ct.Soluong > 0 &&
+                                ct.MonAn != null && 
+                                ct.MonAn.TrangThai == true)
+                    .ToList();
+
+                var dto = _mapper.Map<IEnumerable<ChiTietMonAnDTO>>(activeDetails);
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
