@@ -23,7 +23,7 @@ namespace API.Models.DTO
         [DataType(DataType.Date)]
         public DateTime NgaySinh { get; set; }
 
-        //[Required(ErrorMessage = "Số điện thoại không được để trống")]
+        [Required(ErrorMessage = "Số điện thoại không được để trống")]
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
         [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự")]
         public string? Sdt { get; set; }

@@ -132,8 +132,8 @@ else
                 <div class="product-item">
                     <div class="quantity-badge">@item.SoLuongDat</div>
                     <img src="@(string.IsNullOrEmpty(item.DanhSachAnh?.FirstOrDefault()?.DuongDan)
-                        ? "https://via.placeholder.com/60"
-                        : item.DanhSachAnh.First().DuongDan)"
+                                                                  ? "https://via.placeholder.com/60"
+                                                                  : item.DanhSachAnh.First().DuongDan)"
                  alt="@item.Ten" class="product-image" />
             <div class="product-info">
                 <h4>@item.Ten</h4>
@@ -145,9 +145,48 @@ else
         </div>
                 }
 
-            <div class="summary-row total">
-                <span>Tổng số tiền</span>
-                <span>@TotalAmount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) ₫</span>
+            <div class="summary-section">
+                <div class="summary-row">
+                    <span>Giảm giá</span>
+                    <span class="discount-text">-@discountAmount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VND</span>
+                </div>
+                <div class="summary-row">
+
+                    <span>Tiền hàng</span>
+                    <span>@SubTotal.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VND</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Phí vận chuyển</span>
+                    <span>@ShippingFee.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VND</span>
+                </div>
+                @* zz *@
+                <div class="discount-section">
+                    <div class="discount-input-group">
+                        <input type="text"
+                               @bind="discountCode"
+                               placeholder="Nhập mã giảm giá"
+                               class="discount-input" />
+                        <button type="button"
+                                @onclick="ApplyDiscount"
+                                class="apply-btn">
+                            Áp dụng
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(appliedDiscountCode))
+                    {
+                        <div class="discount-applied">
+                            <span>Mã "@appliedDiscountCode" đã được áp dụng</span>
+                            <button type="button" @onclick="RemoveDiscount" class="remove-btn">✕</button>
+                        </div>
+                    }
+                </div>
+
+                <div class="summary-row total">
+                    <span>Tổng số tiền</span>
+                    <span>@TotalAmount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VND</span>
+                </div>
             </div>
         </div>
 
@@ -160,7 +199,8 @@ else
 @code {
     private CheckoutModel checkoutModel = new();
     private string discountCode = "";
-    private int discountAmount = 0;
+    private decimal discountAmount = 0; // ĐỔI TỪ INT SANG DECIMAL
+    private string appliedDiscountCode = "";
     private int shippingFee = 34000;
     private DateTime deliveryDate;
     private string successMessage = "";
@@ -173,7 +213,9 @@ else
     private List<HinhThucThanhToanDTO> hinhThucThanhToanDTOs = new();
     private List<ChiTietMonAnDTO> chiTietMonAnList = new();
     private KhachHangDTO khachHang = new();
-
+    private decimal SubTotal => chiTietMonAnList.Sum(item => item.Gia * item.SoLuongDat);
+    private decimal ShippingFee { get; set; } = 20000;
+    private decimal TotalAmount => SubTotal + ShippingFee - discountAmount;
     private bool isLoading = true;
     private bool _hasInitialized = false;
     private bool _disposed = false;
@@ -184,6 +226,41 @@ else
         deliveryDate = DateTime.Now.AddDays(3);
     }
 
+    private async Task ApplyDiscount()
+    {
+        if (string.IsNullOrWhiteSpace(discountCode))
+        {
+            await SafeSwal("warning", "Thiếu mã", "Vui lòng nhập mã giảm giá.");
+            return;
+        }
+
+        if (discountCode.ToUpper() == "GIAM10%")
+        {
+            discountAmount = SubTotal * 0.1m; // Giảm 10%
+            appliedDiscountCode = discountCode;
+            await SafeSwal("success", "Thành công", "Mã giảm giá đã được áp dụng!");
+        }
+        else if (discountCode.ToUpper() == "FREESHIP")
+        {
+            discountAmount = ShippingFee; // Miễn phí ship
+            appliedDiscountCode = discountCode;
+            await SafeSwal("success", "Thành công", "Mã miễn phí ship đã được áp dụng!");
+        }
+        else
+        {
+            await SafeSwal("error", "Không hợp lệ", "Mã giảm giá không đúng hoặc đã hết hạn.");
+        }
+
+        StateHasChanged();
+    }
+
+    private void RemoveDiscount()
+    {
+        discountCode = "";
+        appliedDiscountCode = "";
+        discountAmount = 0;
+        StateHasChanged();
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_hasInitialized)
@@ -216,7 +293,7 @@ else
                             hoadon = pending;
                         }
                     }
-                    catch {  }
+                    catch { }
                 }
 
                 await LoadServerData();
@@ -254,7 +331,7 @@ else
                 if (httt != null)
                 {
                     hinhThucThanhToanDTOs = httt;
-                } 
+                }
 
                 var cartJson = await apiService.GetAsync<List<GioHangDTO>>("GioHang");
                 if (cartJson != null)
@@ -294,7 +371,7 @@ else
             var result2 = await apiService.PostAsync<HoaDon, HoaDon>("HoaDon", _mapper.Map<HoaDon>(hoadon));
             if (result2 != null)
             {
-                
+
 
                 foreach (var item in chiTietMonAnList)
                 {
@@ -381,7 +458,7 @@ else
         catch (Exception) { }
     }
 
-    private decimal TotalAmount => chiTietMonAnList.Sum(item => item.Gia * item.SoLuongDat);
+
 
     private async Task HandleSubmit()
     {

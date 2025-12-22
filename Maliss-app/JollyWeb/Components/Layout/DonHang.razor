@@ -1,0 +1,143 @@
+﻿@page "/donhang"
+@layout Layout.MainLayout
+@inject IApiService ApiService
+@inject IJSRuntime JS
+
+<link href="css/DonHang.css" rel="stylesheet" />
+
+<h2 class="text-xl font-semibold mb-4">Đơn hàng của tôi</h2>
+
+@if (DanhSachHoaDon.Any())
+{
+    <table class="table-auto w-full text-sm">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="p-2">Mã đơn</th>
+                <th class="p-2">Ngày đặt</th>
+                <th class="p-2">Tổng tiền</th>
+                <th class="p-2">Trạng thái</th>
+                <th class="p-2">Chi tiết</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var hd in DanhSachHoaDon)
+            {
+                <tr class="border-b">
+                    <td class="p-2">@hd.Id</td>
+                    <td class="p-2">@hd.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td class="p-2">@hd.TongTien.ToString("N0") đ</td>
+                    <td class="p-2">
+                        <span class="badge">@hd.TrangThai</span>
+                    </td>
+                    <td class="p-2">
+                        <button class="btn-view"
+                                @onclick="() => XemChiTiet(hd)">
+                            Xem
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-gray-500">Bạn chưa có đơn hàng nào.</p>
+}
+
+@if (showDetail)
+{
+    <div class="modal-overlay">
+        <div class="modal1">
+            <h3>Chi tiết đơn hàng #@selectedHoaDon?.Id</h3>
+
+            <p><b>Ngày đặt:</b> @selectedHoaDon?.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+            <p><b>Trạng thái:</b> @selectedHoaDon?.TrangThai</p>
+            <p><b>Tổng tiền:</b> @selectedHoaDon?.TongTien.ToString("N0") đ</p>
+
+            <hr />
+
+            <h4>Danh sách món</h4>
+
+            @if (DanhSachMon.Any())
+            {
+                @foreach (var mon in DanhSachMon)
+                {
+                    <div class="item-row">
+                        <div>@mon.Ten</div>
+                        <div>x @mon.SoLuongDat</div>
+                        <div>@mon.Gia.ToString("N0") đ</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Không có dữ liệu</p>
+            }
+
+            <button class="btn-close1"
+                    @onclick="() => showDetail = false">
+                Đóng
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<HoaDon> DanhSachHoaDon = new();
+    private HoaDon? selectedHoaDon;
+    private List<ChiTietMonAnDTO> DanhSachMon = new();
+    private bool showDetail = false;
+
+    private bool _loaded = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _loaded)
+            return;
+
+        _loaded = true;
+
+        var khachHangId = await JS.InvokeAsync<string>(
+            "localStorage.getItem", "KhachHangId");
+
+        if (string.IsNullOrWhiteSpace(khachHangId))
+            return;
+
+        var allHoaDon =
+            await ApiService.GetAsync<List<HoaDon>>("HoaDon") ?? new();
+
+        DanhSachHoaDon = allHoaDon
+            .Where(x => x.KhachHangId == khachHangId)
+            .OrderByDescending(x => x.NgayTao)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task XemChiTiet(HoaDon hoaDon)
+    {
+        selectedHoaDon = hoaDon; 
+
+        var chiTietHoaDon =
+            await ApiService.GetAsync<List<HoaDonChiTietDTO>>("HoaDonChiTiet")
+            ?? new();
+
+        var chiTietMonAn =
+            await ApiService.GetAsync<List<ChiTietMonAnDTO>>("ChiTietMonAn/all")
+            ?? new();
+
+        DanhSachMon.Clear();
+
+        foreach (var ct in chiTietHoaDon.Where(x => x.HoaDonId == hoaDon.Id))
+        {
+            var mon = chiTietMonAn.FirstOrDefault(x => x.Id == ct.ChiTietMonAnId);
+            if (mon == null) continue;
+
+            mon.SoLuongDat = ct.Soluong;
+            DanhSachMon.Add(mon);
+        }
+
+        showDetail = true;
+    }
+}
