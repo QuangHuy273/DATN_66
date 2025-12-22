@@ -17,6 +17,7 @@ namespace API.Models
         [EmailAddress]
         public string? Gmail { get; set; }
         [Phone]
+        [Required]
         public string? Sdt { get; set; }
         public virtual ICollection<DiaChi>? DiaChis { get; set; }
         [JsonIgnore]

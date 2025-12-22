@@ -7,7 +7,7 @@ namespace API.Models
     public class ChiTietMonAn
     {
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; } /*= Guid.NewGuid();*/
         public int Soluong { get; set; }
         [RegularExpression(@"^[\p{L}0-9\s]+$", ErrorMessage = "Không được chứa ký tự đặc biệt")]
         public string? Mota { get; set; }

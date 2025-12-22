@@ -14,11 +14,31 @@
         <input type="text" placeholder="🔍 Tìm sản phẩm..." class="search-box" />
     </div>
     <div class="navbar-right">
+        @* menu tai khoan *@
         @if (!string.IsNullOrWhiteSpace(username))
         {
-            @username
-            <button class="auth-btn logout" @onclick="Logout">Đăng xuất</button>
-        } 
+            <div class="user-menu-wrapper">
+                <span class="username" @onclick="ToggleUserMenu">
+                    👤 @username
+                </span>
+
+                @if (showUserMenu)
+                {
+                    <div class="user-dropdown">
+                        <div class="dropdown-item"
+                             @onclick="GoToOrders">
+                            📦 Đơn hàng của tôi
+                        </div>
+
+                        <div class="dropdown-item logout"
+                             @onclick="Logout">
+                            🚪 Đăng xuất
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
         else
         {
             <button class="auth-btn" @onclick='() => { initialAuthTab = "login"; showAuthModal = true; }'>Đăng nhập</button>
@@ -97,5 +117,20 @@
         }
         
     }
+
+    // menu tài khoản
+    private bool showUserMenu = false;
+
+    private void ToggleUserMenu()
+    {
+        showUserMenu = !showUserMenu;
+    }
+
+    private void GoToOrders()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/donhang"); // trang đơn hàng người dùng
+    }
+
 
 }
