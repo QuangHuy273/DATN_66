@@ -73,10 +73,10 @@
                                             <td>@(string.IsNullOrEmpty(item.Mota) ? "-" : item.Mota)</td>
                                             <td>
                                                 <button class="btn btn-sm btn-info" @onclick="() => EditItem(item)" title="Sửa">
-                                                    <i class="bi bi-pencil"></i>
+                                                    <i class="bi bi-pencil"></i> Sửa
                                                 </button>
                                                 <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item.Id)" title="Xóa">
-                                                    <i class="bi bi-trash"></i>
+                                                    <i class="bi bi-trash"></i> Xóa
                                                 </button>
                                             </td>
                                         </tr>
@@ -229,11 +229,3 @@
     }
 }
 
-<style>
-    .modal-backdrop {
-        z-index: 1040;
-    }
-    .modal {
-        z-index: 1050;
-    }
-</style>

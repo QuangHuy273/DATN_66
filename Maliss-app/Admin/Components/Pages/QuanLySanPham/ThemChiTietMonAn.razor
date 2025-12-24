@@ -21,7 +21,7 @@
     <div class="header-section">
         <h2>
             <i class="bi bi-@(string.IsNullOrEmpty(Id) ? "plus-circle-fill" : "pencil-square")"></i>
-            @(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Sửa Chi Tiết Món Ăn")
+            @(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Chỉnh Sửa Chi Tiết Món Ăn")
         </h2>
         <button class="btn btn-secondary" @onclick="QuayLai" type="button">
             <i class="bi bi-arrow-left"></i> Quay Lại
@@ -30,18 +30,13 @@
 
     @if (isLoading)
     {
-        <div class="loading" style="display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 80px 20px;">
-            <div style="position: relative;">
-                <span class="spinner-border" role="status" style="width: 4rem; height: 4rem; color: #667eea; border-width: 4px;"></span>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px;">
-                    <i class="bi bi-hourglass-split" style="color: #667eea; animation: pulse 1.5s ease-in-out infinite;"></i>
-                </div>
-            </div>
+        <div class="loading" style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 60px 20px;">
+            <span class="spinner-border" role="status" style="width: 3rem; height: 3rem; color: #4f46e5; border-width: 3px;"></span>
             <div style="text-align: center;">
-                <p style="margin: 0; font-size: 18px; font-weight: 700; color: #2d3748; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">
                     Đang tải dữ liệu...
                 </p>
-                <p style="margin: 8px 0 0; font-size: 14px; color: #718096;">Vui lòng chờ trong giây lát</p>
+                <p style="margin: 8px 0 0; font-size: 14px; color: #64748b;">Vui lòng chờ trong giây lát</p>
             </div>
         </div>
     }
@@ -50,12 +45,12 @@
         <EditForm Model="@chiTietMonAn" OnValidSubmit="@LuuChiTietMonAn">
             <DataAnnotationsValidator />
             <div class="form-container">
-                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); padding: 24px; border-radius: 16px; border: 2px solid #e2e8f0; margin-bottom: 28px;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
-                        <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="background: #4f46e5; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
                             <i class="bi bi-info-circle-fill"></i>
                         </span>
-                        <h5 style="margin: 0; font-weight: 700; color: #2d3748; font-size: 17px;">Thông Tin Món Ăn</h5>
+                        <h5 style="margin: 0; font-weight: 600; color: #1e293b; font-size: 16px;">Thông Tin Món Ăn</h5>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
@@ -64,7 +59,7 @@
                                     <i class="bi bi-upc-scan"></i>
                                     Mã Món Ăn
                                 </label>
-                                <InputText id="monAnId" class="form-control" @bind-Value="chiTietMonAn.MonAnId" disabled style="background: #f1f3f5; cursor: not-allowed;" />
+                                <InputText id="monAnId" class="form-control" @bind-Value="chiTietMonAn.MonAnId" disabled style="background: #f1f5f9; cursor: not-allowed; color: #64748b;" />
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -73,7 +68,7 @@
                                     <i class="bi bi-card-heading"></i>
                                     Tên Món Ăn
                                 </label>
-                                <InputText id="ten" class="form-control" @bind-Value="chiTietMonAn.Ten" disabled style="background: #f1f3f5; cursor: not-allowed;" />
+                                <InputText id="ten" class="form-control" @bind-Value="chiTietMonAn.Ten" disabled style="background: #f1f5f9; cursor: not-allowed; color: #64748b;" />
                             </div>
                         </div>
                     </div>
@@ -210,9 +205,9 @@
                     <small class="form-text text-muted">Chọn nhiều ảnh (JPG, PNG, tối đa 5MB mỗi ảnh)</small>
                     @if (chiTietMonAn.DanhSachAnh != null && chiTietMonAn.DanhSachAnh.Any())
                     {
-                        <div class="mt-4 d-flex flex-wrap gap-3" style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 16px; border: 2px dashed #cbd5e0;">
-                            <div style="width: 100%; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">
-                                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                        <div class="mt-3 d-flex flex-wrap gap-3" style="padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                            <div style="width: 100%; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+                                <span style="background: #4f46e5; color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
                                     <i class="bi bi-collection-fill" style="margin-right: 6px;"></i>@chiTietMonAn.DanhSachAnh.Count ảnh
                                 </span>
                             </div>
@@ -220,13 +215,13 @@
                             {
                                 var anh = chiTietMonAn.DanhSachAnh[imgIndex];
                                 var imageNumber = imgIndex + 1;
-                                <div class="position-relative" style="width: 150px; height: 150px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; animation: fadeIn 0.3s ease;">
-                                    <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover; border: none;" title="Click để xem ảnh lớn" />
-                                    <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(102, 126, 234, 0.95); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                <div class="position-relative" style="width: 140px; height: 140px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+                                    <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover; border: 2px solid #e2e8f0;" title="Click để xem ảnh lớn" />
+                                    <div style="position: absolute; bottom: 6px; left: 6px; background: rgba(79, 70, 229, 0.95); color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
                                         #@imageNumber
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 8px; border-radius: 10px; padding: 6px 10px; font-weight: 700; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);" @onclick="async () => await XoaAnhChiTiet(anh.Id)" title="Xóa ảnh này">
-                                        <i class="bi bi-trash-fill"></i>
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 6px; border-radius: 6px; padding: 5px 8px;" @onclick="async () => await XoaAnhChiTiet(anh.Id)" title="Xóa ảnh này">
+                                        <i class="bi bi-trash-fill"></i> Xóa
                                     </button>
                                 </div>
                             }
@@ -234,19 +229,19 @@
                     }
                     @if (isUploadingAnh)
                     {
-                        <div class="mt-3 d-flex align-items-center gap-3" style="padding: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-                            <span class="spinner-border spinner-border-sm" role="status" style="color: #667eea;"></span>
-                            <span style="color: #667eea; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
+                        <div class="mt-3 d-flex align-items-center gap-3" style="padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <span class="spinner-border spinner-border-sm" role="status" style="color: #4f46e5;"></span>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
                         </div>
                     }
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" disabled="@isSaving" style="min-width: 160px;">
+                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
                         @if (isSaving)
                         {
                             <span class="spinner-border spinner-border-sm" role="status"></span>
-                            <span>Đang lưu...</span>
+                            <span>Đang Lưu...</span>
                         }
                         else
                         {
@@ -254,7 +249,7 @@
                             <span>Lưu Thông Tin</span>
                         }
                     </button>
-                    <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving" style="min-width: 120px;">
+                    <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving">
                         <i class="bi bi-x-circle-fill"></i>
                         Hủy Bỏ
                     </button>

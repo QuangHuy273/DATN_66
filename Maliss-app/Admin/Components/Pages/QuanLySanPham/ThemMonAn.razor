@@ -21,7 +21,7 @@
     <div class="header-section">
         <h2>
             <i class="bi bi-@(string.IsNullOrEmpty(Id) ? "plus-circle-fill" : "pencil-square")"></i>
-            @(string.IsNullOrEmpty(Id) ? "Thêm Món Ăn Mới" : "Sửa Món Ăn")
+            @(string.IsNullOrEmpty(Id) ? "Thêm Món Ăn Mới" : "Chỉnh Sửa Món Ăn")
         </h2>
         <button class="btn btn-secondary" @onclick="QuayLai">
             <i class="bi bi-arrow-left"></i> Quay Lại
@@ -70,7 +70,7 @@
                                 }
                             </InputSelect>
                             <button type="button" class="btn btn-outline-success" title="Quản lý thể loại" @onclick="() => showCrudTheLoaiModal = true" style="min-width: 45px;">
-                                <i class="bi bi-plus-circle-fill"></i>
+                                <i class="bi bi-plus-circle-fill"></i> Thêm
                             </button>
                         </div>
                     </div>
@@ -90,7 +90,7 @@
                                 }
                             </InputSelect>
                             <button type="button" class="btn btn-outline-success" title="Quản lý thương hiệu" @onclick="() => showCrudThuongHieuModal = true" style="min-width: 45px;">
-                                <i class="bi bi-plus-circle-fill"></i>
+                                <i class="bi bi-plus-circle-fill"></i> Thêm
                             </button>
                         </div>
                     </div>
@@ -129,38 +129,39 @@
                 <small class="form-text text-muted">Chọn ảnh cho món ăn (JPG, PNG, tối đa 5MB)</small>
                 @if (!string.IsNullOrEmpty(monAn.AnhDaTai))
                 {
-                    <div class="mt-3 d-flex flex-column align-items-start gap-3" style="animation: fadeIn 0.4s ease;">
-                        <div style="position: relative; display: inline-block;">
-                            <img src="@GetImageUrlWithCacheBusting(monAn.AnhDaTai)" alt="Ảnh món ăn" class="img-preview" title="Click để xem ảnh lớn" />
-                            <div style="position: absolute; bottom: 12px; right: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <div class="mt-3 d-flex flex-column align-items-start gap-3">
+                        <!-- SỬA ĐỔI TẠI ĐÂY: Thay style cũ bằng class="main-image-wrapper" -->
+                        <div class="main-image-wrapper">
+                            <img src="@GetImageUrlWithCacheBusting(monAn.AnhDaTai)" alt="Ảnh món ăn" title="Click để xem ảnh lớn" />
+
+                            <!-- Phần Badge "Ảnh Đại Diện" giữ nguyên vì position absolute đã được xử lý ở class cha -->
+                            <div style="position: absolute; bottom: 8px; right: 8px; background: #4f46e5; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                                 <i class="bi bi-star-fill" style="margin-right: 4px;"></i>Ảnh Đại Diện
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-danger" @onclick="XoaAnhMonAn" style="min-width: 120px;">
-                            <i class="bi bi-trash-fill"></i> Xóa ảnh
+                        <button type="button" class="btn btn-sm btn-danger" @onclick="XoaAnhMonAn">
+                            <i class="bi bi-trash-fill"></i> Xóa Ảnh
                         </button>
                     </div>
                 }
                 @if (isUploadingAnhMonAn)
                 {
-                    <div class="mt-3 d-flex align-items-center gap-3" style="padding: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-                        <span class="spinner-border spinner-border-sm" role="status" style="color: #667eea;"></span>
-                        <span style="color: #667eea; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
+                    <div class="mt-3 d-flex align-items-center gap-3" style="padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span class="spinner-border spinner-border-sm" role="status" style="color: #4f46e5;"></span>
+                        <span style="color: #1e293b; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
                     </div>
                 }
             </div>
 
             <hr class="my-4" />
-            <div class="d-flex justify-content-between align-items-center mb-4" style="padding: 24px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 16px; border: 2px solid #e2e8f0; animation: fadeInUp 0.4s ease;">
-                <h4 class="mb-0" style="font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 14px;">
-                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);">
+            <div class="d-flex justify-content-between align-items-center mb-4" style="padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h4 class="mb-0" style="font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; color: #1e293b;">
+                    <span style="background: #4f46e5; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
                         <i class="bi bi-list-check"></i>
                     </span>
-                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                        Chi Tiết Món Ăn
-                    </span>
+                    <span>Chi Tiết Món Ăn</span>
                 </h4>
-                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                <span style="background: #4f46e5; color: white; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;">
                     <i class="bi bi-info-circle-fill" style="margin-right: 6px;"></i>@chiTietMonAns.Count chi tiết
                 </span>
             </div>
@@ -170,9 +171,9 @@
                 {
                     var index = i;
                     <div class="card mb-3 chi-tiet-item">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
-                            <h6 class="mb-0" style="font-size: 16px; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 10px;">
-                                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800;">@(index + 1)</span>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0" style="font-size: 15px; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+                                <span style="background: #4f46e5; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">@(index + 1)</span>
                                 Chi Tiết Món Ăn
                             </h6>
                             <button type="button" class="btn btn-sm btn-danger" @onclick="async () => await XoaChiTiet(index)">
@@ -196,7 +197,7 @@
                                                 }
                                             </InputSelect>
                                             <button type="button" class="btn btn-outline-success" title="Quản lý loại vị" @onclick="() => { selectedChiTietIndex = index; showCrudLoaiViModal = true; }" style="min-width: 45px;">
-                                                <i class="bi bi-plus-circle-fill"></i>
+                                                <i class="bi bi-plus-circle-fill"></i> Thêm
                                             </button>
                                         </div>
                                     </div>
@@ -216,7 +217,7 @@
                                                 }
                                             </InputSelect>
                                             <button type="button" class="btn btn-outline-success" title="Quản lý kích cỡ" @onclick="() => { selectedChiTietIndex = index; showCrudKichCoModal = true; }" style="min-width: 45px;">
-                                                <i class="bi bi-plus-circle-fill"></i>
+                                                <i class="bi bi-plus-circle-fill"></i> Thêm
                                             </button>
                                         </div>
                                     </div>
@@ -238,7 +239,7 @@
                                                 }
                                             </InputSelect>
                                             <button type="button" class="btn btn-outline-success" title="Quản lý nhà cung cấp" @onclick="() => { selectedChiTietIndex = index; showCrudNhaCungCapModal = true; }" style="min-width: 45px;">
-                                                <i class="bi bi-plus-circle-fill"></i>
+                                                <i class="bi bi-plus-circle-fill"></i> Thêm
                                             </button>
                                         </div>
                                     </div>
@@ -258,7 +259,7 @@
                                                 }
                                             </InputSelect>
                                             <button type="button" class="btn btn-outline-success" title="Quản lý nguyên liệu" @onclick="() => { selectedChiTietIndex = index; showCrudNguyenLieuModal = true; }" style="min-width: 45px;">
-                                                <i class="bi bi-plus-circle-fill"></i>
+                                                <i class="bi bi-plus-circle-fill"></i> Thêm
                                             </button>
                                         </div>
                                     </div>
@@ -316,18 +317,24 @@
                                         <small class="form-text text-muted">Chọn nhiều ảnh cho chi tiết món ăn (JPG, PNG, tối đa 5MB mỗi ảnh)</small>
                                         @if (chiTietMonAns[index].DanhSachAnh != null && chiTietMonAns[index].DanhSachAnh.Any())
                                         {
-                                            <div class="mt-4 d-flex flex-wrap gap-3" style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 16px; border: 2px dashed #cbd5e0;">
+                                            <div class="mt-3 d-flex flex-wrap gap-3" style="padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
                                                 @for (int imgIndex = 0; imgIndex < chiTietMonAns[index].DanhSachAnh.Count; imgIndex++)
                                                 {
                                                     var anh = chiTietMonAns[index].DanhSachAnh[imgIndex];
                                                     var imageNumber = imgIndex + 1;
-                                                    <div class="position-relative" style="width: 150px; height: 150px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); transition: all 0.3s ease; animation: fadeIn 0.3s ease;">
-                                                        <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover; border: none;" title="Click để xem ảnh lớn" />
-                                                        <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(102, 126, 234, 0.95); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+
+                                                    <!-- SỬA ĐỔI TẠI ĐÂY: Thay style dài dòng bằng class="thumb-image-wrapper" -->
+                                                    <div class="thumb-image-wrapper">
+                                                        <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" title="Click để xem ảnh lớn" />
+
+                                                        <!-- Số thứ tự ảnh -->
+                                                        <div style="position: absolute; bottom: 6px; left: 6px; background: rgba(79, 70, 229, 0.95); color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
                                                             #@imageNumber
                                                         </div>
-                                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 8px; border-radius: 10px; padding: 6px 10px; font-weight: 700; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);" @onclick="() => XoaAnhChiTiet(index, anh.Id)" title="Xóa ảnh này">
-                                                            <i class="bi bi-trash-fill"></i>
+
+                                                        <!-- Nút xóa -->
+                                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 6px; border-radius: 6px; padding: 5px 8px;" @onclick="() => XoaAnhChiTiet(index, anh.Id)" title="Xóa ảnh này">
+                                                            <i class="bi bi-trash-fill"></i> Xóa
                                                         </button>
                                                     </div>
                                                 }
@@ -335,9 +342,9 @@
                                         }
                                         @if (isUploadingAnhChiTiet[index])
                                         {
-                                            <div class="mt-3 d-flex align-items-center gap-3" style="padding: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-                                                <span class="spinner-border spinner-border-sm" role="status" style="color: #667eea;"></span>
-                                                <span style="color: #667eea; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
+                                            <div class="mt-3 d-flex align-items-center gap-3" style="padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                                <span class="spinner-border spinner-border-sm" role="status" style="color: #4f46e5;"></span>
+                                                <span style="color: #1e293b; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
                                             </div>
                                         }
                                     </div>
@@ -346,17 +353,17 @@
                         </div>
                     </div>
                 }
-                <button type="button" class="btn btn-outline-primary" @onclick="ThemChiTietMoi" style="padding: 16px 32px; font-size: 16px; font-weight: 700; border-width: 2px; border-radius: 14px; margin-top: 8px;">
+                <button type="button" class="btn btn-outline-primary" @onclick="ThemChiTietMoi" style="padding: 12px 24px; font-size: 15px; font-weight: 600; margin-top: 8px;">
                     <i class="bi bi-plus-circle-fill"></i> Thêm Chi Tiết Món Ăn Mới
                 </button>
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary" disabled="@isSaving" style="min-width: 160px;">
+            <div class="form-actions" style="margin: 32px 0;">
+                <button type="submit" class="btn btn-primary" disabled="@isSaving">
                     @if (isSaving)
                     {
                         <span class="spinner-border spinner-border-sm" role="status"></span>
-                        <span>Đang lưu...</span>
+                        <span>Đang Lưu...</span>
                     }
                     else
                     {
@@ -364,7 +371,8 @@
                         <span>Lưu Thông Tin</span>
                     }
                 </button>
-                <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving" style="min-width: 120px;">
+
+                <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving">
                     <i class="bi bi-x-circle-fill"></i>
                     Hủy Bỏ
                 </button>
@@ -1249,3 +1257,41 @@
 {
     <CrudNguyenLieuModal Show="true" OnSuccess="RefreshNguyenLieuDropdown" OnCancel="(()=>showCrudNguyenLieuModal=false)" />
 }
+<style>
+    /* --- CSS xử lý Ảnh --- */
+
+    /* 1. Container cho Ảnh chính (Ảnh đại diện) */
+    .main-image-wrapper {
+        width: 100%; /* Chiếm đầy chiều rộng có thể */
+        max-height: 400px; /* Giới hạn chiều cao tối đa (có thể thay đổi tùy ý) */
+        overflow: hidden; /* Ẩn phần ảnh bị tràn ra ngoài */
+        border-radius: 8px; /* Bo tròn góc cho đẹp */
+        position: relative; /* Cần thiết để hiển thị badge "Ảnh đại diện" đè lên */
+        display: block; /* Hiển thị dưới dạng block */
+        background-color: #eee; /* Màu nền khi chưa có ảnh hoặc ảnh nhỏ */
+    }
+
+        /* Áp dụng cho thẻ img bên trong .main-image-wrapper */
+        .main-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* QUAN TRỌNG: Tự cắt ảnh lớn để vừa khung, giữ tỷ lệ ảnh gốc (không méo) */
+        }
+
+    /* 2. Container cho Ảnh nhỏ (Danh sách ảnh chi tiết) */
+    .thumb-image-wrapper {
+        width: 140px; /* Chiều rộng cố định theo code cũ của bạn */
+        height: 140px; /* Chiều cao cố định để tạo hình vuông */
+        overflow: hidden; /* Ẩn phần thừa */
+        border-radius: 10px; /* Bo góc theo code cũ */
+        position: relative; /* Cần thiết cho các nút xóa và số thứ tự tuyệt đối */
+    }
+
+        /* Áp dụng cho thẻ img bên trong .thumb-image-wrapper */
+        .thumb-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Tương tự: Đảm bảo ảnh lấp đầy khung vuông mà không bị bóp méo */
+            border: none; /* Xóa border cũ nếu có, hoặc để nguyên tùy ý */
+        }
+</style>
