@@ -26,6 +26,7 @@
                     <th>Ảnh</th>
                     <th>Sản phẩm</th>
                     <th>Giá</th>
+                    <th>Tồn kho</th>
                     <th>Số lượng</th>
                     <th>Thành tiền</th>
                     <th>Hành động</th>
@@ -37,6 +38,7 @@
                             .Select((item, index) => (item, index)))
                 {
                     <tr>
+
                         <td>
                             <input type="checkbox"
                                    @bind="item.IsSelected" />
@@ -50,12 +52,18 @@
                 <td>@item.Ten</td>
                 <td>@FormatCurrency(item.Gia)</td>
                 <td>
+                    <span class="@(item.Soluong <= 0 ? "text-danger" : "text-success")">
+                        @item.Soluong
+                    </span>
+                </td>
+                <td>
                     <div class="quantity-control">
                         <button @onclick="() => ChangeQuantity(index, -1)">-</button>
                         <input type="text" value="@item.SoLuongDat" readonly />
                         <button @onclick="() => ChangeQuantity(index, 1)">+</button>
                     </div>
                 </td>
+
                 <td>@FormatCurrency(item.SoLuongDat * item.Gia)</td>
                 <td>
                     <button class="remove-btn" @onclick="@(async () => await RemoveItem(index))">

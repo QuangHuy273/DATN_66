@@ -70,12 +70,22 @@
                         <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")" class="order-img" />
                         <div class="item-info">
                             <div class="order-name">@product.Ten</div>
-                            <div class="order-price">
-                                <span class="old-price">@FormatMoney((int)product.Gia)</span>
-                                <span class="new-price">@FormatMoney((int)product.Gia)</span>
+
+                            <div class="order-code">
+                                Mã: @product.MonAnId
                             </div>
-                            <div class="order-size">Nguyên liệu: @product.NguyenLieu</div>
+
+                            <div class="order-attributes">
+                                <div class="order-size">Vị: <strong>@product.LoaiVi</strong></div>
+                                <div class="order-size">Cỡ: <strong>@product.KichCo</strong></div>
+                                <div class="order-size">Nguyên Liệu: <strong>@product.NguyenLieu</strong></div>
+                            </div>
+
+                            <div class="order-price">
+                                @FormatMoney(product.Gia)
+                            </div>
                         </div>
+
                         <div class="order-qty">
                             <button class="decrease-btn" @onclick="() => DecreaseQuantity(product)">-</button>
                             <input class="qty-input" type="number" value="@product.SoLuongDat" readonly />
@@ -696,10 +706,17 @@
                 Id = item.Id,
                 MonAnId = item.MonAnId,
                 Ten = item.Ten,
+
+                // ✅ GÁN TÊN (QUAN TRỌNG)
+                LoaiVi = item.LoaiVi,
+                KichCo = item.KichCo,
+                NguyenLieu = item.NguyenLieu,
+
+                // ID giữ lại nếu cần backend
                 LoaiViId = item.LoaiViId,
                 KichCoId = item.KichCoId,
-                NhaCungCapId = item.NhaCungCapId,
                 NguyenLieuId = item.NguyenLieuId,
+
                 Gia = item.Gia,
                 GiaGiam = item.GiaGiam,
                 Soluong = item.Soluong,

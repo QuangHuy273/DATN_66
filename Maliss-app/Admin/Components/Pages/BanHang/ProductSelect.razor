@@ -52,26 +52,46 @@
                         .Where(p => IsMatchAllFilters(p))
                         .GroupBy(p => p.Ten))
                 {
+                    var tongTonKho = monAnGroup.Sum(x => x.Soluong);
+
+                    // Nếu muốn ẩn món đã hết hàng hoàn toàn thì mở dòng này
+                    // if (tongTonKho <= 0) { continue; }
+
                     <div class="product-group">
-                        <h4 class="product-title">@monAnGroup.Key</h4>
+                        <h4 class="product-title">
+                            @monAnGroup.Key
+                            <span class="stock-info">(Còn: @tongTonKho)</span>
+                        </h4>
 
                         @foreach (var product in monAnGroup)
                         {
                             <div class="product-select-item">
-                                <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")" class="order-img" alt="@product.Ten" />
+                                <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")"
+                                     class="order-img"
+                                     alt="@product.Ten" />
+
                                 <div class="item-info">
                                     <div class="order-size">Vị: <strong>@product.LoaiVi</strong></div>
                                     <div class="order-size">Cỡ: <strong>@product.KichCo</strong></div>
                                     <div class="order-size">Nguyên Liệu: <strong>@product.NguyenLieu</strong></div>
                                     <div class="order-price">Giá: <strong>@FormatMoney(product.Gia)</strong></div>
                                 </div>
+
                                 <div class="order-qty">
                                     <button @onclick="@(() => ChangeQty(product, -1))">-</button>
                                     <input type="number" value="@product.SoLuongDat" readonly />
                                     <button @onclick="@(() => ChangeQty(product, 1))">+</button>
                                 </div>
-                                <div class="order-total">@FormatMoney(product.Gia * product.SoLuongDat)</div>
-                                <button class="add-btn" @onclick="@(() => AddToOrder(product))">Thêm</button>
+
+                                <div class="order-total">
+                                    @FormatMoney(product.Gia * product.SoLuongDat)
+                                </div>
+
+                                <button class="add-btn"
+                                        disabled="@(product.Soluong <= 0)"
+                                        @onclick="@(() => AddToOrder(product))">
+                                    Thêm
+                                </button>
                             </div>
                         }
                     </div>

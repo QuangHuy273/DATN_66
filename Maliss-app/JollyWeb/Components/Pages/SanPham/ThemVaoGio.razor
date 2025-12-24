@@ -277,7 +277,7 @@
         if (Product == null) return;
 
         IsVisible = true;
-        StateHasChanged(); 
+        StateHasChanged();
 
 
         ChiTietList = await LoadChiTiet(Product.Id);
@@ -290,7 +290,7 @@
         FilteredGia = ChiTietList.OrderBy(x => x.Gia).Select(c => c.Gia).ToList();
         selectedImage = displayedImages.FirstOrDefault();
 
-        StateHasChanged(); 
+        StateHasChanged();
     }
 
 
@@ -349,7 +349,7 @@
         FilteredGia = filtered
             .Select(c => c.GiaGiam > 0 && c.GiaGiam < c.Gia ? c.GiaGiam : c.Gia)
             .Distinct()
-            .OrderBy(g => g) 
+            .OrderBy(g => g)
             .ToList();
 
         // Nếu chọn đầy đủ 3 thuộc tính -> chọn chi tiết chính xác
@@ -495,7 +495,7 @@
         {
             ShowAuthModal("login");
         }
-        
+
     }
     private void ChangeImage(string duongDan)
     {

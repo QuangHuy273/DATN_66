@@ -370,3 +370,34 @@ textarea {
     border: 1px solid #b3d9ff;
     color: #004085;
 }
+.summary-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+    .summary-row span:last-child {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .summary-row.total {
+        border-top: 1px solid #eee;
+        margin-top: 10px;
+        padding-top: 15px;
+        font-weight: 600;
+        font-size: 16px;
+        color: #000;
+    }
+
+        .summary-row.total span:last-child {
+            color: #e74c3c;
+        }
