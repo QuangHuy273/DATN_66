@@ -49,5 +49,41 @@ namespace JollyWeb.Service
             }
         }
 
+        public async Task<List<ChiTietMonAnDTO>> GetActiveDetails(string monAnId)
+        {
+            try
+            {
+                var response = await _httpclient.GetAsync($"ChiTietMonAn/active/{monAnId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<List<ChiTietMonAnDTO>>();
+                    return data ?? new List<ChiTietMonAnDTO>();
+                }
+                return new List<ChiTietMonAnDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<ChiTietMonAnDTO>();
+            }
+        }
+
+        public async Task<List<ChiTietMonAnDTO>> GetAllActiveDetails()
+        {
+            try
+            {
+                var response = await _httpclient.GetAsync("ChiTietMonAn/active");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<List<ChiTietMonAnDTO>>();
+                    return data ?? new List<ChiTietMonAnDTO>();
+                }
+                return new List<ChiTietMonAnDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<ChiTietMonAnDTO>();
+            }
+        }
+
     }
 }

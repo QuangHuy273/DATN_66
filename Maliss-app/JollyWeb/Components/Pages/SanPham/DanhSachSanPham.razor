@@ -51,19 +51,39 @@
 
                 <!-- Cột phải: Danh sách sản phẩm -->
                 <div class="product-grid">
-                    @if (filteredProducts?.Any() == true)
+                    @if (isLoading)
+                    {
+                        <div style="grid-column: 1 / -1;">
+                            <div class="loading-container">
+                                <div class="loading-spinner"></div>
+                                <p>Đang tải sản phẩm...</p>
+                            </div>
+                        </div>
+                    }
+                    else if (filteredProducts?.Any() == true)
                     {
                         @foreach (var product in filteredProducts)
                         {
-
                             <SanPham monAn="product"/>
-                            
                         }
                     }
                     else
                     {
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                            <p style="font-size: 1.5rem; color: #666;">Không tìm thấy sản phẩm nào phù hợp</p>
+                        <div style="grid-column: 1 / -1;">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc; display: block; margin-bottom: 20px;"></i>
+                                <p style="font-size: 1.2rem; color: #666;">
+                                    @(string.IsNullOrWhiteSpace(searchKeyword) && string.IsNullOrEmpty(selectedCategory) && string.IsNullOrEmpty(selectedBrand)
+                                        ? "Chưa có sản phẩm nào"
+                                        : "Không tìm thấy sản phẩm phù hợp với bộ lọc")
+                                </p>
+                                @if (!string.IsNullOrWhiteSpace(searchKeyword) || !string.IsNullOrEmpty(selectedCategory) || !string.IsNullOrEmpty(selectedBrand))
+                                {
+                                    <button class="btn btn-primary" style="margin-top: 20px;" @onclick="ClearFilters">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc
+                                    </button>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
@@ -75,6 +95,7 @@
 @code {
     private List<MonAnDTO> products = new();
     private List<MonAnDTO> filteredProducts = new();
+    private bool isLoading = true;
 
     // Filter properties
     private string searchKeyword = "";
@@ -98,18 +119,40 @@
 
     private async Task LoadProducts()
     {
-        var monAns = await monAnService.GetAll() ?? new();
-        var ctma = await chiTietMonAnService.GetAll() ?? new();
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
 
+            // Sử dụng API chuyên dụng cho khách hàng - chỉ lấy sản phẩm đang hoạt động
+            // API đã lọc sẵn ở backend, không cần lọc lại ở frontend
+            products = await monAnService.GetActiveProducts() ?? new();
 
-        products = monAns
-            .Where(mon => mon.TrangThai == true &&
-                        ctma.Any(c => c.MonAnId == mon.Id 
-                                    && c.TrangThai == true 
-                                    && c.Soluong > 0))
-            .ToList();
+            // Sắp xếp theo tên để hiển thị đẹp hơn
+            products = products.OrderBy(p => p.Ten).ToList();
 
-        InitializeFilterOptions();
+            InitializeFilterOptions();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            products = new();
+            filteredProducts = new();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        searchKeyword = "";
+        selectedCategory = "";
+        selectedBrand = "";
+        priceFilter = maxPrice;
         ApplyFilters();
     }
 

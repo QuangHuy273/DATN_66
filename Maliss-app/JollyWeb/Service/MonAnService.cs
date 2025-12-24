@@ -44,5 +44,41 @@ namespace JollyWeb.Service
                 return default;
             }
         }
+
+        public async Task<List<MonAnDTO>> GetActiveProducts()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("MonAn/active");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<List<MonAnDTO>>();
+                    return data ?? new List<MonAnDTO>();
+                }
+                return new List<MonAnDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<MonAnDTO>();
+            }
+        }
+
+        public async Task<MonAnDTO?> GetActiveProductById(string id)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"MonAn/active/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<MonAnDTO>();
+                    return data;
+                }
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
     }
 }

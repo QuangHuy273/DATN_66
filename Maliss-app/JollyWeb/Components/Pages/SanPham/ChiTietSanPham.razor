@@ -53,131 +53,205 @@
 
                     <!-- Thông tin -->
                     <div class="product-info">
+                        <!-- TÊN SẢN PHẨM -->
                         <h2 class="detail-title">@ProductName</h2>
 
-                        <!-- Giá -->
-                        @if (selectedChiTiet != null)
+                        <!-- MÃ SẢN PHẨM -->
+                        @if (!string.IsNullOrEmpty(ProductCode))
                         {
-                            <div class="detail-price">
+                            <div class="product-code">
+                                Mã sản phẩm: <span>@ProductCode</span>
+                            </div>
+                        }
+
+                        <!-- GIÁ -->
+                        <div class="price-section">
+                            @if (selectedChiTiet != null)
+                            {
                                 @if (selectedChiTiet.GiaGiam > 0 && selectedChiTiet.GiaGiam < selectedChiTiet.Gia)
                                 {
-                                    <span class="original-price">@selectedChiTiet.Gia.ToString("N0")₫</span>
-                                    <span class="sale-price">@selectedChiTiet.GiaGiam.ToString("N0")₫</span>
+                                    <div class="price-wrapper">
+                                        <span class="current-price">@selectedChiTiet.GiaGiam.ToString("N0")₫</span>
+                                        <span class="original-price">@selectedChiTiet.Gia.ToString("N0")₫</span>
+                                        <span class="discount-badge">
+                                            -@(((selectedChiTiet.Gia - selectedChiTiet.GiaGiam) / selectedChiTiet.Gia * 100).ToString("0"))%
+                                        </span>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span>Giá: @selectedChiTiet.Gia.ToString("N0")₫</span>
+                                    <span class="current-price">@selectedChiTiet.Gia.ToString("N0")₫</span>
                                 }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="detail-price">
-                                <span>Giá từ: @FilteredGia.FirstOrDefault().ToString("N0")₫ đến @FilteredGia.LastOrDefault().ToString("N0")₫</span>
-                            </div>
-                        }
+                            }
+                            else
+                            {
+                                <div class="price-range">
+                                    <span class="price-label">Giá:</span>
+                                    <span class="current-price">@FilteredGia.FirstOrDefault().ToString("N0")₫</span>
+                                    @if (FilteredGia.FirstOrDefault() != FilteredGia.LastOrDefault())
+                                    {
+                                        <span class="price-separator">-</span>
+                                        <span class="current-price">@FilteredGia.LastOrDefault().ToString("N0")₫</span>
+                                    }
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(ProductDescription))
+                            {
+                                <div class="product-description-section">
+                                    <h3 class="description-title">Mô tả sản phẩm</h3>
+                                    <p class="detail-description">@ProductDescription</p>
+                                </div>
+                            }
+                        </div>
 
-                        <!-- Mô tả -->
-                        @if (!string.IsNullOrEmpty(ProductDescription))
-                        {
-                            <p class="detail-description">@ProductDescription</p>
-                        }
-
-                        <!-- Lựa chọn chi tiết -->
+                        <!-- Lựa chọn chi tiết - BUTTON CHIPS -->
                         <div class="options-container">
-                        <!-- Hương vị -->
-                        <div class="option-group flavor-group">
-                            <label class="option-label">
-                                <span class="emoji">📂</span>
-                                Hương vị:
-                            </label>
-                            <div class="select-wrapper">
-                                <select class="custom-select flavor-select" @bind-Value="selectedLoaiVi" @bind-Value:event="onchange">
-                                    <option value="">-- Chọn hương vị --</option>
-                                    @foreach (var v in FilteredLoaiVi)
-                                    {
-                                        <option value="@v">@v</option>
-                                    }
-                                </select>
-                                <div class="select-arrow">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6,9 12,15 18,9"></polyline>
-                                    </svg>
+                            <!-- Hương vị -->
+                            @if (FilteredLoaiVi?.Any() == true)
+                            {
+                                <div class="option-group">
+                                    <label class="option-label">
+                                        <span class="emoji">🍹</span>
+                                        Hương vị
+                                    </label>
+                                    <div class="option-chips flavor-chips">
+                                        @foreach (var flavor in FilteredLoaiVi)
+                                        {
+                                            <button type="button" 
+                                                    class="chip @(selectedLoaiVi == flavor ? "active" : "")"
+                                                    @onclick="() => SelectLoaiVi(flavor)">
+                                                @flavor
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
+                            }
+
+                            <!-- Kích cỡ -->
+                            @if (FilteredKichCo?.Any() == true)
+                            {
+                                <div class="option-group">
+                                    <label class="option-label">
+                                        <span class="emoji">📏</span>
+                                        Kích cỡ
+                                    </label>
+                                    <div class="option-chips size-chips">
+                                        @foreach (var size in FilteredKichCo)
+                                        {
+                                            <button type="button" 
+                                                    class="chip @(selectedKichCo == size ? "active" : "")"
+                                                    @onclick="() => SelectKichCo(size)">
+                                                @size
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Nguyên liệu -->
+                            @if (FilteredNguyenLieu?.Any() == true)
+                            {
+                                <div class="option-group">
+                                    <label class="option-label">
+                                        <span class="emoji">🧋</span>
+                                        Nguyên liệu
+                                    </label>
+                                    <div class="option-chips material-chips">
+                                        @foreach (var material in FilteredNguyenLieu)
+                                        {
+                                            <button type="button" 
+                                                    class="chip @(selectedNguyenLieu == material ? "active" : "")"
+                                                    @onclick="() => SelectNguyenLieu(material)">
+                                                @material
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
 
-                        <!-- Kích cỡ -->
-                        <div class="option-group size-group">
-                            <label class="option-label">
-                                <span class="emoji">📏</span>
-                                Kích cỡ:
-                            </label>
-                            <div class="select-wrapper">
-                                <select class="custom-select size-select" @bind-Value="selectedKichCo" @bind-Value:event="onchange">
-                                    <option value="">-- Chọn kích cỡ --</option>
-                                    @foreach (var s in FilteredKichCo)
-                                    {
-                                        <option value="@s">@s</option>
-                                    }
-                                </select>
-                                <div class="select-arrow">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6,9 12,15 18,9"></polyline>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Nguyên liệu -->
-                        <div class="option-group material-group">
-                            <label class="option-label">
-                                <span class="emoji">📦</span>
-                                Nguyên liệu:
-                            </label>
-                            <div class="select-wrapper">
-                                <select class="custom-select material-select" @bind-Value="selectedNguyenLieu" @bind-Value:event="onchange">
-                                    <option value="">-- Chọn nguyên liệu --</option>
-                                    @foreach (var p in FilteredNguyenLieu)
-                                    {
-                                        <option value="@p">@p</option>
-                                    }
-                                </select>
-                                <div class="select-arrow">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6,9 12,15 18,9"></polyline>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                        <!-- Số lượng -->
-                        @if (selectedChiTiet != null)
-                        {
-                            <div class="quantity-selector">
-                                <label>Số lượng:</label>
+                        <!-- Số lượng - LUÔN HIỂN THỊ -->
+                        <div class="quantity-section">
+                            <label class="quantity-label">Số lượng</label>
+                            <div class="quantity-and-stock">
                                 <div class="quantity-controls">
-                                    <button type="button" @onclick="DecreaseQuantity" disabled="@(selectedQuantity <= 1)">-</button>
-                                    <input type="number" @bind="selectedQuantity" min="1" max="@selectedChiTiet.Soluong" />
-                                    <button type="button" @onclick="IncreaseQuantity" disabled="@(selectedQuantity >= selectedChiTiet.Soluong)">+</button>
+                                    <button type="button" 
+                                            class="quantity-btn"
+                                            @onclick="DecreaseQuantity" 
+                                            disabled="@(selectedQuantity <= 1 || selectedChiTiet == null)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </button>
+                                    <input type="number" 
+                                           class="quantity-input"
+                                           @bind="selectedQuantity" 
+                                           min="1" 
+                                           max="@(selectedChiTiet?.Soluong ?? 999)"
+                                           disabled="@(selectedChiTiet == null)" />
+                                    <button type="button" 
+                                            class="quantity-btn"
+                                            @onclick="IncreaseQuantity" 
+                                            disabled="@(selectedChiTiet == null || selectedQuantity >= selectedChiTiet.Soluong)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </button>
                                 </div>
-                                <span class="stock-info">(@selectedChiTiet.Soluong có sẵn)</span>
-                            </div>
-
-                            <button class="add-to-cart"
-                                    @onclick="AddToCart"
-                                    disabled="@(!selectedChiTiet.TrangThai || selectedChiTiet.Soluong <= 0)">
-                                @if (selectedChiTiet.TrangThai && selectedChiTiet.Soluong > 0)
+                                @if (selectedChiTiet != null)
                                 {
-                                    <text>🛒 Thêm vào giỏ</text>
+                                    <span class="stock-info">
+                                        @if (selectedChiTiet.Soluong > 20)
+                                        {
+                                            <span class="stock-status in-stock">Còn hàng</span>
+                                        }
+                                        else if (selectedChiTiet.Soluong > 0)
+                                        {
+                                            <span class="stock-status low-stock">Chỉ còn @selectedChiTiet.Soluong sản phẩm</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="stock-status out-of-stock">Hết hàng</span>
+                                        }
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Nút hành động - LUÔN HIỂN THỊ -->
+                        <div class="action-buttons">
+                            <button class="btn-add-to-cart"
+                                    @onclick="AddToCart"
+                                    disabled="@(selectedChiTiet == null || !selectedChiTiet.TrangThai || selectedChiTiet.Soluong <= 0)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="9" cy="21" r="1"></circle>
+                                    <circle cx="20" cy="21" r="1"></circle>
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                </svg>
+                                @if (selectedChiTiet == null)
+                                {
+                                    <span>Vui lòng chọn phân loại</span>
+                                }
+                                else if (!selectedChiTiet.TrangThai || selectedChiTiet.Soluong <= 0)
+                                {
+                                    <span>Hết hàng</span>
                                 }
                                 else
                                 {
-                                    <text>❌ Hết hàng</text>
+                                    <span>Thêm vào giỏ hàng</span>
                                 }
                             </button>
-                        }
+                            
+                            <button class="btn-buy-now"
+                                    @onclick="BuyNow"
+                                    disabled="@(selectedChiTiet == null || !selectedChiTiet.TrangThai || selectedChiTiet.Soluong <= 0)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                Mua ngay
+                            </button>
+                        </div>
 
                     </div>
                 </div>
@@ -201,7 +275,7 @@
 
     private List<ChiTietMonAnDTO> ChiTietList = new();
     private ChiTietMonAnDTO? selectedChiTiet ;
-
+    private string? ProductCode;
     private string? _selectedLoaiVi;
     private string? selectedLoaiVi
     {
@@ -281,6 +355,7 @@
                 var first = ChiTietList.First();
                 ProductName = first.Ten;
                 ProductDescription = first.Mota;
+                ProductCode = first.MonAnId;
 
                 FilteredLoaiVi = ChiTietList.Select(c => c.LoaiVi).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
                 FilteredKichCo = ChiTietList.Select(c => c.KichCo).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
@@ -301,6 +376,24 @@
         }
     }
 
+
+    // Hàm chọn loại vị
+    private void SelectLoaiVi(string loaiVi)
+    {
+        selectedLoaiVi = loaiVi;
+    }
+
+    // Hàm chọn kích cỡ
+    private void SelectKichCo(string kichCo)
+    {
+        selectedKichCo = kichCo;
+    }
+
+    // Hàm chọn nguyên liệu
+    private void SelectNguyenLieu(string nguyenLieu)
+    {
+        selectedNguyenLieu = nguyenLieu;
+    }
 
     private void OnFilterChanged(ChangeEventArgs e)
     {
@@ -487,6 +580,19 @@
     private void ChangeImage(string duongDan)
     {
         selectedImage = duongDan;
+    }
+
+    // Hàm mua ngay
+    private async Task BuyNow()
+    {
+        if (selectedChiTiet == null) return;
+        
+        // Thêm vào giỏ hàng trước
+        await AddToCart();
+        
+        // Chuyển hướng đến trang giỏ hàng hoặc thanh toán
+        // TODO: Implement navigation to checkout page
+        await JSRuntime.InvokeVoidAsync("alert", "Chức năng mua ngay đang được phát triển!");
     }
 
 }

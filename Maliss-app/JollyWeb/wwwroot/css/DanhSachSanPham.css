@@ -1,180 +1,380 @@
-﻿.container1 {
-    max-width: 1200px;
+﻿/* ===== CONTAINER CHÍNH - RESPONSIVE ===== */
+.container1 {
+    max-width: 1320px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 24px;
 }
 
+/* ===== TIÊU ĐỀ SECTION - HIỆN ĐẠI & NỔI BẬT ===== */
 .section-title {
     text-align: center;
-    font-size: 3rem;
+    font-size: 2.5rem;
     margin-bottom: 3rem;
-    color: #333;
+    color: #222222;
     position: relative;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
+    /* Gạch dưới gradient hiện đại */
     .section-title::after {
         content: '';
         position: absolute;
-        bottom: -10px;
+        bottom: -12px;
         left: 50%;
         transform: translateX(-50%);
-        width: 100px;
+        width: 80px;
         height: 4px;
-        background: linear-gradient(45deg, #ff6b6b, #ffd93d);
-        border-radius: 2px;
+        background: linear-gradient(90deg, #ee4d2d 0%, #ff7337 100%);
+        border-radius: 4px;
     }
 
+/* ===== GRID SẢN PHẨM - LAYOUT LINH HOẠT ===== */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 0;
 }
 
-@@media (max-width: 900px) {
+/* Responsive cho các màn hình khác nhau */
+@media (min-width: 1400px) {
+    .product-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (max-width: 600px) {
     .product-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 }
 
 
+/* ===== LAYOUT TỔNG - SIDEBAR + CONTENT ===== */
 .product-layout {
     display: flex;
-    gap: 40px;
-    margin-top: 40px;
-    align-items: stretch;
-    margin-bottom:30px;
+    gap: 32px;
+    margin-top: 48px;
+    align-items: flex-start;
+    margin-bottom: 48px;
 }
 
+/* ===== BỘ LỌC - SIDEBAR HIỆN ĐẠI ===== */
 .product-filters {
     flex: 0 0 280px;
-    background: white;
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
     height: fit-content;
     position: sticky;
     top: 100px;
+    transition: box-shadow 0.3s ease;
 }
 
-    .product-filters h3 {
-        font-size: 1.5rem;
-        margin-bottom: 20px;
-        color: #ff6b6b;
+    .product-filters:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
 
+    .product-filters h3 {
+        font-size: 1.375rem;
+        margin-bottom: 24px;
+        color: #222222;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f5f5f5;
+    }
+
+        .product-filters h3::before {
+            content: '🔍';
+            font-size: 1.25rem;
+        }
+
+/* ===== NHÓM BỘ LỌC - FORM CONTROLS ===== */
 .filter-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
     .filter-group label {
         display: block;
-        font-weight: bold;
-        margin-bottom: 5px;
-        color: #333;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333333;
+        font-size: 0.9375rem;
+        letter-spacing: 0.3px;
     }
 
     .filter-group input[type="text"],
     .filter-group select {
         width: 100%;
-        padding: 10px;
+        padding: 12px 14px;
         border-radius: 10px;
-        border: 1px solid #ccc;
-        font-size: 1rem;
+        border: 1px solid #e0e0e0;
+        font-size: 0.9375rem;
         box-sizing: border-box;
+        transition: all 0.3s ease;
+        background: #fafafa;
+        color: #333333;
+        font-weight: 400;
     }
 
+        .filter-group input[type="text"]:hover,
+        .filter-group select:hover {
+            border-color: #cccccc;
+            background: #ffffff;
+        }
+
+        .filter-group input[type="text"]:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #ee4d2d;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.1);
+        }
+
+        .filter-group input[type="text"]::placeholder {
+            color: #999999;
+        }
+
+    /* Range slider - Hiện đại */
     .filter-group input[type="range"] {
         width: 100%;
         height: 6px;
-        background: linear-gradient(90deg, #6bcf7f 0%, #ffd93d 100%);
+        background: linear-gradient(90deg, #e0e0e0 0%, #e0e0e0 100%);
         border-radius: 6px;
         outline: none;
         -webkit-appearance: none;
         appearance: none;
-        margin-top: 8px;
-        margin-bottom: 4px;
-        transition: background 0.3s;
+        margin-top: 12px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
     }
 
         .filter-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: #ff6b6b;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 8px rgba(255,107,107,0.2);
+            background: #ee4d2d;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(238, 77, 45, 0.3);
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
         }
 
+        .filter-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 12px rgba(238, 77, 45, 0.4);
+        }
+
+        .filter-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ee4d2d;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(238, 77, 45, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 12px rgba(238, 77, 45, 0.4);
+        }
+
+/* Label hiển thị giá */
 #priceLabel {
     display: block;
-    margin-top: 8px;
-    color: #555;
-    font-size: 0.9rem;
+    margin-top: 10px;
+    color: #ee4d2d;
+    font-size: 0.9375rem;
+    font-weight: 600;
 }
 
+/* ===== ĐIỀU CHỈNH SỐ LƯỢNG - MODERN STYLE ===== */
 .quantity-controls {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .quantity-btn {
-    background: #ff6b6b;
-    color: white;
+    background: linear-gradient(135deg, #ee4d2d 0%, #ff7337 100%);
+    color: #ffffff;
     border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 1.125rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(238, 77, 45, 0.2);
 }
 
     .quantity-btn:hover {
-        background: #ff5252;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(238, 77, 45, 0.3);
     }
 
+    .quantity-btn:active {
+        transform: translateY(0);
+    }
+
+    .quantity-btn:disabled {
+        background: linear-gradient(135deg, #cccccc 0%, #b3b3b3 100%);
+        cursor: not-allowed;
+        opacity: 0.6;
+        box-shadow: none;
+    }
+
+        .quantity-btn:disabled:hover {
+            transform: none;
+        }
+
 .quantity-display {
-    font-weight: bold;
-    font-size: 1.2rem;
-    min-width: 30px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    min-width: 40px;
     text-align: center;
+    color: #222222;
 }
 
+/* ===== TRẠNG THÁI HẾT HÀNG ===== */
 .out-of-stock {
-    opacity: 0.6;
+    opacity: 0.5;
+    position: relative;
 }
+
+    .out-of-stock::after {
+        content: 'Hết hàng';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.75);
+        color: #ffffff;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
 
 .stock-info {
-    font-size: 0.9rem;
-    color: #666;
-    margin-bottom: 10px;
+    font-size: 0.875rem;
+    color: #666666;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    border-left: 3px solid #ee4d2d;
 }
 
-@@media (max-width: 768px) {
-    .product-layout {   
-        flex-direction: column;
+/* ===== RESPONSIVE - TỐI ƯU CHO MỌI THIẾT BỊ ===== */
+@media (max-width: 1024px) {
+    .container1 {
+        padding: 0 20px;
+    }
+
+    .product-layout {
+        gap: 24px;
     }
 
     .product-filters {
-        margin-bottom: 30px;
+        flex: 0 0 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container1 {
+        padding: 0 16px;
+    }
+
+    .product-layout {
+        flex-direction: column;
+        margin-top: 32px;
+        margin-bottom: 32px;
+    }
+
+    .product-filters {
+        flex: 1 1 auto;
+        width: 100%;
+        margin-bottom: 24px;
         position: static;
+        top: auto;
     }
 
     .section-title {
         font-size: 2rem;
+        margin-bottom: 2rem;
     }
 
     .product-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-title {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title::after {
+        width: 60px;
+        height: 3px;
+    }
+
+    .product-filters {
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .product-filters h3 {
+        font-size: 1.25rem;
+        margin-bottom: 20px;
+    }
+
+    .filter-group {
+        margin-bottom: 20px;
+    }
+
+    .quantity-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+
+    .quantity-display {
+        font-size: 1.125rem;
+        min-width: 36px;
     }
 }

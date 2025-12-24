@@ -12,6 +12,7 @@
             {
                 @GetProductEmoji(monAn.TheLoai)
             }
+
         </div>
         <h3>@monAn.Ten</h3>
         <p>@monAn.ThuongHieu</p>
@@ -40,10 +41,10 @@
     {
         return category switch
         {
-            "Đồ ăn vặt" => "🍕",
-            "Thức uống" => "🥤",
-            "Đồ ngọt" => "🍭",
-            _ => "🍴"
+            "Đồ ăn vặt" => "",
+            "Thức uống" => "",
+            "Đồ ngọt" => "",
+            _ => ""
         };
     }
     private async Task Info(MonAnDTO product)
@@ -51,3 +52,4 @@
         Nav.NavigateTo($"/ChiTietSanPham/{product.Id}");
     }
 }
+
