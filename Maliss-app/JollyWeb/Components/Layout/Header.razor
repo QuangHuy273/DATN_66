@@ -1,5 +1,54 @@
 ﻿@inject IJSRuntime JS
+<style>
+    .user-dropdown-wrapper {
+        position: relative;
+        display: inline-block;
+    }
 
+    .user-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 6px 10px;
+    }
+
+    .user-dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        width: 200px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        list-style: none;
+        padding: 8px 0;
+        margin-top: 6px;
+        z-index: 1000;
+    }
+
+        .user-dropdown-menu li {
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .user-dropdown-menu li:hover {
+                background: #f5f5f5;
+            }
+
+        .user-dropdown-menu .divider {
+            height: 1px;
+            background: #eee;
+            margin: 6px 0;
+        }
+
+        .user-dropdown-menu .logout {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+</style>
 <div class="navbar-content">
     <div class="navbar-left">
         <div class="logo" @onclick='() => Navigation.NavigateTo("/")'><img src="https://github.com/khai520/SD_47_Jolly/blob/main/Img/logo_DoAnVat.png?raw=true" width="50px" alt="Alternate Text" /></div>
@@ -17,24 +66,25 @@
         @* menu tai khoan *@
         @if (!string.IsNullOrWhiteSpace(username))
         {
-            <div class="user-menu-wrapper">
-                <span class="username" @onclick="ToggleUserMenu">
-                    👤 @username
-                </span>
+            <div class="user-dropdown-wrapper">
+                <button class="user-btn" @onclick="ToggleUserMenu">
+                    👤 @username ▾
+                </button>
 
                 @if (showUserMenu)
                 {
-                    <div class="user-dropdown">
-                        <div class="dropdown-item"
-                             @onclick="GoToOrders">
+                    <ul class="user-dropdown-menu">
+                        <li @onclick="GoToProfile">
+                            👤 Thông tin khách hàng
+                        </li>
+                        <li @onclick="GoToOrders">
                             📦 Đơn hàng của tôi
-                        </div>
-
-                        <div class="dropdown-item logout"
-                             @onclick="Logout">
+                        </li>
+                        <li class="divider"></li>
+                        <li class="logout" @onclick="Logout">
                             🚪 Đăng xuất
-                        </div>
-                    </div>
+                        </li>
+                    </ul>
                 }
             </div>
         }
@@ -130,6 +180,11 @@
     {
         showUserMenu = false;
         Navigation.NavigateTo("/donhang"); // trang đơn hàng người dùng
+    }
+    private void GoToProfile()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/hoso");
     }
 
 

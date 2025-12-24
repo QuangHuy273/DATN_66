@@ -6,6 +6,7 @@ using API.Models.DTO;
 using API.Repository.IRepository;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ViewAPI.Controllers
 {
@@ -169,6 +170,30 @@ namespace ViewAPI.Controllers
             }
 
             return Ok("Xóa khách hàng thành công");
+        }
+
+        [HttpGet("khachhang/{id}/profile")]
+        public async Task<IActionResult> GetProfileByKhachHangId(string id)
+        {
+            var result = await _context.khachHangs
+                .Where(kh => kh.Id == id)
+                .Select(kh => new KhachHangDTO
+                {
+                    Id = kh.Id,
+                    NguoiDungId = kh.NguoiDungId,
+
+                    Ho = kh.NguoiDung.Ho,
+                    Ten = kh.NguoiDung.Ten,
+                    Gmail = kh.NguoiDung.Gmail,
+                    Sdt = kh.NguoiDung.Sdt,
+                    NgaySinh = kh.NguoiDung.NgaySinh
+                })
+                .FirstOrDefaultAsync();
+
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
         }
 
 

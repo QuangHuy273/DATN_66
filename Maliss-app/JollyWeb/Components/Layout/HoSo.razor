@@ -1,0 +1,123 @@
+﻿@page "/hoso"
+@inject IKhachHangService KhachHangService
+@inject IJSRuntime JS
+<link href="css/HoSo.css" rel="stylesheet" />
+
+<div class="profile-page">
+    <div class="profile-container">
+
+        <!-- SIDEBAR -->
+        <aside class="profile-sidebar">
+            <div class="avatar-wrapper">
+                <img src="@AvatarPreview" class="avatar" />
+                <label class="change-avatar">
+                    Đổi ảnh
+                    <InputFile OnChange="OnAvatarChanged" hidden />
+                </label>
+            </div>
+
+            <p class="username">
+                @($"{hoSoModel.Ho} {hoSoModel.Ten}")
+            </p>
+
+            <ul>
+                <li class="active">Hồ sơ</li>
+                <li>Địa chỉ</li>
+                <li>Đơn mua</li>
+                <li>Phiếu giảm giá</li>
+                <li>Đổi mật khẩu</li>
+            </ul>
+        </aside>
+
+        <!-- CONTENT -->
+        <section class="profile-content">
+            <h2>Hồ sơ của tôi</h2>
+
+            <div class="form-group">
+                <label>Họ</label>
+                <input @bind="hoSoModel.Ho" />
+            </div>
+
+            <div class="form-group">
+                <label>Tên</label>
+                <input @bind="hoSoModel.Ten" />
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input @bind="hoSoModel.Gmail" />
+            </div>
+
+            <div class="form-group">
+                <label>Số điện thoại</label>
+                <input @bind="hoSoModel.Sdt" />
+            </div>
+
+            <div class="form-group">
+                <label>Ngày sinh</label>
+                <input type="date" @bind="hoSoModel.NgaySinh" />
+            </div>
+
+            <button class="btn-save" @onclick="UpdateHoSo">
+                Lưu
+            </button>
+        </section>
+
+
+    </div>
+</div>
+
+
+
+@code {
+    private KhachHangDTO hoSoModel = new();
+    private bool _loaded = false;
+
+    // Avatar
+    string AvatarPreview = "https://i.pravatar.cc/100";
+    IBrowserFile? selectedAvatar;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _loaded)
+            return;
+
+        _loaded = true;
+
+        var idKh = await JS.InvokeAsync<string>(
+            "localStorage.getItem", "KhachHangId");
+
+        if (string.IsNullOrWhiteSpace(idKh))
+            return;
+
+        var data = await KhachHangService.GetProfile(idKh);
+
+        if (data != null)
+        {
+            hoSoModel = data;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateHoSo()
+    {
+        var ok = await KhachHangService.Update(hoSoModel);
+
+        if (ok)
+            await JS.InvokeVoidAsync("alert", "Cập nhật hồ sơ thành công!");
+        else
+            await JS.InvokeVoidAsync("alert", "Cập nhật thất bại!");
+    }
+
+    async Task OnAvatarChanged(InputFileChangeEventArgs e)
+    {
+        selectedAvatar = e.File;
+
+        using var stream = selectedAvatar.OpenReadStream(5 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+
+        AvatarPreview =
+            $"data:{selectedAvatar.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+    }
+}

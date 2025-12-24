@@ -29,5 +29,51 @@ namespace JollyWeb.Service
                 return new List<KhachHangDTO>();
             }
         }
+        public async Task<KhachHangDTO?> GetById(string id)
+        {
+            try
+            {
+                var response = await _httpclient.GetAsync($"KhachHang/{id}");
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                return await response.Content.ReadFromJsonAsync<KhachHangDTO>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        public async Task<bool> Update(KhachHangDTO dto)
+        {
+            try
+            {
+                var response = await _httpclient.PutAsJsonAsync("KhachHang/update", dto);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        public async Task<bool> Delete(string id)
+        {
+            var response = await _httpclient.DeleteAsync($"KhachHang/delete/{id}");
+            return response.IsSuccessStatusCode;
+        }
+        public async Task<KhachHangDTO?> GetProfile(string khachHangId)
+        {
+            var response = await _httpclient.GetAsync(
+    $"KhachHang/khachhang/{khachHangId}/profile");
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await response.Content.ReadFromJsonAsync<KhachHangDTO>();
+        }
+    
+
     }
 }

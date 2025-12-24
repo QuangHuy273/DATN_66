@@ -28,15 +28,24 @@
                 ErrorMessage = "Tài khoản hoặc mật khẩu không đúng!";
                 return;
             }
-            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangId", user.Id);
-            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangRole", user.Quyen);
-            await JS.InvokeVoidAsync("localStorage.setItem", "KhachHangUserName", user.UserName);
-            nav.NavigateTo(nav.Uri, forceLoad: true);
+
+            // ✅ LƯU ĐÚNG ID KHÁCH HÀNG
+            await JS.InvokeVoidAsync("localStorage.setItem",
+                "KhachHangId", user.Id);
+
+            await JS.InvokeVoidAsync("localStorage.setItem",
+                "KhachHangRole", user.Quyen);
+
+            await JS.InvokeVoidAsync("localStorage.setItem",
+                "KhachHangUserName", user.UserName);
+
+            nav.NavigateTo("/", forceLoad: true);
         }
         catch (Exception ex)
         {
             ErrorMessage = "Lỗi đăng nhập: " + ex.Message;
         }
     }
+
 
 }
