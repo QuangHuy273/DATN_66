@@ -11,48 +11,14 @@
 
 <h2 class="text-xl font-semibold mb-4">Quản lý khách hàng</h2>
 
-<!-- Hàng nút -->
-<div class="mb-3 d-flex justify-content-between align-items-center">
-    <!-- Trái -->
-    <button class="btn btn-primary" @onclick="ToggleFilter">
-        🔍 Lọc
-    </button>
+<div class="search-row">
+    <input @bind="TuKhoa" @bind:event="oninput" placeholder="Tìm kiếm..." />
+    <button @onclick="TaiLai">Tải lại</button>
 
-    <!-- Phải -->
-    <button class="btn-action" @onclick="() => showAdd = true">
+    <button class="btn-action ml-2" @onclick="() => showAdd = true">
         + Thêm khách hàng
     </button>
 </div>
-
-@if (showFilter)
-{
-    <div class="search-row row g-2 p-3 border rounded bg-light mb-3">
-        <div class="col">
-            <input class="form-control" placeholder="Tên" @bind="FilterTen" />
-        </div>
-        <div class="col">
-            <input class="form-control" placeholder="SĐT" @bind="FilterSdt" />
-        </div>
-        <div class="col">
-            <input class="form-control" placeholder="Email" @bind="FilterEmail" />
-        </div>
-        <div class="col">
-            <input class="form-control" placeholder="Mã KH" @bind="FilterMa" />
-        </div>
-        <div class="col">
-            <input type="date" class="form-control" @bind="FilterNgaySinh" />
-        </div>
-        <div class="col-auto">
-            <button class="btn btn-primary" @onclick="TaiLai">Áp dụng</button>
-            <button class="btn btn-warning ms-2" @onclick="ResetFilter">Reset</button>
-        </div>
-    </div>
-}
-
-
-
-
-
 
 
 
@@ -325,8 +291,6 @@
 
 
 
-
-
 @code {
     private List<HoaDon> DanhSachHoaDon;
     private List<KhachHangDTO> DanhSachKhachHang = new();
@@ -342,14 +306,6 @@
 
     private bool showView = false;
     private KhachHangDTO viewModel = new();
-    private bool showFilter = false;
-
-    private string FilterTen;
-    private string FilterSdt;
-    private string FilterEmail;
-    private string FilterMa;
-    private DateTime? FilterNgaySinh;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -360,45 +316,14 @@
     {
         DanhSachKhachHang = await KhachHangService.GetAll();
 
-        if (!string.IsNullOrWhiteSpace(FilterTen))
+        if (!string.IsNullOrEmpty(TuKhoa))
         {
             DanhSachKhachHang = DanhSachKhachHang
                 .Where(kh => ($"{kh.Ho} {kh.Ten}")
-                    .Contains(FilterTen, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(FilterSdt))
-        {
-            DanhSachKhachHang = DanhSachKhachHang
-                .Where(kh => kh.Sdt != null &&
-                             kh.Sdt.Contains(FilterSdt))
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(FilterEmail))
-        {
-            DanhSachKhachHang = DanhSachKhachHang
-                .Where(kh => kh.Gmail != null &&
-                             kh.Gmail.Contains(FilterEmail, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(FilterMa))
-        {
-            DanhSachKhachHang = DanhSachKhachHang
-                .Where(kh => kh.Id.Contains(FilterMa))
-                .ToList();
-        }
-
-        if (FilterNgaySinh.HasValue)
-        {
-            DanhSachKhachHang = DanhSachKhachHang
-                .Where(kh => kh.NgaySinh.Date == FilterNgaySinh.Value.Date)
+                    .Contains(TuKhoa, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }
-
     private KhachHangDTO selectedCustomer;
 
     private void XemKhachHang(string id)
@@ -413,16 +338,16 @@
         if (kh != null)
         {
             editModel = new KhachHangDTO
-                {
-                    Id = kh.Id,
-                    Ho = kh.Ho,
-                    Ten = kh.Ten,
-                    Sdt = kh.Sdt,
-                    Gmail = kh.Gmail,
-                    NgaySinh = kh.NgaySinh,
-                    TrangThai = kh.TrangThai,
-                    GhiChu = kh.GhiChu
-                };
+            {
+                Id = kh.Id,
+                Ho = kh.Ho,
+                Ten = kh.Ten,
+                Sdt = kh.Sdt,
+                Gmail = kh.Gmail,
+                NgaySinh = kh.NgaySinh,
+                TrangThai = kh.TrangThai,
+                GhiChu = kh.GhiChu
+            };
 
             showEdit = true;
         }
@@ -468,9 +393,9 @@
     private bool showAdd = false;
 
     private KhachHangDTO addModel = new KhachHangDTO
-        {
-            TrangThai = true
-        };
+    {
+        TrangThai = true
+    };
 
     private async Task SaveCustomer()
     {
@@ -481,10 +406,10 @@
             showAdd = false;
             await TaiLai();
             addModel = new KhachHangDTO
-                {
-                    TrangThai = true,
-                    NgaySinh = DateTime.Today
-                };
+            {
+                TrangThai = true,
+                NgaySinh = DateTime.Today
+            };
         }
         else
         {
@@ -510,20 +435,4 @@
             await JS.InvokeVoidAsync("alert", "Xóa khách hàng thất bại!");
         }
     }
-    private async Task ResetFilter()
-    {
-        FilterTen = null;
-        FilterSdt = null;
-        FilterEmail = null;
-        FilterMa = null;
-        FilterNgaySinh = null;
-
-        await TaiLai();
-    }
-    private void ToggleFilter()
-    {
-        showFilter = !showFilter;
-    }
-
-
 }

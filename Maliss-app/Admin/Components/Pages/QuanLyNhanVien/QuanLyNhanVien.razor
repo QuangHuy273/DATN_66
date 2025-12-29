@@ -7,61 +7,11 @@
 
 <h2 class="text-xl font-semibold mb-4">Quản lý nhân viên</h2>
 
-<!-- Hàng nút -->
-<div class="mb-3 d-flex justify-content-between align-items-center">
-    <!-- Trái -->
-    <button class="btn btn-primary" @onclick="ToggleFilter">
-        🔍 Lọc
-    </button>
-
-    <!-- Phải -->
-    <button class="btn-action" @onclick="() => showAdd = true">
-        + Thêm nhân viên
-    </button>
+<div class="search-row mb-3 flex items-center gap-2">
+    <input @bind="TuKhoa" @bind:event="oninput" placeholder="Tìm kiếm theo tên, SĐT, email..." class="form-control" />
+    <button class="btn btn-secondary" @onclick="TaiLai">Tải lại</button>
+    <button class="btn btn-primary" @onclick="() => showAdd = true">+ Thêm nhân viên</button>
 </div>
-
-@if (showFilter)
-{
-    <div class="search-row row g-2 p-3 border rounded bg-light mb-3">
-        <div class="col">
-            <input class="form-control" placeholder="Tên nhân viên"
-                   @bind="FilterTen" />
-        </div>
-
-        <div class="col">
-            <input class="form-control" placeholder="SĐT"
-                   @bind="FilterSdt" />
-        </div>
-
-        <div class="col">
-            <input class="form-control" placeholder="Email"
-                   @bind="FilterEmail" />
-        </div>
-
-        <div class="col">
-            <select class="form-control" @bind="FilterChucVu">
-                <option value="">Chức vụ</option>
-                <option value="NhanVien">Nhân viên</option>
-                <option value="Admin">Admin</option>
-            </select>
-        </div>
-
-        <div class="col">
-            <input type="date" class="form-control"
-                   @bind="FilterNgayVaoLam" />
-        </div>
-
-        <div class="col-auto">
-            <button class="btn btn-primary" @onclick="TaiLai">Áp dụng</button>
-            <button class="btn btn-warning ms-2" @onclick="ResetFilter">
-                Reset
-            </button>
-        </div>
-    </div>
-}
-
-
-
 
 <table class="table-auto w-full text-sm border">
     <thead>
@@ -335,7 +285,7 @@
 
 @code {
     private List<NhanVienDTO> DanhSachNhanVien = new();
-
+    private string TuKhoa;
 
     private bool showAdd = false;
     private bool showEdit = false;
@@ -344,14 +294,6 @@
     private NhanVienDTO addModel = new() { TrangThai = true, NgaySinh = DateTime.Today, NgayVaoLam = DateTime.Today };
     private NhanVienDTO editModel = new();
     private NhanVienDTO viewModel = new();
-    private bool showFilter = false;
-
-    private string FilterTen;
-    private string FilterSdt;
-    private string FilterEmail;
-    private string FilterChucVu;
-    private DateTime? FilterNgayVaoLam;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -362,43 +304,15 @@
     {
         DanhSachNhanVien = await NhanVienService.GetAll();
 
-        if (!string.IsNullOrWhiteSpace(FilterTen))
+        if (!string.IsNullOrWhiteSpace(TuKhoa))
         {
             DanhSachNhanVien = DanhSachNhanVien
-                .Where(nv => ($"{nv.Ho} {nv.Ten}")
-                .Contains(FilterTen, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                .Where(nv =>
+                    ($"{nv.Ho} {nv.Ten}").Contains(TuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(nv.Sdt) && nv.Sdt.Contains(TuKhoa)) ||
+                    (!string.IsNullOrEmpty(nv.Gmail) && nv.Gmail.Contains(TuKhoa))
+                ).ToList();
         }
-
-        if (!string.IsNullOrWhiteSpace(FilterSdt))
-        {
-            DanhSachNhanVien = DanhSachNhanVien
-                .Where(nv => nv.Sdt != null && nv.Sdt.Contains(FilterSdt))
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(FilterEmail))
-        {
-            DanhSachNhanVien = DanhSachNhanVien
-                .Where(nv => nv.Gmail != null &&
-                             nv.Gmail.Contains(FilterEmail, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(FilterChucVu))
-        {
-            DanhSachNhanVien = DanhSachNhanVien
-                .Where(nv => nv.TenChucVu == FilterChucVu)
-                .ToList();
-        }
-
-        if (FilterNgayVaoLam.HasValue)
-        {
-            DanhSachNhanVien = DanhSachNhanVien
-                .Where(nv => nv.NgayVaoLam.Date == FilterNgayVaoLam.Value.Date)
-                .ToList();
-        }
-
     }
 
     private void XemNhanVien(string id)
@@ -407,17 +321,17 @@
         if (nv == null) return;
 
         viewModel = new NhanVienDTO
-            {
-                Id = nv.Id,
-                Ho = nv.Ho,
-                Ten = nv.Ten,
-                Sdt = nv.Sdt,
-                Gmail = nv.Gmail,
-                NgaySinh = nv.NgaySinh,
-                NgayVaoLam = nv.NgayVaoLam,
-                TenChucVu = nv.TenChucVu,
-                TrangThai = nv.TrangThai
-            };
+        {
+            Id = nv.Id,
+            Ho = nv.Ho,
+            Ten = nv.Ten,
+            Sdt = nv.Sdt,
+            Gmail = nv.Gmail,
+            NgaySinh = nv.NgaySinh,
+            NgayVaoLam = nv.NgayVaoLam,
+            TenChucVu = nv.TenChucVu,
+            TrangThai = nv.TrangThai
+        };
 
         showView = true;
     }
@@ -428,17 +342,17 @@
         if (nv == null) return;
 
         editModel = new NhanVienDTO
-            {
-                Id = nv.Id,
-                Ho = nv.Ho,
-                Ten = nv.Ten,
-                Sdt = nv.Sdt,
-                Gmail = nv.Gmail,
-                NgaySinh = nv.NgaySinh,
-                NgayVaoLam = nv.NgayVaoLam,
-                TenChucVu = nv.TenChucVu,
-                TrangThai = nv.TrangThai
-            };
+        {
+            Id = nv.Id,
+            Ho = nv.Ho,
+            Ten = nv.Ten,
+            Sdt = nv.Sdt,
+            Gmail = nv.Gmail,
+            NgaySinh = nv.NgaySinh,
+            NgayVaoLam = nv.NgayVaoLam,
+            TenChucVu = nv.TenChucVu,
+            TrangThai = nv.TrangThai
+        };
 
         showEdit = true;
     }
@@ -503,22 +417,6 @@
             await JS.InvokeVoidAsync("alert", "Xóa nhân viên thất bại!");
         }
     }
-    private void ToggleFilter()
-    {
-        showFilter = !showFilter;
-    }
-
-    private async Task ResetFilter()
-    {
-        FilterTen = null;
-        FilterSdt = null;
-        FilterEmail = null;
-        FilterChucVu = null;
-        FilterNgayVaoLam = null;
-
-        await TaiLai();
-    }
-
 
 
 
