@@ -15,7 +15,8 @@ namespace API.Models.DTO
         public decimal Gia { get; set; }
         public decimal GiaGiam { get; set; }
         public int Soluong { get; set; }
-        public int SoNgayHSD { get; set; }
+        public DateTime NgaySanXuat { get; set; }
+        public DateTime HanSuDung { get; set; }
         public string? Mota { get; set; }
         public bool TrangThai { get; set; } = false;
         public Guid? KichCoId { get; set; }

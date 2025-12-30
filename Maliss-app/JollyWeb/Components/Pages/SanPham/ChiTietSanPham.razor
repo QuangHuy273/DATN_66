@@ -95,13 +95,6 @@
                                     }
                                 </div>
                             }
-                            @if (!string.IsNullOrEmpty(ProductDescription))
-                            {
-                                <div class="product-description-section">
-                                    <h3 class="description-title">Mô tả sản phẩm</h3>
-                                    <p class="detail-description">@ProductDescription</p>
-                                </div>
-                            }
                         </div>
 
                         <!-- Lựa chọn chi tiết - BUTTON CHIPS -->
@@ -175,23 +168,23 @@
                             <label class="quantity-label">Số lượng</label>
                             <div class="quantity-and-stock">
                                 <div class="quantity-controls">
-                                    <button type="button" 
+                                    <button type="button"
                                             class="quantity-btn"
-                                            @onclick="DecreaseQuantity" 
+                                            @onclick="DecreaseQuantity"
                                             disabled="@(selectedQuantity <= 1 || selectedChiTiet == null)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                                             <line x1="5" y1="12" x2="19" y2="12"></line>
                                         </svg>
                                     </button>
-                                    <input type="number" 
+                                    <input type="number"
                                            class="quantity-input"
-                                           @bind="selectedQuantity" 
-                                           min="1" 
+                                           @bind="selectedQuantity"
+                                           min="1"
                                            max="@(selectedChiTiet?.Soluong ?? 999)"
                                            disabled="@(selectedChiTiet == null)" />
-                                    <button type="button" 
+                                    <button type="button"
                                             class="quantity-btn"
-                                            @onclick="IncreaseQuantity" 
+                                            @onclick="IncreaseQuantity"
                                             disabled="@(selectedChiTiet == null || selectedQuantity >= selectedChiTiet.Soluong)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -199,16 +192,15 @@
                                         </svg>
                                     </button>
                                 </div>
+
                                 @if (selectedChiTiet != null)
                                 {
                                     <span class="stock-info">
-                                        @if (selectedChiTiet.Soluong > 20)
+                                        @if (selectedChiTiet.Soluong > 0)
                                         {
-                                            <span class="stock-status in-stock">Còn hàng</span>
-                                        }
-                                        else if (selectedChiTiet.Soluong > 0)
-                                        {
-                                            <span class="stock-status low-stock">Chỉ còn @selectedChiTiet.Soluong sản phẩm</span>
+                                            <span class="stock-status @(selectedChiTiet.Soluong <= 5 ? "low-stock" : "in-stock")">
+                                                Còn @selectedChiTiet.Soluong sản phẩm
+                                            </span>
                                         }
                                         else
                                         {
@@ -218,6 +210,7 @@
                                 }
                             </div>
                         </div>
+
 
                         <!-- Nút hành động - LUÔN HIỂN THỊ -->
                         <div class="action-buttons">
@@ -252,7 +245,16 @@
                                 Mua ngay
                             </button>
                         </div>
-
+                        <!-- MÔ TẢ MÓN ĂN -->
+                        @if (!string.IsNullOrEmpty(ProductDescription))
+                        {
+                            <div class="product-description-detail">
+                                <h3 class="description-title">MÔ TẢ MÓN ĂN</h3>
+                                <div class="description-content">
+                                    <p>@ProductDescription</p>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -354,7 +356,10 @@
             {
                 var first = ChiTietList.First();
                 ProductName = first.Ten;
-                ProductDescription = first.Mota;
+                // Lấy mô tả từ chi tiết đầu tiên có mô tả, hoặc từ chi tiết đầu tiên
+                ProductDescription = ChiTietList
+                    .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.Mota))?.Mota 
+                    ?? first.Mota;
                 ProductCode = first.MonAnId;
 
                 FilteredLoaiVi = ChiTietList.Select(c => c.LoaiVi).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();

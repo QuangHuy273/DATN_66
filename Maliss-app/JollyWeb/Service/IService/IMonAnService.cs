@@ -16,5 +16,11 @@ namespace JollyWeb.Service.IService
         /// Lấy món ăn theo ID (chỉ active)
         /// </summary>
         public Task<MonAnDTO?> GetActiveProductById(string id);
+        
+        /// <summary>
+        /// Lọc và phân trang sản phẩm cho khách hàng (chỉ sản phẩm hợp lệ)
+        /// Sử dụng MonAnFilterRequest - DTO chung với Admin
+        /// </summary>
+        public Task<MonAnFilterResponse?> FilterForCustomer(MonAnFilterRequest filter);
     }
 }

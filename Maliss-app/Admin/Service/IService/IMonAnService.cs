@@ -10,5 +10,10 @@ namespace Admin.Service.IService
         public Task<MonAnDTO?> Create(MonAnDTO monAn);
         public Task<bool> Update(MonAnDTO monAn);
         public Task<bool> Delete(string id);
+        
+        /// <summary>
+        /// Filter và phân trang món ăn
+        /// </summary>
+        public Task<MonAnFilterResponse?> Filter(MonAnFilterRequest filter);
     }
 }

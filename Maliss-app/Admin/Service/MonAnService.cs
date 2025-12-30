@@ -70,5 +70,24 @@ namespace Admin.Service
         {
             return await DeleteAsync("MonAn", id);
         }
+
+        public async Task<MonAnFilterResponse?> Filter(MonAnFilterRequest filter)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("MonAn/filter", filter);
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<MonAnFilterResponse>();
+                    return data;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error filtering MonAn: {ex.Message}");
+                return null;
+            }
+        }
     }
 }

@@ -98,17 +98,47 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <div class="form-group">
-                            <label for="soNgayHSD">
-                                <i class="bi bi-calendar-check"></i>
-                                Số Ngày HSD <span class="text-danger">*</span>
+                            <label for="ngaySanXuat">
+                                <i class="bi bi-calendar-plus"></i>
+                                Ngày Sản Xuất <span class="text-danger">*</span>
                             </label>
-                            <InputNumber id="soNgayHSD" class="form-control" @bind-Value="chiTietMonAn.SoNgayHSD" />
-                            <ValidationMessage For="@(() => chiTietMonAn.SoNgayHSD)" />
+                            <InputDate id="ngaySanXuat" class="form-control" @bind-Value="chiTietMonAn.NgaySanXuat" />
+                            <ValidationMessage For="@(() => chiTietMonAn.NgaySanXuat)" />
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="hanSuDung">
+                                <i class="bi bi-calendar-check"></i>
+                                Hạn Sử Dụng <span class="text-danger">*</span>
+                            </label>
+                            <InputDate id="hanSuDung" class="form-control" @bind-Value="chiTietMonAn.HanSuDung" />
+                            <ValidationMessage For="@(() => chiTietMonAn.HanSuDung)" />
+                            @if (!string.IsNullOrEmpty(hanSuDungError))
+                            {
+                                <div class="text-danger small mt-1">
+                                    <i class="bi bi-exclamation-triangle"></i> @hanSuDungError
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>
+                                <i class="bi bi-hourglass-split"></i>
+                                Thời Hạn Sử Dụng
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control fw-bold text-center" disabled 
+                                       value="@GetThoiHanSuDungText()"
+                                       style="@GetThoiHanSuDungStyle()" />
+                                <span class="input-group-text">@GetThoiHanSuDungIcon()</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label for="trangThai">
                                 <i class="bi bi-toggle-on"></i>
@@ -275,7 +305,8 @@
         Ten = string.Empty,
         Gia = 0,
         Soluong = 0,
-        SoNgayHSD = 0,
+        NgaySanXuat = DateTime.Now,
+        HanSuDung = DateTime.Now.AddDays(7),
         TrangThai = false,
         DanhSachAnh = new List<AnhDTO>()
     };
@@ -293,6 +324,7 @@
     private bool isSaving = false;
     private bool isLoading = true;
     private bool isUploadingAnh = false;
+    private string hanSuDungError = string.Empty;
 
     
     // Computed properties
@@ -440,6 +472,28 @@
     }
 
     
+    // Validation
+    
+    private bool ValidateHanSuDung()
+    {
+        hanSuDungError = string.Empty;
+
+        if (chiTietMonAn.HanSuDung <= chiTietMonAn.NgaySanXuat)
+        {
+            hanSuDungError = "Hạn sử dụng phải lớn hơn ngày sản xuất";
+            return false;
+        }
+
+        if (chiTietMonAn.NgaySanXuat > DateTime.Now)
+        {
+            hanSuDungError = "Ngày sản xuất không được là ngày tương lai";
+            return false;
+        }
+
+        return true;
+    }
+
+    
     // Save logic
     
     private async Task LuuChiTietMonAn()
@@ -447,6 +501,13 @@
         isSaving = true;
         try
         {
+            // Validate ngày trước khi lưu
+            if (!ValidateHanSuDung())
+            {
+                await JS.InvokeVoidAsync("alert", hanSuDungError);
+                return;
+            }
+
             chiTietMonAn.MonAnId = MonAnId;
             chiTietMonAn.NguyenLieuId = selectedNguyenLieuId;
             chiTietMonAn.NhaCungCapId = selectedNhaCungCapId;
@@ -484,7 +545,8 @@
                     Ten = chiTietMonAn.Ten,
                     Gia = chiTietMonAn.Gia,
                     Soluong = chiTietMonAn.Soluong,
-                    SoNgayHSD = chiTietMonAn.SoNgayHSD,
+                    NgaySanXuat = chiTietMonAn.NgaySanXuat,
+                    HanSuDung = chiTietMonAn.HanSuDung,
                     TrangThai = chiTietMonAn.TrangThai,
                     Mota = chiTietMonAn.Mota,
                     LoaiViId = chiTietMonAn.LoaiViId,
@@ -671,8 +733,63 @@
         }
     }
 
-    
     // Helpers
+    
+    private int GetSoNgayThoiHanSuDung()
+    {
+        if (chiTietMonAn.HanSuDung <= chiTietMonAn.NgaySanXuat)
+            return 0;
+        
+        return (chiTietMonAn.HanSuDung - chiTietMonAn.NgaySanXuat).Days + 1;
+    }
+    
+    private string GetThoiHanSuDungText()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        if (soNgay <= 0)
+            return "Không hợp lệ";
+        
+        return $"{soNgay} ngày";
+    }
+    
+    private string GetThoiHanSuDungStyle()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        
+        if (soNgay <= 0)
+            return "background-color: #f8f9fa; color: #6c757d;";
+        
+        if (soNgay > 14)
+            return "background-color: #d4edda; color: #155724; border-color: #28a745;"; // Xanh
+        
+        if (soNgay >= 8)
+            return "background-color: #fff3cd; color: #856404; border-color: #ffc107;"; // Vàng
+        
+        if (soNgay >= 4)
+            return "background-color: #ffe5d0; color: #8b4513; border-color: #fd7e14;"; // Cam
+        
+        // <= 3 ngày
+        return "background-color: #f8d7da; color: #721c24; border-color: #dc3545;"; // Đỏ
+    }
+    
+    private string GetThoiHanSuDungIcon()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        
+        if (soNgay <= 0)
+            return "❌";
+        
+        if (soNgay > 14)
+            return "🟢"; // Xanh
+        
+        if (soNgay >= 8)
+            return "🟡"; // Vàng
+        
+        if (soNgay >= 4)
+            return "🟠"; // Cam
+        
+        return "🔴"; // Đỏ
+    }
     
     private string? GetFileNameFromAnh(AnhDTO? anh)
     {
