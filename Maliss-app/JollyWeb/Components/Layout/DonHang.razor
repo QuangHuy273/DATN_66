@@ -2,79 +2,238 @@
 @layout Layout.MainLayout
 @inject IApiService ApiService
 @inject IJSRuntime JS
+<link href="css/Donhang.css" rel="stylesheet" />
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
     .page-container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
-        padding: 2rem 1rem;
+        padding: 2rem 1.5rem;
+        background: #f8fafc;
+        min-height: 100vh;
     }
 
     .page-header {
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .page-title {
-        font-size: 1.875rem;
-        font-weight: 700;
-        color: #1f2937;
+        font-size: 2.25rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin-bottom: 0.5rem;
     }
 
     .page-subtitle {
-        color: #6b7280;
-        font-size: 0.875rem;
+        color: #64748b;
+        font-size: 1rem;
     }
 
+    /* Filter Box */
+    .filter-box {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .filter-input,
+    .filter-select {
+        flex: 1;
+        min-width: 250px;
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-input::placeholder {
+            color: #94a3b8;
+        }
+
+    /* Stats Bar */
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+    .stat-icon {
+        font-size: 2.5rem;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-top: 0.25rem;
+    }
+
+    /* Orders Grid */
     .orders-grid {
         display: grid;
         gap: 1.5rem;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .order-card {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        transition: all 0.3s ease;
-        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 1.75rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
     }
 
-        .order-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
+        .order-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
+
+        .order-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            transform: translateY(-4px);
+        }
+
+            .order-card:hover::before {
+                transform: scaleX(1);
+            }
 
     .order-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 2px solid #f1f5f9;
     }
 
     .order-id {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
     }
 
     .order-date {
-        color: #6b7280;
+        color: #64748b;
         font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
 
+        .order-date::before {
+            content: '📅';
+            font-size: 0.875rem;
+        }
+
     .order-body {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
     }
 
     .order-total {
-        font-size: 1.5rem;
-        font-weight: 700;
+        font-size: 1.75rem;
+        font-weight: 800;
         color: #059669;
         margin-bottom: 0.5rem;
+    }
+
+    .order-items-preview {
+        color: #64748b;
+        font-size: 0.875rem;
     }
 
     .order-footer {
@@ -85,84 +244,286 @@
     }
 
     .status-badge {
-        padding: 0.375rem 0.75rem;
-        border-radius: 9999px;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.025em;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .badge-blue {
-        background: #dbeafe;
-        color: #1e40af;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
     }
 
     .badge-orange {
-        background: #fed7aa;
-        color: #c2410c;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
     }
 
     .badge-purple {
-        background: #e9d5ff;
-        color: #7c3aed;
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
     }
 
     .badge-green {
-        background: #d1fae5;
-        color: #065f46;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
     }
 
     .badge-red {
-        background: #fee2e2;
-        color: #991b1b;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
     }
 
     .badge-gray {
-        background: #f3f4f6;
-        color: #4b5563;
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        color: white;
     }
 
     .btn-view-detail {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 0.5rem 1.25rem;
-        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
         border: none;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.875rem;
         cursor: pointer;
         transition: all 0.3s ease;
         flex: 1;
+        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
     }
 
         .btn-view-detail:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
         }
 
+        .btn-view-detail:active {
+            transform: translateY(0);
+        }
+
+    /* Progress Tracker */
+    .progress-tracker {
+        margin: 2rem 0;
+        padding: 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        padding: 1rem 0;
+    }
+
+    .progress-line {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #e2e8f0;
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .progress-line-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 1s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .progress-line-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+    @@keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .progress-step {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .step-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all 0.5s ease;
+        border: 4px solid #e2e8f0;
+        position: relative;
+    }
+
+    .progress-step.active .step-icon-wrapper {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0.2), 0 8px 24px rgba(102, 126, 234, 0.4);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .progress-step.completed .step-icon-wrapper {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-color: #10b981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .step-icon-wrapper::after {
+        content: '';
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        background: transparent;
+        transition: all 0.5s ease;
+    }
+
+    .progress-step.active .step-icon-wrapper::after {
+        animation: ripple 2s ease-out infinite;
+    }
+
+    @@keyframes ripple {
+        0% {
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+        }
+
+        100% {
+            box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+        }
+    }
+
+    .step-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-align: center;
+        transition: all 0.3s ease;
+        max-width: 100px;
+    }
+
+    .progress-step.active .step-label {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .progress-step.completed .step-label {
+        color: #059669;
+        font-weight: 700;
+    }
+
+    .step-check {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        font-size: 1.5rem;
+        transition: transform 0.3s ease;
+    }
+
+    .progress-step.completed .step-check {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Empty State */
     .empty-state {
         text-align: center;
-        padding: 4rem 2rem;
+        padding: 5rem 2rem;
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
+        font-size: 5rem;
+        margin-bottom: 1.5rem;
+        animation: bounce 2s infinite;
+    }
+
+    @@keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
     }
 
     .empty-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.5rem;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.75rem;
     }
 
     .empty-text {
-        color: #6b7280;
+        color: #64748b;
+        font-size: 1rem;
+    }
+
+    /* Loading State */
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Modal */
@@ -172,224 +533,445 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.7);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 1000;
         padding: 1rem;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
+        animation: fadeIn 0.3s ease-out;
     }
 
     .modal-content {
         background: white;
-        border-radius: 16px;
-        max-width: 900px;
+        border-radius: 20px;
+        max-width: 1000px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: slideUp 0.4s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .modal-header {
-        padding: 2rem;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 2.5rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-radius: 16px 16px 0 0;
+        border-radius: 20px 20px 0 0;
+        position: relative;
     }
 
     .modal-title {
-        font-size: 1.5rem;
-        font-weight: 700;
+        font-size: 1.75rem;
+        font-weight: 800;
         margin: 0;
     }
 
     .modal-body {
-        padding: 2rem;
+        padding: 2.5rem;
     }
 
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
     }
 
     .info-card {
-        background: #f9fafb;
-        padding: 1.25rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 1.5rem;
         border-radius: 12px;
         border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
     }
+
+        .info-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
 
     .info-label {
         font-size: 0.75rem;
         text-transform: uppercase;
-        color: #6b7280;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.5rem;
+        color: #64748b;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.75rem;
     }
 
     .info-value {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1f2937;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
     }
 
     .info-secondary {
         font-size: 0.875rem;
-        color: #6b7280;
-        margin-top: 0.25rem;
-    }
-
-    .total-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 12px;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .total-amount {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .total-label {
-        font-size: 0.875rem;
-        opacity: 0.9;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        color: #64748b;
+        margin-top: 0.5rem;
     }
 
     .section-title {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: #1f2937;
+        color: #1e293b;
         margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
+
+        .section-title::before {
+            content: '🍽️';
+            font-size: 1.5rem;
+        }
 
     .items-list {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
-        margin-bottom: 2rem;
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
     }
 
     .item-card {
         display: flex;
-        gap: 1.25rem;
-        padding: 1.25rem;
-        background: #f9fafb;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background: #f8fafc;
         border-radius: 12px;
         align-items: center;
         transition: all 0.3s ease;
+        border: 2px solid transparent;
     }
 
         .item-card:hover {
-            background: #f3f4f6;
+            background: white;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
         }
 
     .item-image {
-        width: 80px;
-        height: 80px;
-        border-radius: 10px;
+        width: 100px;
+        height: 100px;
+        border-radius: 12px;
         object-fit: cover;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s ease;
+    }
+
+    .item-card:hover .item-image {
+        transform: scale(1.05);
     }
 
     .item-details {
         flex: 1;
     }
 
-    .item-name {
-        font-weight: 600;
-        color: #1f2937;
+    .item-header {
         margin-bottom: 0.75rem;
+    }
+
+    .item-name {
+        font-weight: 700;
+        color: #1e293b;
         font-size: 1.125rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .item-id {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 600;
     }
 
     .item-attributes {
         display: flex;
         flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .attr-item {
+        display: flex;
+        align-items: center;
         gap: 0.5rem;
     }
 
-    .attr-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 6px;
+    .attr-label {
         font-size: 0.75rem;
-        font-weight: 500;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .attr-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
     }
 
     .attr-purple {
-        background: #ede9fe;
+        background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
         color: #6d28d9;
     }
 
     .attr-green {
-        background: #d1fae5;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         color: #065f46;
     }
 
     .attr-orange {
-        background: #fed7aa;
+        background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
         color: #c2410c;
     }
 
     .attr-yellow {
-        background: #fef3c7;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         color: #92400e;
     }
 
     .item-quantity {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #6b7280;
-        min-width: 60px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #64748b;
+        min-width: 70px;
         text-align: center;
+        background: #f1f5f9;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
     }
 
     .item-price {
-        font-size: 1.25rem;
-        font-weight: 700;
+        font-size: 1.375rem;
+        font-weight: 800;
         color: #059669;
-        min-width: 120px;
+        min-width: 130px;
         text-align: right;
     }
 
-    .modal-footer {
-        padding: 1.5rem 2rem;
-        border-top: 1px solid #e5e7eb;
+    .total-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .total-row {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        font-size: 1rem;
+    }
+
+        .total-row:last-of-type {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+    .total-amount {
+        font-size: 3rem;
+        font-weight: 900;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        color: white;
+    }
+
+    .total-label {
+        font-size: 0.875rem;
+        opacity: 0.95;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        text-align: center;
+        color: white;
+    }
+
+    .modal-footer {
+        padding: 2rem 2.5rem;
+        border-top: 2px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        background: #f8fafc;
+        border-radius: 0 0 20px 20px;
     }
 
     .btn-close {
-        background: #6b7280;
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
         color: white;
-        padding: 0.75rem 2rem;
-        border-radius: 8px;
+        padding: 0.875rem 2.5rem;
+        border-radius: 10px;
         border: none;
-        font-weight: 600;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .btn-close:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+    .btn-cancel-order {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        padding: 0.875rem 2.5rem;
+        border-radius: 10px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+        .btn-cancel-order:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-cancel-order:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+    /* Confirmation Dialog */
+    .confirm-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        z-index: 1001;
+        max-width: 450px;
+        width: 90%;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    .confirm-icon {
+        font-size: 4rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .confirm-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .confirm-message {
+        color: #64748b;
+        text-align: center;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .confirm-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .btn-confirm-yes {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 10px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+        .btn-confirm-yes:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+        }
+
+    .btn-confirm-no {
+        background: white;
+        color: #64748b;
+        padding: 0.875rem 2rem;
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
-        .btn-close:hover {
-            background: #4b5563;
-            transform: scale(1.05);
+        .btn-confirm-no:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
         }
 
+    /* Responsive */
     @@media (max-width: 768px) {
+        .page-container {
+            padding: 1.5rem 1rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+        }
+
         .orders-grid {
             grid-template-columns: 1fr;
+        }
+
+        .filter-box {
+            flex-direction: column;
+        }
+
+        .filter-input,
+        .filter-select {
+            min-width: 100%;
+        }
+
+        .progress-steps {
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .progress-line {
+            display: none;
+        }
+
+        .progress-step {
+            flex: 0 0 calc(50% - 1rem);
         }
 
         .item-card {
@@ -401,15 +983,42 @@
             margin: 0 auto;
         }
 
+        .item-attributes {
+            justify-content: center;
+        }
+
         .item-quantity,
         .item-price {
             text-align: center;
+            min-width: 100%;
         }
 
         .total-amount {
-            font-size: 2rem;
+            font-size: 2.25rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
         }
     }
+
+    /* Scrollbar */
+    .modal-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modal-content::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 4px;
+    }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
 </style>
 
 <div class="page-container">
@@ -418,41 +1027,96 @@
         <p class="page-subtitle">Quản lý và theo dõi tất cả đơn hàng của bạn</p>
     </div>
 
-    @if (DanhSachHoaDon.Any())
+    @if (_loaded)
     {
-        <div class="orders-grid">
-            @foreach (var hd in DanhSachHoaDon)
-            {
-                <div class="order-card">
-                    <div class="order-header">
-                        <div>
-                            <div class="order-id">#@hd.Id</div>
-                            <div class="order-date">@hd.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
-                        </div>
-                        <span class="status-badge @GetBadgeClass(hd.TrangThai)">
-                            @hd.TrangThai
-                        </span>
-                    </div>
-
-                    <div class="order-body">
-                        <div class="order-total">@hd.TongTien.ToString("N0") đ</div>
-                    </div>
-
-                    <div class="order-footer">
-                        <button class="btn-view-detail" @onclick="() => XemChiTiet(hd)">
-                            Xem chi tiết
-                        </button>
+        @if (DanhSachHoaDon.Any())
+        {
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Tổng đơn hàng</div>
+                        <div class="stat-value">@DanhSachHoaDon.Count</div>
                     </div>
                 </div>
-            }
+                <div class="stat-card">
+                    <div class="stat-icon">@GetStatusIcon()</div>
+                    <div class="stat-content">
+                        <div class="stat-label">@GetStatusLabel()</div>
+                        <div class="stat-value">@GetFilteredCount()</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Tổng chi tiêu</div>
+                        <div class="stat-value">@DanhSachHoaDon.Sum(x => x.TongTien).ToString("N0") đ</div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="filter-box">
+            <input class="filter-input"
+                   placeholder="🔍 Tìm theo mã đơn hàng..."
+                   @bind="searchText"
+                   @bind:event="oninput" />
+
+            <select class="filter-select" @bind="selectedStatus" @bind:event="onchange">
+                <option value="">📦 Tất cả trạng thái</option>
+                <option value="Chờ xác nhận">Chờ xác nhận</option>
+                <option value="Chờ giao">Chờ giao</option>
+                <option value="Vận chuyển">Vận chuyển</option>
+                <option value="Đã giao">Đã giao</option>
+                <option value="Đã thanh toán">Đã thanh toán</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Đã huỷ">Đã huỷ</option>
+            </select>
         </div>
+
+        @if (FilteredHoaDon.Any())
+        {
+            <div class="orders-grid">
+                @foreach (var hd in FilteredHoaDon)
+                {
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-id">#@hd.Id</div>
+                                <div class="order-date">@hd.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                            <span class="status-badge @GetBadgeClass(hd.TrangThai)">
+                                @hd.TrangThai
+                            </span>
+                        </div>
+
+                        <div class="order-body">
+                            <div class="order-total">@hd.TongTien.ToString("N0") đ</div>
+                        </div>
+
+                        <div class="order-footer">
+                            <button class="btn-view-detail" @onclick="() => XemChiTiet(hd)">
+                                Xem chi tiết
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3 class="empty-title">Không tìm thấy đơn hàng</h3>
+                <p class="empty-text">Không có đơn hàng nào khớp với bộ lọc của bạn</p>
+            </div>
+        }
     }
     else
     {
-        <div class="empty-state">
-            <div class="empty-icon">📦</div>
-            <h3 class="empty-title">Chưa có đơn hàng nào</h3>
-            <p class="empty-text">Bạn chưa có đơn hàng nào. Hãy bắt đầu đặt món ngay!</p>
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Đang tải đơn hàng...</p>
         </div>
     }
 </div>
@@ -466,6 +1130,85 @@
             </div>
 
             <div class="modal-body">
+                <!-- Progress Tracker -->
+                <div class="progress-tracker">
+                    <div class="progress-steps">
+                        <div class="progress-line">
+                            <div class="progress-line-fill" style="width: @GetProgressWidth(selectedHoaDon.TrangThai)%"></div>
+                        </div>
+
+                        <div class="progress-step @GetStepClass("Chờ xác nhận", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Chờ xác nhận", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>📋</span>
+                                }
+                            </div>
+                            <div class="step-label">Chờ xác nhận</div>
+                        </div>
+
+                        <div class="progress-step @GetStepClass("Chờ giao", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Chờ giao", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>📦</span>
+                                }
+                            </div>
+                            <div class="step-label">Chờ giao</div>
+                        </div>
+
+                        <div class="progress-step @GetStepClass("Vận chuyển", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Vận chuyển", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>🚚</span>
+                                }
+                            </div>
+                            <div class="step-label">Vận chuyển</div>
+                        </div>
+
+                        <div class="progress-step @GetStepClass("Đã giao", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Đã giao", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>🏠</span>
+                                }
+                            </div>
+                            <div class="step-label">Đã giao</div>
+                        </div>
+
+                        <div class="progress-step @GetStepClass("Hoàn thành", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Hoàn thành", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>✅</span>
+                                }
+                            </div>
+                            <div class="step-label">Hoàn thành</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="info-grid">
                     <div class="info-card">
                         <div class="info-label">Ngày đặt</div>
@@ -479,10 +1222,15 @@
                             @selectedHoaDon.TrangThai
                         </span>
                     </div>
+
+                    <div class="info-card">
+                        <div class="info-label">Số lượng món</div>
+                        <div class="info-value">@DanhSachMon.Sum(x => x.SoLuongDat) món</div>
+                    </div>
                 </div>
 
                 <h4 class="section-title">
-                    Chi tiết món ăn (@DanhSachMon.Sum(x => x.SoLuongDat) món)
+                    Chi tiết món ăn
                 </h4>
 
                 <div class="items-list">
@@ -492,17 +1240,26 @@
                             <img src="@(mon.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "/images/default-food.jpg")"
                                  class="item-image"
                                  alt="@mon.Ten" />
-
                             <div class="item-details">
-                                <div class="item-name">@mon.Ten</div>
+                                <div class="item-header">
+                                    <div class="item-name">@mon.Ten</div>
+                                    <div class="item-id">Mã: @mon.MonAnId</div>
+                                </div>
                                 <div class="item-attributes">
-                                    <span class="attr-badge attr-green">@mon.MonAnId</span>
-                                    <span class="attr-badge attr-purple">@mon.LoaiVi</span>
-                                    <span class="attr-badge attr-orange">@mon.KichCo</span>
-                                    <span class="attr-badge attr-yellow">@mon.NguyenLieu</span>
+                                    <div class="attr-item">
+                                        <span class="attr-label">Loại vị:</span>
+                                        <span class="attr-badge attr-purple">@mon.LoaiVi</span>
+                                    </div>
+                                    <div class="attr-item">
+                                        <span class="attr-label">Kích cỡ:</span>
+                                        <span class="attr-badge attr-orange">@mon.KichCo</span>
+                                    </div>
+                                    <div class="attr-item">
+                                        <span class="attr-label">Nguyên liệu:</span>
+                                        <span class="attr-badge attr-yellow">@mon.NguyenLieu</span>
+                                    </div>
                                 </div>
                             </div>
-
                             <div class="item-quantity">x @mon.SoLuongDat</div>
                             <div class="item-price">@mon.Gia.ToString("N0") đ</div>
                         </div>
@@ -510,13 +1267,13 @@
                 </div>
 
                 <div class="total-section">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                        <span style="opacity: 0.9;">Tiền hàng:</span>
-                        <span style="font-weight: 600;">@((selectedHoaDon.TongTien - 20000).ToString("N0")) đ</span>
+                    <div class="total-row">
+                        <span>Tiền hàng:</span>
+                        <span>@((selectedHoaDon.TongTien - 20000).ToString("N0")) đ</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                        <span style="opacity: 0.9;">Phí vận chuyển:</span>
-                        <span style="font-weight: 600;">20,000 đ</span>
+                    <div class="total-row">
+                        <span>Phí vận chuyển:</span>
+                        <span>20,000 đ</span>
                     </div>
                     <div class="total-amount">@selectedHoaDon.TongTien.ToString("N0") đ</div>
                     <div class="total-label">Tổng giá trị đơn hàng</div>
@@ -524,6 +1281,19 @@
             </div>
 
             <div class="modal-footer">
+                @if (CanCancelOrder(selectedHoaDon.TrangThai))
+                {
+                    <button class="btn-cancel-order" @onclick="ShowCancelConfirmation" disabled="@isCancelling">
+                        @if (isCancelling)
+                        {
+                            <span>Đang hủy...</span>
+                        }
+                        else
+                        {
+                            <span>❌ Hủy đơn hàng</span>
+                        }
+                    </button>
+                }
                 <button class="btn-close" @onclick="() => showDetail = false">
                     Đóng
                 </button>
@@ -538,18 +1308,88 @@
     private List<ChiTietMonAnDTO> DanhSachMon = new();
     private bool showDetail = false;
     private bool _loaded = false;
+    private string searchText = "";
+    private string selectedStatus = "";
+    private bool showCancelConfirm = false;
+    private bool isCancelling = false;
 
-    private string GetBadgeClass(string status) => status switch
+    private List<HoaDon> FilteredHoaDon =>
+        DanhSachHoaDon
+            .Where(hd =>
+                (string.IsNullOrWhiteSpace(searchText) ||
+                 hd.Id.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrWhiteSpace(selectedStatus) ||
+                 hd.TrangThai?.Trim().Equals(selectedStatus.Trim(), StringComparison.OrdinalIgnoreCase) == true)
+            )
+            .ToList();
+
+    private string GetBadgeClass(string status)
     {
-        "Chờ xác nhận" => "badge-blue",
-        "Chờ giao" => "badge-orange",
-        "Vận chuyển" => "badge-purple",
-        "Đã giao" => "badge-green",
-        "Đã thanh toán" => "badge-green",
-        "hoàn thành" => "badge-green",
-        "Đã huỷ" => "badge-red",
-        _ => "badge-gray"
-    };
+        var normalizedStatus = status?.Trim().ToLower() ?? "";
+
+        return normalizedStatus switch
+        {
+            "chờ xác nhận" => "badge-blue",
+            "chờ giao" => "badge-orange",
+            "vận chuyển" => "badge-purple",
+            "đã giao" => "badge-green",
+            "đã thanh toán" => "badge-green",
+            "hoàn thành" => "badge-green",
+            "đã huỷ" => "badge-red",
+            _ => "badge-gray"
+        };
+    }
+
+    private int GetStatusLevel(string status)
+    {
+        // Normalize status
+        var normalizedStatus = status?.Trim().ToLower() ?? "";
+
+        return normalizedStatus switch
+        {
+            "chờ xác nhận" => 0,
+            "chờ giao" => 1,
+            "vận chuyển" => 2,
+            "đã giao" => 3,
+            "đã thanh toán" => 4,
+            "hoàn thành" => 4,
+            "đã huỷ" => -1,
+            _ => 0
+        };
+    }
+
+    private string GetStepClass(string step, string currentStatus)
+    {
+        int stepLevel = GetStatusLevel(step);
+        int currentLevel = GetStatusLevel(currentStatus);
+
+        if (currentLevel > stepLevel)
+            return "completed";
+        if (currentLevel == stepLevel)
+            return "active";
+        return "";
+    }
+
+    private bool IsStepCompleted(string step, string currentStatus)
+    {
+        int stepLevel = GetStatusLevel(step);
+        int currentLevel = GetStatusLevel(currentStatus);
+        return currentLevel > stepLevel;
+    }
+
+    private int GetProgressWidth(string status)
+    {
+        int level = GetStatusLevel(status);
+        return level switch
+        {
+            0 => 0,
+            1 => 25,
+            2 => 50,
+            3 => 75,
+            4 => 100,
+            _ => 0
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -558,39 +1398,192 @@
 
         _loaded = true;
 
-        var khachHangId = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
+        try
+        {
+            var khachHangId = await JS.InvokeAsync<string>("localStorage.getItem", "KhachHangId");
 
-        if (string.IsNullOrWhiteSpace(khachHangId))
-            return;
+            if (string.IsNullOrWhiteSpace(khachHangId))
+            {
+                StateHasChanged();
+                return;
+            }
 
-        var allHoaDon = await ApiService.GetAsync<List<HoaDon>>("HoaDon") ?? new();
+            var allHoaDon = await ApiService.GetAsync<List<HoaDon>>("HoaDon") ?? new();
 
-        DanhSachHoaDon = allHoaDon
-            .Where(x => x.KhachHangId == khachHangId)
-            .OrderByDescending(x => x.NgayTao)
-            .ToList();
+            DanhSachHoaDon = allHoaDon
+                .Where(x => x.KhachHangId == khachHangId)
+                .OrderByDescending(x => x.NgayTao)
+                .ToList();
 
-        StateHasChanged();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading orders: {ex.Message}");
+            StateHasChanged();
+        }
     }
 
     private async Task XemChiTiet(HoaDon hoaDon)
     {
-        selectedHoaDon = hoaDon;
-
-        var chiTietHoaDon = await ApiService.GetAsync<List<HoaDonChiTietDTO>>("HoaDonChiTiet") ?? new();
-        var chiTietMonAn = await ApiService.GetAsync<List<ChiTietMonAnDTO>>("ChiTietMonAn/all") ?? new();
-
-        DanhSachMon.Clear();
-
-        foreach (var ct in chiTietHoaDon.Where(x => x.HoaDonId == hoaDon.Id))
+        try
         {
-            var mon = chiTietMonAn.FirstOrDefault(x => x.Id == ct.ChiTietMonAnId);
-            if (mon == null) continue;
+            selectedHoaDon = hoaDon;
 
-            mon.SoLuongDat = ct.Soluong;
-            DanhSachMon.Add(mon);
+            var chiTietHoaDon = await ApiService.GetAsync<List<HoaDonChiTietDTO>>("HoaDonChiTiet") ?? new();
+            var chiTietMonAn = await ApiService.GetAsync<List<ChiTietMonAnDTO>>("ChiTietMonAn/all") ?? new();
+
+            DanhSachMon.Clear();
+
+            foreach (var ct in chiTietHoaDon.Where(x => x.HoaDonId == hoaDon.Id))
+            {
+                var mon = chiTietMonAn.FirstOrDefault(x => x.Id == ct.ChiTietMonAnId);
+                if (mon == null) continue;
+
+                mon.SoLuongDat = ct.Soluong;
+                DanhSachMon.Add(mon);
+            }
+
+            showDetail = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading order details: {ex.Message}");
+        }
+    }
+
+    private bool CanCancelOrder(string status)
+    {
+        var normalizedStatus = status?.Trim().ToLower() ?? "";
+        return normalizedStatus == "chờ xác nhận" || normalizedStatus == "chờ giao";
+    }
+
+    private void ShowCancelConfirmation()
+    {
+        showCancelConfirm = true;
+    }
+
+    private async Task ConfirmCancelOrder()
+    {
+        if (selectedHoaDon == null) return;
+
+        try
+        {
+            isCancelling = true;
+            showCancelConfirm = false;
+            StateHasChanged();
+
+            // Lấy lại đơn hàng đầy đủ từ API để có đủ dữ liệu
+            var currentHoaDon = await ApiService.GetAsync<HoaDon>($"HoaDon/{selectedHoaDon.Id}");
+
+            if (currentHoaDon != null)
+            {
+                // Cập nhật trạng thái
+                currentHoaDon.TrangThai = "Đã huỷ";
+
+                // Gọi API PUT để cập nhật
+                var result = await ApiService.PutAsync($"HoaDon/{currentHoaDon.Id}", currentHoaDon);
+
+                if (result)
+                {
+                    // Cập nhật lại trong danh sách local
+                    selectedHoaDon.TrangThai = "Đã huỷ";
+                    var hoaDonInList = DanhSachHoaDon.FirstOrDefault(x => x.Id == selectedHoaDon.Id);
+                    if (hoaDonInList != null)
+                    {
+                        hoaDonInList.TrangThai = "Đã huỷ";
+                    }
+
+                    await JS.InvokeVoidAsync("alert", "Đơn hàng đã được hủy thành công!");
+                    showDetail = false;
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Có lỗi xảy ra khi hủy đơn hàng. Vui lòng thử lại!");
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Không tìm thấy thông tin đơn hàng!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling order: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+
+            // Hiển thị lỗi chi tiết hơn
+            var errorMsg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            await JS.InvokeVoidAsync("alert", $"Có lỗi xảy ra: {errorMsg}");
+        }
+        finally
+        {
+            isCancelling = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusIcon()
+    {
+        if (string.IsNullOrWhiteSpace(selectedStatus))
+            return "✅";
+
+        var normalizedStatus = selectedStatus.Trim().ToLower();
+        return normalizedStatus switch
+        {
+            "chờ xác nhận" => "📋",
+            "chờ giao" => "📦",
+            "vận chuyển" => "🚚",
+            "đã giao" => "🏠",
+            "đã thanh toán" => "💳",
+            "hoàn thành" => "✅",
+            "đã huỷ" => "❌",
+            _ => "✅"
+        };
+    }
+
+    private string GetStatusLabel()
+    {
+        if (string.IsNullOrWhiteSpace(selectedStatus))
+            return "Đã hoàn thành";
+
+        // Trả về tên trạng thái được chọn
+        return selectedStatus;
+    }
+
+    private int GetFilteredCount()
+    {
+        if (string.IsNullOrWhiteSpace(selectedStatus))
+        {
+            // Mặc định: đếm đơn hoàn thành (đã giao trở lên)
+            return DanhSachHoaDon.Count(x => GetStatusLevel(x.TrangThai) >= 3);
         }
 
-        showDetail = true;
+        // Đếm theo trạng thái được chọn
+        return DanhSachHoaDon.Count(x =>
+            x.TrangThai?.Trim().Equals(selectedStatus.Trim(), StringComparison.OrdinalIgnoreCase) == true);
     }
+}
+
+@if (showCancelConfirm)
+{
+    <div class="modal-overlay" @onclick="() => showCancelConfirm = false">
+        <div class="confirm-dialog" @onclick:stopPropagation>
+            <div class="confirm-icon">⚠️</div>
+            <h3 class="confirm-title">Xác nhận hủy đơn hàng</h3>
+            <p class="confirm-message">
+                Bạn có chắc chắn muốn hủy đơn hàng <strong>#@selectedHoaDon?.Id</strong>?<br />
+                Hành động này không thể hoàn tác.
+            </p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-yes" @onclick="ConfirmCancelOrder">
+                    Xác nhận hủy
+                </button>
+                <button class="btn-confirm-no" @onclick="() => showCancelConfirm = false">
+                    Không, giữ lại
+                </button>
+            </div>
+        </div>
+    </div>
 }
