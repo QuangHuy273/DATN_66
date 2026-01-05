@@ -169,8 +169,16 @@ else
 
                 <div class="summary-row">
                     <span>Phí vận chuyển</span>
-                    <span>@ShippingFee.ToString("N0", new CultureInfo("vi-VN")) VND</span>
+                    @if (ShippingFee == 0)
+                    {
+                        <span style="color: green; font-weight: 600;">Miễn phí</span>
+                    }
+                    else
+                    {
+                        <span>@ShippingFee.ToString("N0", new CultureInfo("vi-VN")) VND</span>
+                    }
                 </div>
+
 
                 <div class="discount-section">
                     <div class="discount-input-group">
@@ -206,8 +214,13 @@ else
                 </div>
 
                 <div class="summary-row total">
-                    <span>Tổng số tiền</span>
-                    <span>@TotalAmount.ToString("N0", new CultureInfo("vi-VN")) VND</span>
+                    @if (SubTotal >= 500000)
+                    {
+                        <div style="color: green; font-size: 14px; margin-top: 6px;">
+                            🎉 Đơn hàng từ 500.000₫ được miễn phí vận chuyển
+                        </div>
+                    }
+
                 </div>
 
             </div>
@@ -237,7 +250,9 @@ else
     private List<ChiTietMonAnDTO> chiTietMonAnList = new();
     private KhachHangDTO khachHang = new();
     private decimal SubTotal => chiTietMonAnList.Sum(item => item.Gia * item.SoLuongDat);
-    private decimal ShippingFee { get; set; } = 20000;
+    private decimal ShippingFee =>
+    SubTotal >= 500_000 ? 0 : 20000;
+
     private decimal TotalAmount => SubTotal + ShippingFee - discountAmount;
     private bool isLoading = true;
     private bool _hasInitialized = false;

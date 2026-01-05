@@ -121,8 +121,24 @@
                     <td class="p-2">@hoaDon.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                     <td class="p-2">@hoaDon.LoaiHoaDon</td>
                     <td class="p-2">
-                        <span class="badge @(GetBadgeClass(hoaDon.TrangThai))">@hoaDon.TrangThai</span>
+                        @if (hoaDon.TrangThai == "Chờ xác nhận"
+                                        && hoaDon.DaGuiYeuCauXacNhan
+                                        && hoaDon.TongTien > NGUONG_XAC_NHAN)
+                        {
+                            <span class="badge badge-blue badge-wait-confirm">
+                                ⏳ Chờ khách xác nhận
+                            </span>
+
+                        }
+                        else
+                        {
+                            <span class="badge @(GetBadgeClass(hoaDon.TrangThai))">
+                                @hoaDon.TrangThai
+                            </span>
+                        }
                     </td>
+
+
                     <td class="p-2">
                         <button @onclick="@(() => XemChiTiet(hoaDon.Id))"
                                 class="btn-view">
@@ -207,69 +223,86 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                     </div>
                 </div>
             </div>
+        
 
             <!-- Chi tiết món ăn -->
-        @if (selectedChiTiet?.Any() == true)
+        @if (selectedChiTiet?.Any() == true && MonAnTheoLichSu?.Any() == true)
             {
                 var tongSoMon = selectedChiTiet.Sum(ct => ct.Soluong);
                 <h4 class="section-title">Chi tiết món ăn (@tongSoMon món)</h4>
                 <div class="items-list">
-                    @foreach (var chiTiet in MonAnTheoLichSu.Values.SelectMany(x => x))
+                    @foreach (var hoaDonCt in selectedChiTiet)
                     {
-                        <div class="item-row">
-                            <!-- Hình ảnh -->
-                            <img src="@(string.IsNullOrEmpty(chiTiet.DanhSachAnh?.FirstOrDefault()?.DuongDan)
-                                                                                       ? "/images/default-food.jpg"
-                                                                                       : chiTiet.DanhSachAnh.First().DuongDan)"
+                        if (MonAnTheoLichSu.TryGetValue(hoaDonCt.Id, out var monAnList))
+                        {
+                            var chiTiet = monAnList.FirstOrDefault();
+                            if (chiTiet != null)
+                            {
+                                <div class="item-row">
+                                    <!-- Hình ảnh -->
+                                    <img src="@(string.IsNullOrEmpty(chiTiet.DanhSachAnh?.FirstOrDefault()?.DuongDan)
+                                                                                         ? "/images/default-food.jpg"
+                                                                                         : chiTiet.DanhSachAnh.First().DuongDan)"
                      alt="@chiTiet.Ten"
                      class="item-image" />
 
-                            <!-- Thông tin món ăn -->
-                            <div class="item-info">
-                                <!-- Header: Tên và Mã -->
-                                <div class="item-header">
-                                    <div class="item-title">@chiTiet.Ten</div>
-                                    <div class="item-code">Mã: @chiTiet.MonAnId</div>
-                                </div>
+                                    <!-- Thông tin món ăn -->
+                                    <div class="item-info">
+                                        <!-- Header: Tên và Mã -->
+                                        <div class="item-header">
+                                            <div class="item-title">@chiTiet.Ten</div>
+                                            <div class="item-code">Mã: @chiTiet.MonAnId</div>
+                                        </div>
 
-                                <!-- Các thuộc tính -->
-                                <div class="item-attributes">
+                                        <!-- Các thuộc tính -->
+                                        <div class="item-attributes">
                         @if (!string.IsNullOrEmpty(chiTiet.LoaiVi))
-                                    {
-                                        <div class="item-attribute">
-                                            <span class="attribute-label">Loại vị</span>
-                                            <span class="attribute-value">@chiTiet.LoaiVi</span>
-                                        </div>
-                                    }
+                                            {
+                                                <div class="item-attribute">
+                                                    <span class="attribute-label">Loại vị</span>
+                                                    <span class="attribute-value">@chiTiet.LoaiVi</span>
+                                                </div>
+                                            }
 
-                                    @if (!string.IsNullOrEmpty(chiTiet.KichCo))
-                                    {
-                                        <div class="item-attribute">
-                                            <span class="attribute-label">Kích cỡ</span>
-                                            <span class="attribute-value">@chiTiet.KichCo</span>
-                                        </div>
-                                    }
+                                            @if (!string.IsNullOrEmpty(chiTiet.KichCo))
+                                            {
+                                                <div class="item-attribute">
+                                                    <span class="attribute-label">Kích cỡ</span>
+                                                    <span class="attribute-value">@chiTiet.KichCo</span>
+                                                </div>
+                                            }
 
-                                    @if (!string.IsNullOrEmpty(chiTiet.NguyenLieu))
-                                    {
-                                        <div class="item-attribute">
-                                            <span class="attribute-label">Nguyên liệu</span>
-                                            <span class="attribute-value">@chiTiet.NguyenLieu</span>
+                                            @if (!string.IsNullOrEmpty(chiTiet.NguyenLieu))
+                                            {
+                                                <div class="item-attribute">
+                                                    <span class="attribute-label">Nguyên liệu</span>
+                                                    <span class="attribute-value">@chiTiet.NguyenLieu</span>
+                                                </div>
+                                            }
                                         </div>
-                                    }
+
+                                        <!-- Mô tả -->
+                                        @if (!string.IsNullOrEmpty(chiTiet.Mota))
+                                        {
+                                            <div class="item-description">@chiTiet.Mota</div>
+                                        }
+                                    </div>
+
+                                    <!-- Số lượng và giá -->
+                                    <div class="item-quantity">
+                                        x @hoaDonCt.Soluong
+                                    </div>
+
+                                    <div class="item-price">
+                                        <div style="font-size:13px;color:#6c757d">
+                                            @chiTiet.Gia.ToString("N0") đ / món
+                                        </div>
+                                        
+                                    </div>
+
                                 </div>
-
-                                <!-- Mô tả -->
-                                @if (!string.IsNullOrEmpty(chiTiet.Mota))
-                                {
-                                    <div class="item-description">@chiTiet.Mota</div>
-                                }
-                            </div>
-
-                            <!-- Số lượng và giá -->
-                            <div class="item-quantity">x @chiTiet.SoLuongDat</div>
-                            <div class="item-price">@chiTiet.Gia.ToString("N0") đ</div>
-                        </div>
+                            }
+                        }
                     }
                 </div>
             }
@@ -278,11 +311,31 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
             <div class="total-summary">
                 @if (selectedHoaDon?.LoaiHoaDon == "Online")
                 {
-                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: #6c757d;">
+                    var phiShip = selectedHoaDon.TongTien >= NGUONG_XAC_NHAN ? 0 : PHI_SHIP;
+
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: #6c757d;">
                         <span>Phí vận chuyển:</span>
-                        <span>20,000 đ</span>
+
+                        @if (phiShip == 0)
+                        {
+                            <span style="color: green; font-weight: 600;">
+                                Miễn phí
+                            </span>
+                        }
+                        else
+                        {
+                            <span>@phiShip.ToString("N0") đ</span>
+                        }
                     </div>
+
+                    @if (phiShip == 0)
+                    {
+                        <div style="color: green; font-size: 13px; margin-bottom: 10px;">
+                            🎉 Đơn hàng từ 500.000₫ được miễn phí vận chuyển
+                        </div>
+                    }
                 }
+
 
                 <div class="total-amount">@selectedHoaDon?.TongTien.ToString("N0") đ</div>
                 <div class="total-label">Tổng giá trị đơn hàng</div>
@@ -320,9 +373,30 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                     @* CHỜ XÁC NHẬN *@
                     @if (selectedHoaDon.TrangThai == "Chờ xác nhận")
                     {
+                        @* ⏳ Đang chờ khách xác nhận *@
+                        @if (selectedHoaDon.DaGuiYeuCauXacNhan
+                                    && selectedHoaDon.TongTien > NGUONG_XAC_NHAN)
+                        {
+                            <button class="btn-action" disabled>
+                                ⏳ Chờ khách xác nhận
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn-action"
+                                    @onclick="() => CapNhatTrangThai(selectedHoaDon.Id)">
+                                Xác nhận
+                            </button>
+                        }
+                    }
+
+
+                    @* XÁC NHẬN *@
+                    else if (selectedHoaDon.TrangThai == "Xác nhận")
+                    {
                         <button class="btn-action"
                                 @onclick="() => CapNhatTrangThai(selectedHoaDon.Id)">
-                            Xác nhận
+                            Chờ giao
                         </button>
 
                         <button class="btn-danger"
@@ -393,6 +467,10 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
     private int SoLuongHienThi = 25;
     private const int SO_LUONG_MOI_LAN = 25;
 
+    private bool showXacNhanKhachHang = false;
+    private string hoaDonChoXacNhan;
+    private const decimal NGUONG_XAC_NHAN = 500_000;
+
     private List<HoaDon> DanhSachHoaDon;
     private List<HoaDon> DanhSachHoaDonDayDu;
     private List<HoaDonChiTietDTO> DanhSachChiTiet;
@@ -404,14 +482,15 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
     private string TrangThai;
     private readonly List<string> TrangThaiList = new()
     {
-        "TẤT CẢ", "Chờ xác nhận", "Chờ giao", "Vận chuyển", "Đã giao", "Đã thanh toán", "Đã huỷ", "hoàn thành"
+        "TẤT CẢ", "Chờ xác nhận", "Xác nhận", "Chờ giao", "Vận chuyển", "Đã giao", "Đã thanh toán", "Đã huỷ", "hoàn thành"
     };
 
     private string? GetNextTrangThai(string trangThaiHienTai)
     {
         return trangThaiHienTai switch
         {
-            "Chờ xác nhận" => "Chờ giao",
+            "Chờ xác nhận" => "Xác nhận",
+            "Xác nhận" => "Chờ giao",
             "Chờ giao" => "Vận chuyển",
             "Vận chuyển" => "Đã giao",
             "Đã giao" => "Đã thanh toán",
@@ -506,10 +585,11 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                 return matchText && matchFromDate && matchToDate && matchTrangThai && matchGiaTu && matchGiaDen;
             })
             .OrderBy(hd => hd.TrangThai == "Chờ xác nhận" ? 0 :
-                           hd.TrangThai == "Chờ giao" ? 1 :
-                           hd.TrangThai == "Vận chuyển" ? 2 :
-                           hd.TrangThai == "Đã giao" ? 3 :
-                           hd.TrangThai == "Đã thanh toán" ? 4 :
+                           hd.TrangThai == "Xác nhận" ? 1 :
+                           hd.TrangThai == "Chờ giao" ? 2 :
+                           hd.TrangThai == "Vận chuyển" ? 3 :
+                           hd.TrangThai == "Đã giao" ? 4 :
+                           hd.TrangThai == "Đã thanh toán" ? 5 :
                            hd.TrangThai == "hoàn thành" ? 99 :
                            hd.TrangThai == "Đã huỷ" ? 100 : 50)
             .ThenByDescending(hd => hd.NgayTao)
@@ -537,6 +617,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
     {
         "hoàn thành" => "badge-purple",
         "Chờ xác nhận" => "badge-blue",
+        "Xác nhận" => "badge-blue",
         "Chờ giao" => "badge-orange",
         "Vận chuyển" => "badge-blue",
         "Đã giao" => "badge-green",
@@ -560,6 +641,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                     await HoaDonService.LichSuTrangThai(item.Id, "Đã huỷ", "Bán Hàng Online");
                 }
                 await TaiLai();
+                showHistory = false;
             }
         }
     }
@@ -568,6 +650,32 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
     {
         var hoaDon = await ApiService.GetbyId<HoaDon, string>(hoaDonId, "HoaDon");
         if (hoaDon == null) return;
+        // ⛔ ĐƠN TRÊN 500K → CHỈ GỬI YÊU CẦU KHÁCH XÁC NHẬN
+        if (hoaDon.TrangThai == "Chờ xác nhận"
+            && hoaDon.TongTien > NGUONG_XAC_NHAN)
+        {
+            hoaDon.DaGuiYeuCauXacNhan = true;
+
+            await ApiService.PutAsync("HoaDon", hoaDon);
+
+            foreach (var item in selectedChiTiet)
+            {
+                await HoaDonService.LichSuTrangThai(
+                    item.Id,
+                    "Chờ xác nhận",
+                    "Yêu cầu khách hàng xác nhận đơn > 500k"
+                );
+            }
+
+            await JS.InvokeVoidAsync(
+                "alert",
+                "Đã gửi yêu cầu xác nhận cho khách hàng"
+            );
+
+            await TaiLai();
+            showHistory = false;
+            return; // ⛔ CỰC KỲ QUAN TRỌNG
+        }
 
         var trangThaiMoi = GetNextTrangThai(hoaDon.TrangThai);
         if (trangThaiMoi == null)
@@ -627,7 +735,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
         await TaiLai();
         StateHasChanged();
     }
-
+    
     private bool showHistory = false;
     private List<LichSuTrangThai> selectedLichSu = new();
     private Dictionary<Guid, List<ChiTietMonAnDTO>> MonAnTheoLichSu = new();

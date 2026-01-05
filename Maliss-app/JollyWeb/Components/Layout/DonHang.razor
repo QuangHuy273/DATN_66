@@ -254,6 +254,11 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
+    .badge-cyan {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+    }
+
     .badge-blue {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
@@ -806,6 +811,10 @@
         color: white;
     }
 
+    .modal-footer button {
+        pointer-events: auto;
+    }
+
     .modal-footer {
         padding: 2rem 2.5rem;
         border-top: 2px solid #e2e8f0;
@@ -1065,6 +1074,7 @@
             <select class="filter-select" @bind="selectedStatus" @bind:event="onchange">
                 <option value="">📦 Tất cả trạng thái</option>
                 <option value="Chờ xác nhận">Chờ xác nhận</option>
+                <option value="Xác nhận">Xác nhận</option>
                 <option value="Chờ giao">Chờ giao</option>
                 <option value="Vận chuyển">Vận chuyển</option>
                 <option value="Đã giao">Đã giao</option>
@@ -1149,6 +1159,19 @@
                                 }
                             </div>
                             <div class="step-label">Chờ xác nhận</div>
+                        </div>
+                        <div class="progress-step @GetStepClass("Xác nhận", selectedHoaDon.TrangThai)">
+                            <div class="step-icon-wrapper">
+                                @if (IsStepCompleted("Xác nhận", selectedHoaDon.TrangThai))
+                                {
+                                    <span class="step-check">✓</span>
+                                }
+                                else
+                                {
+                                    <span>📝</span>
+                                }
+                            </div>
+                            <div class="step-label">Xác nhận</div>
                         </div>
 
                         <div class="progress-step @GetStepClass("Chờ giao", selectedHoaDon.TrangThai)">
@@ -1269,18 +1292,100 @@
                 <div class="total-section">
                     <div class="total-row">
                         <span>Tiền hàng:</span>
-                        <span>@((selectedHoaDon.TongTien - 20000).ToString("N0")) đ</span>
+                        <span>@TienHang.ToString("N0") đ</span>
                     </div>
+
                     <div class="total-row">
                         <span>Phí vận chuyển:</span>
-                        <span>20,000 đ</span>
+                        @if (PhiVanChuyen == 0)
+                        {
+                            <span style="color:#bbf7d0;font-weight:700">Miễn phí</span>
+                        }
+                        else
+                        {
+                            <span>@PhiVanChuyen.ToString("N0") đ</span>
+                        }
                     </div>
-                    <div class="total-amount">@selectedHoaDon.TongTien.ToString("N0") đ</div>
+
+                    @if (PhiVanChuyen == 0)
+                    {
+                        <div style="color:#bbf7d0;font-size:14px;margin-bottom:12px">
+                            🎉 Đơn hàng từ 500.000₫ được miễn phí vận chuyển
+                        </div>
+                    }
+
+                    <div class="total-amount">
+                        @selectedHoaDon.TongTien.ToString("N0") đ
+                    </div>
                     <div class="total-label">Tổng giá trị đơn hàng</div>
                 </div>
             </div>
 
             <div class="modal-footer">
+                @if (selectedHoaDon.TrangThai == "Chờ xác nhận"
+                            && selectedHoaDon.DaGuiYeuCauXacNhan
+                            && selectedHoaDon.TongTien > 500000)
+                {
+                    <div style="flex:1; text-align:left;">
+                        <p style="color:#d97706;font-weight:600;margin-bottom:8px">
+                            ⚠️ Đơn hàng trên 500.000đ, vui lòng xác nhận để tiếp tục xử lý
+                        </p>
+
+                        <button class="btn-view-detail"
+                                style="max-width:220px"
+                                @onclick="MoFormXacNhan">
+                            ✅ Xác nhận đơn hàng
+                        </button>
+                    </div>
+                }
+                @if (showXacNhanForm)
+                {
+                    <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-96">
+                            <h3 class="text-lg font-semibold mb-4">Xác nhận thanh toán</h3>
+
+                            
+                            <div class="mb-3">
+                                <label>Ngân hàng</label>
+                                <select class="form-control" @bind="nganHangDaChon">
+                                    <option value="">-- Chọn ngân hàng --</option>
+                                    @foreach (var bank in danhSachNganHang)
+                                    {
+                                        <option value="@bank">@bank</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Số tài khoản</label>
+
+                                <input class="form-control"
+                                       @bind="soTaiKhoan"
+                                       maxlength="20"
+                                       inputmode="numeric"
+                                       pattern="[0-9]*"
+                                       placeholder="Nhập số tài khoản" />
+                            </div>
+
+
+                            @if (!string.IsNullOrEmpty(loiXacNhan))
+                            {
+                                <div class="text-danger mb-2">@loiXacNhan</div>
+                            }
+
+                            <div class="text-end">
+                                <button class="btn btn-secondary"
+                                        @onclick="DongFormXacNhan">
+                                    Hủy
+                                </button>
+
+                                <button class="btn btn-primary ms-2"
+                                        @onclick="XacNhanDonHang">
+                                    Xác nhận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
                 @if (CanCancelOrder(selectedHoaDon.TrangThai))
                 {
                     <button class="btn-cancel-order" @onclick="ShowCancelConfirmation" disabled="@isCancelling">
@@ -1303,6 +1408,7 @@
 }
 
 @code {
+
     private List<HoaDon> DanhSachHoaDon = new();
     private HoaDon? selectedHoaDon;
     private List<ChiTietMonAnDTO> DanhSachMon = new();
@@ -1312,6 +1418,12 @@
     private string selectedStatus = "";
     private bool showCancelConfirm = false;
     private bool isCancelling = false;
+    public bool DaGuiYeuCauXacNhan { get; set; }
+    bool showXacNhanForm = false;
+
+    string soTaiKhoan = string.Empty;
+    string nganHang = string.Empty;
+    string? loiXacNhan = null;
 
     private List<HoaDon> FilteredHoaDon =>
         DanhSachHoaDon
@@ -1330,6 +1442,7 @@
         return normalizedStatus switch
         {
             "chờ xác nhận" => "badge-blue",
+            "xác nhận" => "badge-cyan",
             "chờ giao" => "badge-orange",
             "vận chuyển" => "badge-purple",
             "đã giao" => "badge-green",
@@ -1348,14 +1461,142 @@
         return normalizedStatus switch
         {
             "chờ xác nhận" => 0,
-            "chờ giao" => 1,
-            "vận chuyển" => 2,
-            "đã giao" => 3,
-            "đã thanh toán" => 4,
-            "hoàn thành" => 4,
+            "xác nhận" => 1,
+            "chờ giao" => 2,
+            "vận chuyển" => 3,
+            "đã giao" => 4,
+            "đã thanh toán" => 5,
+            "hoàn thành" => 5,
             "đã huỷ" => -1,
             _ => 0
         };
+
+    }
+    //ngan hang
+    private string nganHangDaChon = "";
+
+    private List<string> danhSachNganHang = new()
+{
+    "Vietcombank",
+    "VietinBank",
+    "BIDV",
+    "Agribank",
+    "Techcombank",
+    "MB Bank",
+    "ACB",
+    "TPBank",
+    "Sacombank"
+};
+
+
+    // phi ship 
+    private const decimal PhiShip = 20000;
+
+    private decimal TienHang =>
+        selectedHoaDon == null
+            ? 0
+            : (selectedHoaDon.TongTien >= 500000
+                ? selectedHoaDon.TongTien
+                : selectedHoaDon.TongTien - PhiShip);
+
+    private decimal PhiVanChuyen =>
+        selectedHoaDon != null && selectedHoaDon.TongTien >= 500000
+            ? 0
+            : PhiShip;
+
+    void DongFormXacNhan()
+    {
+        showXacNhanForm = false;
+    }
+
+    void MoFormXacNhan()
+    {
+        loiXacNhan = null;
+        showXacNhanForm = true;
+    }
+    // khach xac nhan
+    private async Task KhachXacNhan()
+    {
+        if (selectedHoaDon == null || string.IsNullOrEmpty(selectedHoaDon.Id))
+            return;
+
+        var hoaDonId = selectedHoaDon.Id;
+
+        // 1️⃣ GET FULL
+        var fullHoaDon = await ApiService.GetAsync<HoaDonDTO>(
+            $"HoaDon/{hoaDonId}");
+
+        if (fullHoaDon == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Không lấy được dữ liệu hóa đơn!");
+            return;
+        }
+
+        // 2️⃣ UPDATE
+        fullHoaDon.TrangThai = "Xác nhận";
+        fullHoaDon.DaGuiYeuCauXacNhan = false;
+        fullHoaDon.GhiChu = $"CK: {nganHang} - {soTaiKhoan}";
+
+        // 3️⃣ PUT ĐÚNG ROUTE (🔥 CHỖ QUAN TRỌNG 🔥)
+        var ok = await ApiService.PutAsync(
+            $"HoaDon", fullHoaDon);
+
+        if (!ok)
+        {
+            await JS.InvokeVoidAsync("alert", "Lỗi khi xác nhận đơn hàng!");
+            return;
+        }
+
+        // 4️⃣ UPDATE UI
+        selectedHoaDon.TrangThai = "Xác nhận";
+        selectedHoaDon.DaGuiYeuCauXacNhan = false;
+
+        StateHasChanged();
+    }
+
+    // xac nhan don
+    private async Task XacNhanDonHang()
+    {
+        // 🔒 CHECK CHỌN NGÂN HÀNG
+        if (string.IsNullOrEmpty(nganHangDaChon))
+        {
+            await JS.InvokeVoidAsync(
+                "Swal.fire",
+                "Thiếu dữ liệu",
+                "Vui lòng chọn ngân hàng",
+                "warning"
+            );
+            return;
+        }
+
+        //  CHECK STK 
+        if (string.IsNullOrWhiteSpace(soTaiKhoan))
+        {
+            await JS.InvokeVoidAsync("Swal.fire",
+                "Thiếu dữ liệu",
+                "Vui lòng nhập số tài khoản",
+                "warning");
+            return;
+        }
+
+        // 🔒 CHỈ CHO PHÉP 6–20 SỐ
+        if (!System.Text.RegularExpressions.Regex.IsMatch(soTaiKhoan, @"^\d{6,20}$"))
+        {
+            await JS.InvokeVoidAsync("Swal.fire",
+                "STK không hợp lệ",
+                "Số tài khoản phải gồm 6–20 chữ số",
+                "error");
+            return;
+        }
+
+        showXacNhanForm = false;
+
+        // GỌI HÀM XÁC NHẬN 
+        showXacNhanForm = false;
+        await KhachXacNhan();
+
+        soTaiKhoan = "";
+        nganHangDaChon = "";
     }
 
     private string GetStepClass(string step, string currentStatus)
@@ -1383,12 +1624,14 @@
         return level switch
         {
             0 => 0,
-            1 => 25,
-            2 => 50,
-            3 => 75,
-            4 => 100,
+            1 => 20,   // Xác nhận
+            2 => 40,
+            3 => 60,
+            4 => 80,
+            5 => 100,
             _ => 0
         };
+
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1456,7 +1699,10 @@
     private bool CanCancelOrder(string status)
     {
         var normalizedStatus = status?.Trim().ToLower() ?? "";
-        return normalizedStatus == "chờ xác nhận" || normalizedStatus == "chờ giao";
+        return normalizedStatus == "chờ xác nhận"
+      || normalizedStatus == "xác nhận"
+      || normalizedStatus == "chờ giao";
+
     }
 
     private void ShowCancelConfirmation()
@@ -1483,7 +1729,7 @@
                 currentHoaDon.TrangThai = "Đã huỷ";
 
                 // Gọi API PUT để cập nhật
-                var result = await ApiService.PutAsync($"HoaDon/{currentHoaDon.Id}", currentHoaDon);
+                var result = await ApiService.PutAsync(  "HoaDon", currentHoaDon);
 
                 if (result)
                 {
@@ -1533,6 +1779,7 @@
         return normalizedStatus switch
         {
             "chờ xác nhận" => "📋",
+            "xác nhận" => "📝",
             "chờ giao" => "📦",
             "vận chuyển" => "🚚",
             "đã giao" => "🏠",
