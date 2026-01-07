@@ -1,165 +1,499 @@
 ﻿@using API.Models
 @using System.ComponentModel.DataAnnotations
 @using API.Models.ViewModels.QuanLyGiamGia
+@using API.Models.DTO
 @using System.Globalization
 @inject IJSRuntime JS
+@inject IMonAnService MonAnService
 <link href="css/ThemSuaGiamGia.css" rel="stylesheet" />
-<!-- Modal Overlay -->
-<div class="modal-overlay">
-    <div class="modal-box">
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="HandleOverlayClick">
-            <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" @onclick:stopPropagation="true">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">@(IsEdit ? "Chỉnh sửa voucher" : "Tạo voucher mới")</h2>
-                    <button @onclick="OnClose" class="text-gray-500 hover:text-gray-700 text-2xl">
-                        ×
-                    </button>
-                </div>
 
-                <EditForm Model="@formData" OnValidSubmit="@HandleSubmit">
-                    <DataAnnotationsValidator />
-            
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4"
-                    
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Tên voucher <span class="text-red-500">*</span>
-                                </label>
-                                <InputText @bind-Value="formData.Ten" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                           placeholder="Tên hiển thị" />
-                                <ValidationMessage For="@(() => formData.Ten)" class="text-red-500 text-sm mt-1" />
-                            </div>
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
+     @onclick="HandleOverlayClick">
+    <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl animate-slideUp"
+         @onclick:stopPropagation="true">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">
+                    @(IsEdit ? "Chỉnh sửa voucher" : "Tạo voucher mới")
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    @(IsEdit ? "Cập nhật thông tin voucher" : "Điền thông tin để tạo voucher mới")
+                </p>
+            </div>
+            <button @onclick="OnClose"
+                    class="text-gray-400 hover:text-gray-600 transition-colors text-3xl leading-none"
+                    title="Đóng">
+                ×
+            </button>
+        </div>
+
+        <!-- Form Content -->
+        <div class="overflow-y-auto px-6 py-4" style="max-height: calc(90vh - 140px);">
+            <EditForm Model="@formData" OnValidSubmit="@HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="space-y-5">
+                    <!-- Tên voucher -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Tên voucher <span class="text-red-500">*</span>
+                        </label>
+                        <InputText @bind-Value="formData.Ten"
+                                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                   placeholder="VD: Giảm giá mùa hè 2024" />
+                        <ValidationMessage For="@(() => formData.Ten)" class="text-red-500 text-sm mt-1" />
+                    </div>
+
+                    <!-- Loại giảm giá và giá trị -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Loại giảm giá
+                            </label>
+                            <select @bind="DiscountType"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow">
+                                <option value="percentage">Phần trăm (%)</option>
+                                <option value="fixed">Số tiền cố định (VNĐ)</option>
+                            </select>
                         </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Loại giảm giá
-                                </label>
-                                <select @bind="discountType" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="percentage">Phần trăm (%)</option>
-                                    <option value="fixed">Số tiền cố định</option>
-                                </select>
-                            </div>
-                    
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Giá trị <span class="text-red-500">*</span>
-                                </label>
-                                @if (IsPercentage)
-                                {
-                                    <InputNumber @bind-Value="formData.PhanTramKhuyenMai" 
-                                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                 placeholder="20" 
-                                                 min="1" 
-                                                 max="100" />
-                                    <ValidationMessage For="@(() => formData.PhanTramKhuyenMai)" class="text-red-500 text-sm mt-1" />
-                                }
-                                @if (IsFixed)
-                                {
-                                    <InputNumber @bind-Value="formData.SoTienKhuyenMai" 
-                                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                 placeholder="50000" 
-                                                 min="1000" />
-                                    <ValidationMessage For="@(() => formData.SoTienKhuyenMai)" class="text-red-500 text-sm mt-1" />
-                                }
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Đơn hàng tối thiểu
-                                </label>
-                                <InputNumber @bind-Value="formData.SoTienToiThieu" 
-                                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                             placeholder="100000" 
-                                             min="0" />
-                            </div>
-                    
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Số lượng <span class="text-red-500">*</span>
-                                </label>
-                                <InputNumber @bind-Value="formData.Soluong" 
-                                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                             placeholder="1000" 
-                                             min="1" />
-                                <ValidationMessage For="@(() => formData.Soluong)" class="text-red-500 text-sm mt-1" />
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Ngày bắt đầu
-                                </label>
-                                <InputDate @bind-Value="formData.NgayBatDau"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                <ValidationMessage For="@(() => formData.NgayBatDau)" class="text-red-500 text-sm mt-1" />
-
-                            </div>
-                    
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Ngày kết thúc
-                                </label>
-                                <InputDate @bind-Value="formData.NgayKetThuc" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                <ValidationMessage For="@(() => formData.NgayKetThuc)" class="text-red-500 text-sm mt-1" />
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="flex items-center space-x-2">
-                                <InputCheckbox @bind-Value="formData.ApDungSanPham" 
-                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-                                <label class="text-sm font-medium text-gray-700">
-                                    Áp dụng cho sản phẩm cụ thể
-                                </label>
-                            </div>
-                        </div>
-
-
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Mô tả (tùy chọn)
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Giá trị giảm <span class="text-red-500">*</span>
                             </label>
-                            <InputTextArea @bind-Value="formData.MoTa" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                           placeholder="Mô tả chi tiết về voucher..." 
-                                           rows="3" />
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <InputCheckbox @bind-Value="formData.TrangThai" 
-                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-                            <label class="text-sm font-medium text-gray-700">
-                                Kích hoạt voucher ngay
-                            </label>
+                            @if (IsPercentage)
+                            {
+                                <div class="relative">
+                                    <InputNumber @bind-Value="formData.PhanTramKhuyenMai"
+                                                 class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                                 placeholder="VD: 20"
+                                                 min="1"
+                                                 max="100" />
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">%</span>
+                                </div>
+                                <ValidationMessage For="@(() => formData.PhanTramKhuyenMai)" class="text-red-500 text-sm mt-1" />
+                                <p class="text-xs text-gray-500 mt-1">Giá trị từ 1% đến 100%</p>
+                            }
+                            @if (IsFixed)
+                            {
+                                <div class="relative">
+                                    <InputNumber @bind-Value="formData.SoTienKhuyenMai"
+                                                 class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                                 placeholder="VD: 50000"
+                                                 min="1000" />
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">đ</span>
+                                </div>
+                                <ValidationMessage For="@(() => formData.SoTienKhuyenMai)" class="text-red-500 text-sm mt-1" />
+                                <p class="text-xs text-gray-500 mt-1">Tối thiểu 1,000đ</p>
+                            }
                         </div>
                     </div>
 
-                    <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
-                        <button type="button" 
-                                @onclick="OnClose" 
-                                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
-                            Hủy
-                        </button>
-                        <button type="submit" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            @(IsEdit ? "Cập nhật" : "Tạo voucher")
-                        </button>
+                    <!-- Điều kiện và số lượng -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Đơn hàng tối thiểu
+                            </label>
+                            <div class="relative">
+                                <InputNumber @bind-Value="formData.SoTienToiThieu"
+                                             class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                             placeholder="VD: 100000"
+                                             min="0" />
+                                <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">đ</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Để trống nếu không giới hạn</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Số lượng voucher <span class="text-red-500">*</span>
+                            </label>
+                            <InputNumber @bind-Value="formData.Soluong"
+                                         class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                         placeholder="VD: 1000"
+                                         min="1" />
+                            <ValidationMessage For="@(() => formData.Soluong)" class="text-red-500 text-sm mt-1" />
+                        </div>
                     </div>
-                </EditForm>
-            </div>
+
+                    <!-- Thời gian hiệu lực -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Ngày bắt đầu <span class="text-red-500">*</span>
+                            </label>
+                            <InputDate @bind-Value="formData.NgayBatDau"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" />
+                            <ValidationMessage For="@(() => formData.NgayBatDau)" class="text-red-500 text-sm mt-1" />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Ngày kết thúc <span class="text-red-500">*</span>
+                            </label>
+                            <InputDate @bind-Value="formData.NgayKetThuc"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" />
+                            <ValidationMessage For="@(() => formData.NgayKetThuc)" class="text-red-500 text-sm mt-1" />
+                        </div>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Mô tả voucher
+                        </label>
+                        <InputTextArea @bind-Value="formData.MoTa"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none"
+                                       placeholder="Mô tả chi tiết về điều kiện, cách sử dụng voucher..."
+                                       rows="3" />
+                        <p class="text-xs text-gray-500 mt-1">Thông tin bổ sung cho khách hàng</p>
+                    </div>
+
+                    <!-- Tùy chọn -->
+                    <div class="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="flex items-start space-x-3">
+                            <InputCheckbox @bind-Value="formData.ApDungSanPham"
+                                           class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
+                                           id="apDungSanPham"
+                                           @onchange="OnApDungSanPhamChanged" />
+                            <div>
+                                <label for="apDungSanPham" class="text-sm font-medium text-gray-700 cursor-pointer">
+                                    Áp dụng cho sản phẩm cụ thể
+                                </label>
+                                <p class="text-xs text-gray-500 mt-0.5">Giới hạn voucher chỉ cho một số sản phẩm nhất định</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <InputCheckbox @bind-Value="formData.TrangThai"
+                                           class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
+                                           id="trangThai" />
+                            <div>
+                                <label for="trangThai" class="text-sm font-medium text-gray-700 cursor-pointer">
+                                    Kích hoạt voucher ngay
+                                </label>
+                                <p class="text-xs text-gray-500 mt-0.5">Voucher sẽ có thể sử dụng ngay sau khi tạo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danh sách sản phẩm áp dụng -->
+                    @if (formData.ApDungSanPham && showProductSelection)
+                    {
+                        <div class="p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    <i class="bi bi-box-seam"></i> Chọn sản phẩm áp dụng
+                                    @if (selectedProducts.Any())
+                                    {
+                                        <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">
+                                            @selectedProducts.Count đã chọn
+                                        </span>
+                                    }
+                                </label>
+                                <button type="button"
+                                        @onclick="OpenProductModal"
+                                        class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
+                                    <i class="bi bi-search"></i> Tìm sản phẩm
+                                </button>
+                            </div>
+
+                            @if (selectedProducts.Any())
+                            {
+                                <div class="space-y-2 max-h-60 overflow-y-auto">
+                                    @foreach (var product in selectedProducts)
+                                    {
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                                            <div class="flex items-center space-x-3">
+                                                @if (!string.IsNullOrWhiteSpace(product.AnhDaTai))
+                                                {
+                                                    <img src="@product.AnhDaTai"
+                                                         alt="@product.Ten"
+                                                         class="w-12 h-12 object-cover rounded border border-gray-300" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
+                                                        <i class="bi bi-image text-gray-400"></i>
+                                                    </div>
+                                                }
+                                                <div>
+                                                    <p class="text-sm font-medium text-gray-900">@product.Ten</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        @(string.IsNullOrWhiteSpace(product.TheLoai) ? "Chưa phân loại" : product.TheLoai)
+                                                    </p>
+                                                    <p class="text-xs text-gray-400">ID: @product.Id</p>
+                                                </div>
+                                            </div>
+                                            <button type="button"
+                                                    @onclick="() => RemoveProduct(product.Id)"
+                                                    class="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                    title="Xóa sản phẩm">
+                                                <i class="bi bi-x-circle text-xl"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-8 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                                    <i class="bi bi-inbox text-4xl mb-2 block text-gray-400"></i>
+                                    <p class="font-medium">Chưa có sản phẩm nào được chọn</p>
+                                    <p class="text-xs mt-1">Nhấn "Tìm sản phẩm" để thêm sản phẩm áp dụng voucher</p>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Preview thông tin -->
+                    @if (formData.PhanTramKhuyenMai.HasValue || formData.SoTienKhuyenMai.HasValue)
+                    {
+                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-sm font-medium text-blue-900 mb-2">
+                                ℹ️ Thông tin voucher
+                            </p>
+                            <div class="text-sm text-blue-800 space-y-1">
+                                <p>
+                                    • Giảm:
+                                    @if (formData.PhanTramKhuyenMai.HasValue)
+                                    {
+                                        <span class="font-semibold">@formData.PhanTramKhuyenMai%</span>
+                                    }
+                                    else if (formData.SoTienKhuyenMai.HasValue)
+                                    {
+                                        <span class="font-semibold">@formData.SoTienKhuyenMai.Value.ToString("N0")đ</span>
+                                    }
+                                </p>
+                                @if (formData.SoTienToiThieu.HasValue && formData.SoTienToiThieu > 0)
+                                {
+                                    <p>• Đơn tối thiểu: <span class="font-semibold">@formData.SoTienToiThieu.Value.ToString("N0")đ</span></p>
+                                }
+                                @if (formData.Soluong > 0)
+                                {
+                                    <p>• Số lượng: <span class="font-semibold">@formData.Soluong voucher</span></p>
+                                }
+                                @if (formData.ApDungSanPham && selectedProducts.Any())
+                                {
+                                    <p>• Áp dụng cho: <span class="font-semibold">@selectedProducts.Count sản phẩm</span></p>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                    <button type="button"
+                            @onclick="OnClose"
+                            class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            disabled="@isSubmitting">
+                        Hủy
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="animate-spin mr-2">⏳</span>
+                            <span>Đang xử lý...</span>
+                        }
+                        else
+                        {
+                            <span>@(IsEdit ? "Cập nhật" : "Tạo voucher")</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
         </div>
     </div>
 </div>
+
+<!-- Modal chọn sản phẩm -->
+@if (isProductModalOpen)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 animate-fadeIn"
+         @onclick="CloseProductModal">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl animate-slideUp"
+             @onclick:stopPropagation="true">
+
+            <!-- Header -->
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i class="bi bi-search mr-2"></i> Tìm và chọn sản phẩm
+                </h3>
+                <button @onclick="CloseProductModal"
+                        class="text-white hover:text-gray-200 transition-colors text-3xl leading-none">
+                    ×
+                </button>
+            </div>
+
+            <!-- Search bar -->
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div class="relative">
+                    <input type="text"
+                           @bind="productSearchKeyword"
+                           @bind:event="oninput"
+                           @onkeyup="SearchProducts"
+                           placeholder="Tìm kiếm sản phẩm theo tên hoặc ID..."
+                           class="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm" />
+                    <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    @if (!string.IsNullOrWhiteSpace(productSearchKeyword))
+                    {
+                        <button @onclick="ClearSearch"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    }
+                </div>
+                @if (availableProducts.Any())
+                {
+                    <p class="text-xs text-gray-500 mt-2">
+                        Tìm thấy <strong>@availableProducts.Count</strong> sản phẩm
+                    </p>
+                }
+            </div>
+
+            <!-- Product list -->
+            <div class="overflow-y-auto px-6 py-4" style="max-height: calc(90vh - 240px);">
+                @if (isLoadingProducts)
+                {
+                    <div class="text-center py-12">
+                        <div class="animate-spin inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+                        <p class="text-gray-500 mt-3 font-medium">Đang tải danh sách sản phẩm...</p>
+                    </div>
+                }
+                else if (!availableProducts.Any())
+                {
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="bi bi-inbox text-5xl mb-3 block text-gray-400"></i>
+                        <p class="font-medium text-lg">Không tìm thấy sản phẩm nào</p>
+                        <p class="text-sm mt-1">Thử thay đổi từ khóa tìm kiếm</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach (var product in availableProducts)
+                        {
+                            var isSelected = selectedProducts.Any(p => p.Id == product.Id);
+                            <div class="flex items-center space-x-3 p-3 border-2 rounded-lg hover:bg-gray-50 transition-all cursor-pointer @(isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200")"
+                                 @onclick="() => ToggleProduct(product)">
+                                <input type="checkbox"
+                                       checked="@isSelected"
+                                       class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                                       @onclick:stopPropagation="true"
+                                       @onchange="() => ToggleProduct(product)" />
+
+                                @if (!string.IsNullOrWhiteSpace(product.AnhDaTai))
+                                {
+                                    <img src="@product.AnhDaTai"
+                                         alt="@product.Ten"
+                                         class="w-16 h-16 object-cover rounded border border-gray-300 shadow-sm" />
+                                }
+                                else
+                                {
+                                    <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center border border-gray-300">
+                                        <i class="bi bi-image text-gray-400 text-xl"></i>
+                                    </div>
+                                }
+
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">@product.Ten</p>
+                                    <p class="text-xs text-gray-500">
+                                        @(string.IsNullOrWhiteSpace(product.TheLoai) ? "Chưa phân loại" : product.TheLoai)
+                                    </p>
+                                    <p class="text-xs text-gray-400">ID: @product.Id</p>
+                                    @if (product.TrangThai)
+                                    {
+                                        <span class="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full">Tạm dừng</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <span class="text-sm text-gray-600 font-medium">
+                    Đã chọn: <strong class="text-blue-600">@selectedProducts.Count</strong> sản phẩm
+                </span>
+                <div class="space-x-3">
+                    <button type="button"
+                            @onclick="CloseProductModal"
+                            class="px-5 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm">
+                        Hủy
+                    </button>
+                    <button type="button"
+                            @onclick="ConfirmProductSelection"
+                            class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
+                        Xác nhận (@selectedProducts.Count)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .animate-slideUp {
+        animation: slideUp 0.3s ease-out;
+    }
+
+    /* Custom scrollbar */
+    .overflow-y-auto::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .overflow-y-auto::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+</style>
 
 @code {
     [Parameter] public Voucher? Voucher { get; set; }
@@ -169,8 +503,70 @@
 
     private Voucher formData = new();
     private string discountType = "percentage";
+    private bool isSubmitting = false;
+
+    // Product selection
+    private bool showProductSelection = false;
+    private bool isProductModalOpen = false;
+    private bool isLoadingProducts = false;
+    private string productSearchKeyword = "";
+    private List<MonAnDTO> availableProducts = new();
+    private List<MonAnDTO> selectedProducts = new();
+    private List<MonAnDTO> allProducts = new();
+
+    // DTO class for products
+    public class MonAnDTO
+    {
+        public string? Id { get; set; }
+        public string? Ten { get; set; }
+        public string? AnhDaTai { get; set; }
+        public string? TheLoai { get; set; }
+        public bool TrangThai { get; set; }
+    }
+
+    private string DiscountType
+    {
+        get => discountType;
+        set
+        {
+            if (discountType != value)
+            {
+                discountType = value;
+
+                // Reset giá trị khi đổi loại
+                if (discountType == "percentage")
+                {
+                    formData.SoTienKhuyenMai = null;
+                    if (!formData.PhanTramKhuyenMai.HasValue || formData.PhanTramKhuyenMai <= 0)
+                    {
+                        formData.PhanTramKhuyenMai = 10;
+                    }
+                }
+                else
+                {
+                    formData.PhanTramKhuyenMai = null;
+                    if (!formData.SoTienKhuyenMai.HasValue || formData.SoTienKhuyenMai < 1000)
+                    {
+                        formData.SoTienKhuyenMai = 10000;
+                    }
+                }
+
+                StateHasChanged();
+            }
+        }
+    }
 
     protected override void OnInitialized()
+    {
+        InitializeFormData();
+    }
+
+    protected override void OnParametersSet()
+    {
+        InitializeFormData();
+    }
+
+    private void InitializeFormData()
     {
         if (Voucher != null)
         {
@@ -186,76 +582,280 @@
                 NgayKetThuc = Voucher.NgayKetThuc,
                 MoTa = Voucher.MoTa,
                 ApDungSanPham = Voucher.ApDungSanPham,
-                TrangThai = Voucher.TrangThai
+                TrangThai = Voucher.TrangThai,
+                DaSuDung = Voucher.DaSuDung
             };
 
             discountType = Voucher.PhanTramKhuyenMai.HasValue ? "percentage" : "fixed";
+            showProductSelection = Voucher.ApDungSanPham;
+
+            // TODO: Load selected products if editing
+            if (Voucher.ApDungSanPham)
+            {
+                // LoadSelectedProductsForVoucher(Voucher.Id);
+            }
         }
         else
         {
             formData = new Voucher
             {
                 Ten = string.Empty,
-                Soluong = 1,
-                SoTienKhuyenMai = 0,
-                PhanTramKhuyenMai = 1,
+                Soluong = 100,
+                SoTienKhuyenMai = null,
+                PhanTramKhuyenMai = 10,
                 SoTienToiThieu = 0,
                 NgayBatDau = DateTime.Today,
-                NgayKetThuc = DateTime.Today,
+                NgayKetThuc = DateTime.Today.AddDays(30),
                 MoTa = string.Empty,
                 ApDungSanPham = false,
-                TrangThai = true
+                TrangThai = true,
+                DaSuDung = 0
             };
+            discountType = "percentage";
+            showProductSelection = false;
         }
     }
 
+    private void OnApDungSanPhamChanged(ChangeEventArgs e)
+    {
+        showProductSelection = formData.ApDungSanPham;
+        if (showProductSelection && allProducts.Count == 0)
+        {
+            // Load products when first enabled
+            _ = LoadAllProducts();
+        }
+        StateHasChanged();
+    }
 
+    private async Task LoadAllProducts()
+    {
+        isLoadingProducts = true;
+        try
+        {
+            // Sử dụng API Filter với tất cả sản phẩm
+            var filterRequest = new MonAnFilterRequest
+            {
+                PageIndex = 1,
+                PageSize = 1000, // Lấy nhiều sản phẩm
+                TrangThaiMonAn = true // Chỉ lấy sản phẩm đang hoạt động
+            };
+
+            var response = await MonAnService.Filter(filterRequest);
+
+            if (response != null && response.MonAns != null && response.MonAns.Any())
+            {
+                // Convert từ MonAnWithMatchingVariants sang MonAnDTO
+                allProducts = response.MonAns.Select(item => new MonAnDTO
+                {
+                    Id = item.MonAn.Id,
+                    Ten = item.MonAn.Ten,
+                    AnhDaTai = item.MonAn.AnhDaTai,
+                    TheLoai = item.MonAn.TheLoai,
+                    TrangThai = item.MonAn.TrangThai
+                }).ToList();
+
+                availableProducts = allProducts;
+            }
+            else
+            {
+                allProducts = new List<MonAnDTO>();
+                availableProducts = new List<MonAnDTO>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            await ShowError("Lỗi", $"Không thể tải danh sách sản phẩm: {ex.Message}");
+            allProducts = new List<MonAnDTO>();
+            availableProducts = new List<MonAnDTO>();
+        }
+        finally
+        {
+            isLoadingProducts = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenProductModal()
+    {
+        if (allProducts.Count == 0)
+        {
+            _ = LoadAllProducts();
+        }
+        else
+        {
+            availableProducts = allProducts;
+        }
+        isProductModalOpen = true;
+    }
+
+    private void CloseProductModal()
+    {
+        isProductModalOpen = false;
+        productSearchKeyword = "";
+        availableProducts = allProducts;
+    }
+
+    private void SearchProducts()
+    {
+        if (string.IsNullOrWhiteSpace(productSearchKeyword))
+        {
+            availableProducts = allProducts;
+        }
+        else
+        {
+            var keyword = productSearchKeyword.ToLower().Trim();
+            availableProducts = allProducts
+                .Where(p => (p.Ten?.ToLower().Contains(keyword) == true) ||
+                           (p.Id?.ToLower().Contains(keyword) == true) ||
+                           (p.TheLoai?.ToLower().Contains(keyword) == true))
+                .ToList();
+        }
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        productSearchKeyword = "";
+        availableProducts = allProducts;
+        StateHasChanged();
+    }
+
+    private void ToggleProduct(MonAnDTO product)
+    {
+        var existingProduct = selectedProducts.FirstOrDefault(p => p.Id == product.Id);
+        if (existingProduct != null)
+        {
+            selectedProducts.Remove(existingProduct);
+        }
+        else
+        {
+            selectedProducts.Add(product);
+        }
+        StateHasChanged();
+    }
+
+    private void RemoveProduct(string? productId)
+    {
+        var product = selectedProducts.FirstOrDefault(p => p.Id == productId);
+        if (product != null)
+        {
+            selectedProducts.Remove(product);
+            StateHasChanged();
+        }
+    }
+
+    private void ConfirmProductSelection()
+    {
+        CloseProductModal();
+    }
 
     private async Task HandleSubmit()
     {
-        if (formData.NgayKetThuc < formData.NgayBatDau)
+        try
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
+            // Validate dates
+            if (formData.NgayKetThuc < formData.NgayBatDau)
             {
-                icon = "error",
-                title = "Ngày không hợp lệ",
-                text = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu."
-            });
-            return;
-        }
+                await ShowError("Ngày không hợp lệ", "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.");
+                return;
+            }
 
-        if (discountType == "percentage" && (!formData.PhanTramKhuyenMai.HasValue || formData.PhanTramKhuyenMai <= 0))
+            // Validate discount value based on type
+            if (discountType == "percentage")
+            {
+                if (!formData.PhanTramKhuyenMai.HasValue || formData.PhanTramKhuyenMai <= 0 || formData.PhanTramKhuyenMai > 100)
+                {
+                    await ShowError("Giá trị không hợp lệ", "Phần trăm giảm giá phải từ 1 đến 100.");
+                    return;
+                }
+                formData.SoTienKhuyenMai = null;
+            }
+            else
+            {
+                if (!formData.SoTienKhuyenMai.HasValue || formData.SoTienKhuyenMai < 1000)
+                {
+                    await ShowError("Giá trị không hợp lệ", "Số tiền giảm phải tối thiểu 1,000đ.");
+                    return;
+                }
+                formData.PhanTramKhuyenMai = null;
+            }
+
+            // Validate quantity
+            if (formData.Soluong <= 0)
+            {
+                await ShowError("Số lượng không hợp lệ", "Số lượng voucher phải lớn hơn 0.");
+                return;
+            }
+
+            // Validate name
+            if (string.IsNullOrWhiteSpace(formData.Ten))
+            {
+                await ShowError("Tên không hợp lệ", "Vui lòng nhập tên voucher.");
+                return;
+            }
+
+            // Validate product selection
+            if (formData.ApDungSanPham && !selectedProducts.Any())
+            {
+                var result = await JS.InvokeAsync<bool>("confirm", "Bạn đã bật 'Áp dụng cho sản phẩm cụ thể' nhưng chưa chọn sản phẩm nào.\n\nBạn có muốn:\n- Nhấn OK để chọn sản phẩm\n- Nhấn Cancel để bỏ tùy chọn này và áp dụng cho tất cả sản phẩm");
+
+                if (result)
+                {
+                    // Mở modal chọn sản phẩm
+                    OpenProductModal();
+                    return;
+                }
+                else
+                {
+                    // Tự động bỏ tick "Áp dụng cho sản phẩm cụ thể"
+                    formData.ApDungSanPham = false;
+                    showProductSelection = false;
+                    StateHasChanged();
+                }
+            }
+
+            isSubmitting = true;
+            StateHasChanged();
+
+            // TODO: Save selected products to voucher
+            // You'll need to implement this based on your data structure
+            // Example:
+            // if (formData.ApDungSanPham && selectedProducts.Any())
+            // {
+            //     formData.ProductIds = selectedProducts.Select(p => p.Id).ToList();
+            //     await VoucherService.SaveVoucherProducts(formData.Id, formData.ProductIds);
+            // }
+
+            await OnSave.InvokeAsync(formData);
+        }
+        catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                icon = "error",
-                title = "Giá trị không hợp lệ",
-                text = "Vui lòng nhập phần trăm giảm giá từ 1 đến 100."
-            });
-            return;
+            await ShowError("Lỗi", $"Đã xảy ra lỗi: {ex.Message}");
         }
-
-        if (discountType == "fixed" && (!formData.SoTienKhuyenMai.HasValue || formData.SoTienKhuyenMai < 1000))
+        finally
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                icon = "error",
-                title = "Giá trị không hợp lệ",
-                text = "Vui lòng nhập số tiền giảm tối thiểu 1000đ."
-            });
-            return;
+            isSubmitting = false;
+            StateHasChanged();
         }
-
-        formData.PhanTramKhuyenMai = discountType == "percentage" ? formData.PhanTramKhuyenMai : null;
-        formData.SoTienKhuyenMai = discountType == "fixed" ? formData.SoTienKhuyenMai : null;
-
-        await OnSave.InvokeAsync(formData);
     }
-
 
     private async Task HandleOverlayClick()
     {
-        await OnClose.InvokeAsync();
+        if (!isSubmitting)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task ShowError(string title, string message)
+    {
+        await JS.InvokeVoidAsync("Swal.fire", new
+        {
+            icon = "error",
+            title = title,
+            text = message
+        });
     }
 
     private bool IsPercentage => discountType == "percentage";
