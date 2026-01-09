@@ -109,7 +109,9 @@
             {
                 var chiTiets = ChiTietTheoHoaDon.GetValueOrDefault(hoaDon.Id);
                 var tongSoSP = chiTiets?.Sum(c => c.Soluong) ?? 0;
-                var tongTienFinal = hoaDon.TongTien;
+                var tongTienFinal = hoaDon.TongTienSauKhiGiam > 0
+                ? hoaDon.TongTienSauKhiGiam
+                : hoaDon.TongTien;
 
 
                 <tr class="border-b">
@@ -334,10 +336,31 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                             🎉 Đơn hàng từ 500.000₫ được miễn phí vận chuyển
                         </div>
                     }
+
+                }
+
+                @{
+                    var tongGoc = selectedHoaDon?.TongTien ?? 0;
+                    var tongSauGiam = selectedHoaDon?.TongTienSauKhiGiam ?? 0;
+                    var tienGiam = tongGoc > tongSauGiam
+                    ? tongGoc - tongSauGiam
+                    : 0;
+                }
+
+                @if (tienGiam > 0)
+                {
+                    <div style="display:flex; justify-content:space-between;
+                        font-size:14px; margin-bottom:6px; color:#dc3545;">
+                        <span>Voucher giảm giá:</span>
+                        <span>-@tienGiam.ToString("N0") đ</span>
+                    </div>
                 }
 
 
-                <div class="total-amount">@selectedHoaDon?.TongTien.ToString("N0") đ</div>
+            <div class="total-amount">
+                @(  (selectedHoaDon?.TongTienSauKhiGiam > 0 ? selectedHoaDon.TongTienSauKhiGiam : selectedHoaDon?.TongTien )?.ToString("N0") ) đ
+            </div>
+
                 <div class="total-label">Tổng giá trị đơn hàng</div>
             </div>
 
@@ -551,36 +574,37 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                     tongSoSP.ToString()
                 }).ToLower();
 
-                // 🔍 lọc text
+                //  lọc text
                 bool matchText =
                     string.IsNullOrWhiteSpace(TuKhoa)
                     || searchText.Contains(TuKhoa.ToLower());
 
-                // 📅 lọc TỪ NGÀY
+                //  lọc TỪ NGÀY
                 bool matchFromDate =
                     !TuNgay.HasValue
                     || hd.NgayTao.Date >= TuNgay.Value.Date;
 
-                // 📅 lọc ĐẾN NGÀY
+                //  lọc ĐẾN NGÀY
                 bool matchToDate =
                     !DenNgay.HasValue
                     || hd.NgayTao.Date <= DenNgay.Value.Date;
 
-                // 📌 lọc trạng thái
+                //  lọc trạng thái
                 bool matchTrangThai =
                     string.IsNullOrEmpty(TrangThai)
                     || TrangThai == "TẤT CẢ"
                     || hd.TrangThai == TrangThai;
 
-                // 💰 lọc GIÁ TỪ
-                bool matchGiaTu =
-                    !GiaTu.HasValue
-                    || hd.TongTien >= GiaTu.Value;
+                var tienThucTe = hd.TongTienSauKhiGiam > 0
+                 ? hd.TongTienSauKhiGiam
+                  : hd.TongTien;
 
-                // 💰 lọc GIÁ ĐẾN
+                bool matchGiaTu =
+                    !GiaTu.HasValue || tienThucTe >= GiaTu.Value;
+
                 bool matchGiaDen =
-                    !GiaDen.HasValue
-                    || hd.TongTien <= GiaDen.Value;
+                    !GiaDen.HasValue || tienThucTe <= GiaDen.Value;
+
 
                 return matchText && matchFromDate && matchToDate && matchTrangThai && matchGiaTu && matchGiaDen;
             })
@@ -648,9 +672,10 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
 
     private async Task CapNhatTrangThai(string hoaDonId)
     {
+
         var hoaDon = await ApiService.GetbyId<HoaDon, string>(hoaDonId, "HoaDon");
         if (hoaDon == null) return;
-        // ⛔ ĐƠN TRÊN 500K → CHỈ GỬI YÊU CẦU KHÁCH XÁC NHẬN
+        //  ĐƠN TRÊN 500K CHỈ GỬI YÊU CẦU KHÁCH XÁC NHẬN
         if (hoaDon.TrangThai == "Chờ xác nhận"
             && hoaDon.TongTien > NGUONG_XAC_NHAN)
         {
@@ -674,7 +699,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
 
             await TaiLai();
             showHistory = false;
-            return; // ⛔ CỰC KỲ QUAN TRỌNG
+            return; 
         }
 
         var trangThaiMoi = GetNextTrangThai(hoaDon.TrangThai);

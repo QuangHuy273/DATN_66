@@ -1101,7 +1101,13 @@
                         </div>
 
                         <div class="order-body">
-                            <div class="order-total">@hd.TongTien.ToString("N0") đ</div>
+                            <div class="order-total">
+                                @((hd.TongTienSauKhiGiam > 0
+                                                    ? hd.TongTienSauKhiGiam
+                                                    : hd.TongTien
+                                                    ).ToString("N0")) đ
+
+                        </div>
                         </div>
 
                         <div class="order-footer">
@@ -1313,10 +1319,21 @@
                             🎉 Đơn hàng từ 500.000₫ được miễn phí vận chuyển
                         </div>
                     }
+                    @if (TienGiam > 0)
+                    {
+                        <div class="total-row">
+                            <span>Giảm giá:</span>
+                            <span style="color:#bbf7d0;font-weight:700">
+                                -@TienGiam.ToString("N0") đ
+                            </span>
+                        </div>
+                    }
 
                     <div class="total-amount">
-                        @selectedHoaDon.TongTien.ToString("N0") đ
+                        @TongThanhToan.ToString("N0") đ
                     </div>
+
+                   
                     <div class="total-label">Tổng giá trị đơn hàng</div>
                 </div>
             </div>
@@ -1424,7 +1441,7 @@
     string soTaiKhoan = string.Empty;
     string nganHang = string.Empty;
     string? loiXacNhan = null;
-
+    
     private List<HoaDon> FilteredHoaDon =>
         DanhSachHoaDon
             .Where(hd =>
@@ -1488,6 +1505,17 @@
     "Sacombank"
 };
 
+    private decimal TongThanhToan =>
+        selectedHoaDon?.TongTienSauKhiGiam > 0
+            ? selectedHoaDon.TongTienSauKhiGiam
+            : selectedHoaDon?.TongTien ?? 0;
+
+    private decimal TienGiam =>
+        (selectedHoaDon != null
+         && selectedHoaDon.TongTienSauKhiGiam > 0
+         && selectedHoaDon.TongTien > selectedHoaDon.TongTienSauKhiGiam)
+            ? selectedHoaDon.TongTien - selectedHoaDon.TongTienSauKhiGiam
+            : 0;
 
     // phi ship 
     private const decimal PhiShip = 20000;
