@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-string url = "https://localhost:7047/api/";
+string url = "https://localhost:5021/api/";
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(url) });
 
 

@@ -350,16 +350,16 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
                 @if (tienGiam > 0)
                 {
                     <div style="display:flex; justify-content:space-between;
-                                font-size:14px; margin-bottom:6px; color:#dc3545;">
+                        font-size:14px; margin-bottom:6px; color:#dc3545;">
                         <span>Voucher giảm giá:</span>
                         <span>-@tienGiam.ToString("N0") đ</span>
                     </div>
                 }
 
 
-                <div class="total-amount">
-                    @(  (selectedHoaDon?.TongTienSauKhiGiam > 0 ? selectedHoaDon.TongTienSauKhiGiam : selectedHoaDon?.TongTien )?.ToString("N0") ) đ
-                </div>
+            <div class="total-amount">
+                @(  (selectedHoaDon?.TongTienSauKhiGiam > 0 ? selectedHoaDon.TongTienSauKhiGiam : selectedHoaDon?.TongTien )?.ToString("N0") ) đ
+            </div>
 
                 <div class="total-label">Tổng giá trị đơn hàng</div>
             </div>
@@ -699,7 +699,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
 
             await TaiLai();
             showHistory = false;
-            return;
+            return; // ⛔ CỰC KỲ QUAN TRỌNG
         }
 
         var trangThaiMoi = GetNextTrangThai(hoaDon.TrangThai);

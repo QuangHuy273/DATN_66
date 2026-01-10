@@ -25,6 +25,7 @@ namespace API.Models.DTO
         public Guid? NhaCungCapId { get; set; }
         public List<AnhDTO>? DanhSachAnh { get; set; }
         public int SoLuongDat { get; set; } = 1;
+        public int _OldSoLuongDat { get; set; } = 0;
         public bool IsSelected { get; set; } = false;
 
     }
