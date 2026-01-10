@@ -22,8 +22,9 @@ namespace ViewAPI.Controllers
                 vnpay.AddResponseData(key, value);
             }
 
-            string hashSecret = _config["VnPay:HashSecret"];
+            string hashSecret = "R5VLRHTQY4PXHRKKR530F36FVEV4JS19";
             bool checkSignature = vnpay.ValidateSignature(query["vnp_SecureHash"], hashSecret);
+            Console.WriteLine("HashSecret = " + hashSecret);
 
             if (checkSignature)
             {
