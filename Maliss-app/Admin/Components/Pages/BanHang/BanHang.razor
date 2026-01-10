@@ -186,12 +186,12 @@
                             <div>
                                 @if (CustomerPay < TotalAmount)
                                 {
-                                    <strong>Khách còn thiếu:</strong>
+                                    <strong>Khách còn thiếu:</strong> 
                                     @FormatMoney(TotalAmount - CustomerPay)
                                 }
                                 else
                                 {
-                                    <strong>Tiền thừa:</strong>
+                                    <strong>Tiền thừa:</strong> 
                                     @FormatMoney(CustomerPay - TotalAmount)
                                 }
                             </div>
@@ -233,11 +233,9 @@
 
     private decimal Subtotal => CurrentOrder?.Products?.Sum(p => p.SoLuongDat * p.Gia) ?? 0m;
 
-    private decimal DiscountMoney { get; set; } = 0;
-    private decimal DiscountAmount => DiscountPercent > 0   ? Subtotal * DiscountPercent / 100: DiscountMoney;
+    private decimal DiscountAmount => (Subtotal * DiscountPercent) / 100m;
 
     private decimal TotalAmount => Subtotal - DiscountAmount;
-
 
     private decimal DeficitAmount => CustomerPay - TotalAmount;
 
@@ -246,7 +244,7 @@
     private List<Voucher> vouchers = new();
     private string PaymentMethod { get; set; } = "Cash";
 
-   
+
     // 🛒 Hành động
     private async Task CreateOrder()
     {
@@ -657,26 +655,26 @@
     void OnVoucherChange(ChangeEventArgs e)
     {
         string selectedVoucher = e.Value?.ToString()?.Trim();
-        var voucher = vouchers.FirstOrDefault(v => v.Ten == selectedVoucher);
 
-        DiscountPercent = 0;
-        DiscountMoney = 0;
+        var voucher = vouchers.FirstOrDefault(v => v.Ten == selectedVoucher);
 
         if (voucher != null)
         {
-            if (voucher.PhanTramKhuyenMai.HasValue && voucher.PhanTramKhuyenMai > 0)
+            if (voucher.PhanTramKhuyenMai != null || voucher.PhanTramKhuyenMai != 0)
             {
-                DiscountPercent = voucher.PhanTramKhuyenMai.Value;
+                DiscountPercent = voucher.PhanTramKhuyenMai ?? 0 * 0.1m;
             }
-            else if (voucher.SoTienKhuyenMai.HasValue && voucher.SoTienKhuyenMai > 0)
+            else if (voucher.SoTienKhuyenMai != null || voucher.SoTienKhuyenMai != 0)
             {
-                DiscountMoney = voucher.SoTienKhuyenMai.Value;
+                DiscountPercent = voucher.SoTienKhuyenMai ?? 0;
             }
+
         }
-
-        StateHasChanged();
+        else
+        {
+            DiscountPercent = 0;
+        }
     }
-
 
     private async Task SaveOrdersToStorage()
     {

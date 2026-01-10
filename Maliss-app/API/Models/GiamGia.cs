@@ -24,8 +24,7 @@ namespace API.Models
         public bool? Kieu { get; set; }
         public bool ApDungSanPham { get; set; }
         public bool TrangThai { get; set; } = false;
-        public bool DotGiamGia { get; set; }
-        public int? DaSuDung { get; set; } = 0;
+        public bool DotGiamGia { get; set; } 
         public virtual ICollection<ChiTietGiamGia> chiTietGiamGias { get; set; }
         public virtual ICollection<HoaDon> hoaDons { get; set; }
     }
