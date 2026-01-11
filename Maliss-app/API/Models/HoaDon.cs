@@ -26,8 +26,6 @@ namespace API.Models
         public virtual NhanVien NhanVien { get; set; }
         public bool DaGuiYeuCauXacNhan { get; set; }
         public virtual GiamGia GiamGia { get; set; }
-        public string? MaGiamGia { get; set; }
-        public decimal? SoTienGiam { get; set; }
         [JsonIgnore]
         public virtual ICollection<HoaDonChiTiet> hoaDonChiTiets { get; set; }
 

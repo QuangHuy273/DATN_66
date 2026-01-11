@@ -12,7 +12,7 @@
   "DetailedErrors": true,
   "VnPay": {
     "TmnCode": "E3QQUILQ",
-    "HashSecret": "FCS5AI4QIUIDM1RPYKZ6NOMC4XGYGKAE",
+    "HashSecret": "R5VLRHTQY4PXHRKKR530F36FVEV4JS19",
     "BaseUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
     "ReturnUrl": "https://hungry-numbers-post.loca.lt/vnpay_return"
   }

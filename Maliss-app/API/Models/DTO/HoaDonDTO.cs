@@ -7,9 +7,6 @@
         public string LoaiHoaDon { get; set; }
         public decimal TongTien { get; set; }
         public string TrangThai { get; set; }
-
-        public string? MaGiamGia { get; set; }   // ✅ THÊM
-        public decimal SoTienGiam { get; set; }  // ✅ THÊM
         public decimal TongTienSauKhiGiam { get; set; }
         public string? GhiChu { get; set; }
         public string? GiamGiaId { get; set; }
