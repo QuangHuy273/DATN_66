@@ -209,7 +209,7 @@
 
     private string OrderListClass => CurrentOrder?.Products?.Count == 0 ? "empty" : "";
 
-    // 📦 Dữ liệu đơn hàng
+    //  Dữ liệu đơn hàng
     private List<Order> Orders = new();
     private int CurrentOrderIndex = 0;
     private Order? CurrentOrder =>
@@ -228,7 +228,7 @@
         }
     }
 
-    // 💰 Tính toán đơn hàng
+    //  Tính toán đơn hàng
     private decimal DiscountPercent { get; set; } = 0;
 
     private decimal Subtotal => CurrentOrder?.Products?.Sum(p => p.SoLuongDat * p.Gia) ?? 0m;
@@ -263,6 +263,9 @@
             });
             return;
         }
+       
+        await ReloadProductStock();
+
         Orders.Add(new Order()
         {
             ThoiGianTao = DateTime.Now
@@ -271,29 +274,42 @@
         StateHasChanged();
         await SaveOrdersToStorage();
     }
+    // reset về kho khi xóa đơn
+    private async Task RestoreStockForOrder(Order order)
+    {
+        if (order?.Products == null) return;
 
+        foreach (var product in order.Products)
+        {
+            var chiTiet = await apiService.GetbyId<ChiTietMonAn, Guid>(product.Id, "ChiTietMonAn");
+            if (chiTiet != null)
+            {
+                chiTiet.Soluong += product.SoLuongDat;
+                await apiService.PutAsync<ChiTietMonAn>("ChiTietMonAn", chiTiet);
+            }
+        }
+    }
+    // xóa đơn
     private async Task RemoveOrder(int index)
     {
-        if (Orders.Count < 1)
-        {
-            Orders = new() { new Order() };
-            CurrentOrderIndex = 0;
-            await SaveOrdersToStorage();
-            return;
-        }
+        if (index < 0 || index >= Orders.Count) return;
+
+        var order = Orders[index];
+
+      
+        await RestoreStockForOrder(order);
 
         Orders.RemoveAt(index);
 
         if (index <= CurrentOrderIndex && CurrentOrderIndex > 0)
-        {
             CurrentOrderIndex--;
-        }
 
         if (CurrentOrderIndex >= Orders.Count)
-        {
             CurrentOrderIndex = Orders.Count - 1;
-        }
+
+        await RefreshProductData();      
         await SaveOrdersToStorage();
+        StateHasChanged();
     }
 
     private bool IsRemovingOrder = false;
@@ -315,7 +331,7 @@
             if (IsRemovingOrder) return;
             IsRemovingOrder = true;
 
-            RemoveOrder(index);
+            await RemoveOrder(index);
             await Task.Delay(200);
             IsRemovingOrder = false;
         }
@@ -333,46 +349,61 @@
 
     private async Task IncreaseQuantity(ChiTietMonAnDTO product)
     {
-
-        if (product.SoLuongDat >= product.Soluong)
+        var chiTiet = await apiService.GetbyId<ChiTietMonAn, Guid>(product.Id, "ChiTietMonAn");
+        if (chiTiet == null || chiTiet.Soluong <= 0)
         {
             await JS.InvokeVoidAsync("Swal.fire", new
             {
-                toast = true,
-                position = "top-end",
                 icon = "info",
-                title = "Số lượng tối đa đã đạt",
-                showConfirmButton = false,
-                timer = 2000
+                title = "Đã hết hàng"
             });
             return;
         }
+
+        //  TRỪ KHO DB
+        chiTiet.Soluong--;
+        if (!await apiService.PutAsync<ChiTietMonAn>("ChiTietMonAn", chiTiet)) return;
+
+        //  CẬP NHẬT VIEW NGAY LẬP TỨC
         product.SoLuongDat++;
-        product.SoLuongDat = Math.Clamp(product.SoLuongDat, 1, product.Soluong);
+        product.Soluong--; 
+
+        // cập nhật source list
+        var p = Products.FirstOrDefault(x => x.Id == product.Id);
+        if (p != null)
+        {
+            p.Soluong = product.Soluong;
+        }
+
         StateHasChanged();
         await SaveOrdersToStorage();
     }
+
 
     private async Task DecreaseQuantity(ChiTietMonAnDTO product)
     {
-        if (product.SoLuongDat <= 1)
-        {
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                toast = true,
-                position = "top-end",
-                icon = "info",
-                title = "Không thể giảm dưới 1",
-                showConfirmButton = false,
-                timer = 2000
-            });
-            return;
-        }
+        if (product.SoLuongDat <= 1) return;
+
+        var chiTiet = await apiService.GetbyId<ChiTietMonAn, Guid>(product.Id, "ChiTietMonAn");
+        if (chiTiet == null) return;
+
+        // TRẢ KHO DB
+        chiTiet.Soluong++;
+        if (!await apiService.PutAsync<ChiTietMonAn>("ChiTietMonAn", chiTiet)) return;
+
         product.SoLuongDat--;
-        product.SoLuongDat = Math.Clamp(product.SoLuongDat, 1, product.Soluong);
+        product.Soluong++; 
+
+        var p = Products.FirstOrDefault(x => x.Id == product.Id);
+        if (p != null)
+        {
+            p.Soluong = product.Soluong;
+        }
+
         StateHasChanged();
         await SaveOrdersToStorage();
     }
+
 
     private async Task OnQuantityChanged(ChiTietMonAnDTO product)
     {
@@ -409,9 +440,24 @@
 
     private async Task RemoveProduct(ChiTietMonAnDTO product)
     {
+        var chiTiet = await apiService.GetbyId<ChiTietMonAn, Guid>(product.Id, "ChiTietMonAn");
+        if (chiTiet != null)
+        {
+            chiTiet.Soluong += product.SoLuongDat;
+            await apiService.PutAsync<ChiTietMonAn>("ChiTietMonAn", chiTiet);
+        }
+        var p = Products.FirstOrDefault(x => x.Id == product.Id);
+        if (p != null)
+        {
+            p.Soluong = chiTiet.Soluong;
+        }
+
+        //  CẬP NHẬT SOURCE
+        await RefreshProductData();
         CurrentOrder.Products.Remove(product);
         await SaveOrdersToStorage();
     }
+
 
     private System.Threading.Timer? OrderCleanupTimer;
 
@@ -466,23 +512,23 @@
         {
             foreach (var item in CurrentOrder.Products)
             {
-                var monanchitiet = await apiService.GetbyId<ChiTietMonAn, Guid>(item.Id, "ChiTietMonAn");
-                if (monanchitiet != null)
-                {
-                    Console.WriteLine(monanchitiet.Soluong + "+" + item.SoLuongDat);
-                    monanchitiet.Soluong -= item.SoLuongDat;
-                    var result4 = await apiService.PutAsync<ChiTietMonAn>($"ChiTietMonAn", monanchitiet);
-                    if (!result4)
-                    {
-                        await JS.InvokeVoidAsync("Swal.fire", new
-                        {
-                            icon = "warning",
-                            title = $"Thất bại",
-                            text = $"Cập nhật số lượng sản phẩm thất bại."
-                        });
-                        return;
-                    }
-                }
+                // var monanchitiet = await apiService.GetbyId<ChiTietMonAn, Guid>(item.Id, "ChiTietMonAn");
+                // if (monanchitiet != null)
+                // {
+                //     Console.WriteLine(monanchitiet.Soluong + "+" + item.SoLuongDat);
+                //     monanchitiet.Soluong -= item.SoLuongDat;
+                //     var result4 = await apiService.PutAsync<ChiTietMonAn>($"ChiTietMonAn", monanchitiet);
+                //     if (!result4)
+                //     {
+                //         await JS.InvokeVoidAsync("Swal.fire", new
+                //         {
+                //             icon = "warning",
+                //             title = $"Thất bại",
+                //             text = $"Cập nhật số lượng sản phẩm thất bại."
+                //         });
+                //         return;
+                //     }
+                // }
                 var hoadonchitiet = new HoaDonChiTietDTO()
                 {
                     ChiTietMonAnId = item.Id,
@@ -553,43 +599,76 @@
     {
         if (CurrentOrder == null || item == null) return;
 
-        var existing = CurrentOrder.Products.Find(x => x.Id == item.Id);
+        // Lấy tồn kho mới nhất từ DB
+        var chiTiet = await apiService.GetbyId<ChiTietMonAn, Guid>(item.Id, "ChiTietMonAn");
+        if (chiTiet == null || chiTiet.Soluong <= 0)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "warning",
+                title = "Hết hàng",
+                text = "Sản phẩm không còn trong kho"
+            });
+            return;
+        }
+
+        int soLuongThem = item.SoLuongDat > 0 ? item.SoLuongDat : 1;
+
+        if (chiTiet.Soluong < soLuongThem)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "warning",
+                title = "Không đủ hàng",
+                text = $"Chỉ còn {chiTiet.Soluong} sản phẩm"
+            });
+            return;
+        }
+
+        //  TRỪ KHO DB
+        chiTiet.Soluong -= soLuongThem;
+        if (!await apiService.PutAsync<ChiTietMonAn>("ChiTietMonAn", chiTiet)) return;
+
+        //  CẬP NHẬT LẠI DANH SÁCH SẢN PHẨM NGUỒN
+        await RefreshProductData();
+        //  CẬP NHẬT DANH SÁCH SẢN PHẨM (VIEW)
+        var productInList = Products.FirstOrDefault(p => p.Id == item.Id);
+        if (productInList != null)
+        {
+            productInList.Soluong = chiTiet.Soluong;
+        }
+
+        var existing = CurrentOrder.Products.FirstOrDefault(x => x.Id == item.Id);
         if (existing != null)
         {
-            existing.SoLuongDat += item.SoLuongDat;
-            if (existing.SoLuongDat > existing.Soluong)
-            {
-                existing.SoLuongDat = existing.Soluong;
-            }
+            existing.SoLuongDat += soLuongThem;
+            existing.Soluong = chiTiet.Soluong;
         }
         else
         {
-            var newProduct = new ChiTietMonAnDTO
+            CurrentOrder.Products.Add(new ChiTietMonAnDTO
             {
                 Id = item.Id,
-                MonAnId = item.MonAnId,
                 Ten = item.Ten,
-                LoaiVi = item.LoaiVi,
-                KichCo = item.KichCo,
-                NguyenLieu = item.NguyenLieu,
-                LoaiViId = item.LoaiViId,
-                KichCoId = item.KichCoId,
-                NguyenLieuId = item.NguyenLieuId,
-                Gia = item.Gia,
-                GiaGiam = item.GiaGiam,
-                Soluong = item.Soluong,
-                SoLuongDat = item.SoLuongDat > 0 ? item.SoLuongDat : 1,
-                DanhSachAnh = item.DanhSachAnh != null ? new List<AnhDTO>(item.DanhSachAnh) : new(),
-                Mota = item.Mota,
-                TrangThai = item.TrangThai
-            };
+                MonAnId = item.MonAnId,
 
-            CurrentOrder.Products.Add(newProduct);
+                KichCo = item.KichCo,
+                LoaiVi = item.LoaiVi,
+                NguyenLieu = item.NguyenLieu,
+
+                Gia = item.Gia,
+                Soluong = chiTiet.Soluong,
+                SoLuongDat = soLuongThem,
+                DanhSachAnh = item.DanhSachAnh
+            });
+
         }
 
         item.SoLuongDat = 1;
+        StateHasChanged();
         await SaveOrdersToStorage();
     }
+
 
 
     private bool IsCustomerModalVisible = false;
@@ -649,7 +728,11 @@
     {
         allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
         var allproduct = await GetChiTietMonAnService.GetAll();
-        Products = allproduct?.Where(p => p.Soluong >= 1 && p.TrangThai == true && allProducts.FirstOrDefault(m => m.Id == p.MonAnId && m.TrangThai == true) != null).ToList() ?? new();
+        Products = allproduct
+    ?.Where(p => p.TrangThai == true
+        && allProducts.Any(m => m.Id == p.MonAnId && m.TrangThai))
+    .ToList() ?? new();
+
     }
 
     void OnVoucherChange(ChangeEventArgs e)
@@ -681,6 +764,13 @@
         await LocalStorage.SetItemAsync("banhang_orders", Orders);
         await LocalStorage.SetItemAsync("banhang_currentIndex", CurrentOrderIndex);
     }
+    // reload 
+    private async Task ReloadProductStock()
+    {
+        await RefreshProductData();   
+        StateHasChanged();
+    }
+
 
     private async Task ThanhToanVnPay()
     {
