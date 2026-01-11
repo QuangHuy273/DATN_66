@@ -32,6 +32,12 @@ namespace API.HeThong
                     src.KichCo != null && !string.IsNullOrWhiteSpace(src.KichCo.Ten)
                     ? src.KichCo.Ten : ""))
                 .ForMember(dg => dg.Gia, opt => opt.MapFrom(src => src.Gia))
+                .ForMember(m => m.Mota, opt => opt.MapFrom(src =>
+                    !string.IsNullOrWhiteSpace(src.Mota)
+                    ? src.Mota
+                    : (src.MonAn != null && !string.IsNullOrWhiteSpace(src.MonAn.Mota)
+                        ? src.MonAn.Mota
+                        : null)))
                 .ReverseMap();
 
             CreateMap<ChiTietMonAnDTO, ChiTietMonAn>()
@@ -80,14 +86,9 @@ namespace API.HeThong
                 .ForMember(dg => dg.TheLoai, opt => opt.MapFrom(src =>
                     src.TheLoai != null && !string.IsNullOrWhiteSpace(src.TheLoai.Ten)
                     ? src.TheLoai.Ten : ""))
+                // Ảnh đại diện của món ăn lấy trực tiếp từ cột AnhDaTai (một ảnh duy nhất)
                 .ForMember(a => a.AnhDaTai, opt => opt.MapFrom(src =>
-                    src.ChiTietMonAns != null
-                    ? src.ChiTietMonAns
-                        .Where(ct => ct.Anhs != null && ct.TrangThai == true && ct.Anhs.Any() &&
-                                        !string.IsNullOrWhiteSpace(ct.Anhs.First().DuongDan))
-                        .Select(ct => ct.Anhs.First().DuongDan)
-                        .FirstOrDefault() ?? ""
-                    : ""))
+                    !string.IsNullOrWhiteSpace(src.AnhDaTai) ? src.AnhDaTai : ""))
                 .ForMember(dg => dg.Gia, opt => opt.MapFrom(src =>
                     src.ChiTietMonAns != null
                         ? src.ChiTietMonAns
@@ -98,7 +99,9 @@ namespace API.HeThong
                 .ReverseMap();
             CreateMap<MonAnDTO, MonAn>()
                 .ForMember(dest => dest.ThuongHieu, opt => opt.Ignore())
-                .ForMember(dest => dest.TheLoai, opt => opt.Ignore());
+                .ForMember(dest => dest.TheLoai, opt => opt.Ignore())
+                // DTO không quản lý trực tiếp tập ảnh chi tiết
+                .ForMember(dest => dest.Anhs, opt => opt.Ignore());
             CreateMap<NguoiDung, NguoiDungDTO>().ReverseMap();
             CreateMap<NhaCungCap, NhaCungCapDTO>().ReverseMap();
             CreateMap<NhanVien, NhanVienDTO>()

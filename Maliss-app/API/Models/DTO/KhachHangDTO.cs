@@ -10,11 +10,11 @@ namespace API.Models.DTO
     {
         public string? Id { get; set; }
 
-        [Required(ErrorMessage = "Họ không được để trống")]
+        //[Required(ErrorMessage = "Họ không được để trống")]
         [StringLength(50, ErrorMessage = "Họ không được vượt quá 50 ký tự")]
         public string? Ho { get; set; }
 
-        [Required(ErrorMessage = "Tên không được để trống")]
+        //[Required(ErrorMessage = "Tên không được để trống")]
         [StringLength(50, ErrorMessage = "Tên không được vượt quá 50 ký tự")]
         public string? Ten { get; set; }
 
@@ -23,7 +23,7 @@ namespace API.Models.DTO
         [DataType(DataType.Date)]
         public DateTime NgaySinh { get; set; }
 
-        [Required(ErrorMessage = "Số điện thoại không được để trống")]
+        //[Required(ErrorMessage = "Số điện thoại không được để trống")]
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
         [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự")]
         public string? Sdt { get; set; }

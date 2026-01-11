@@ -196,29 +196,47 @@
     private async Task AddToOrder(ChiTietMonAnDTO item)
     {
         // Gửi item ra ngoài để thêm vào hóa đơn
-        await OnAddProduct.InvokeAsync(item);
+        // await OnAddProduct.InvokeAsync(item);
 
         // TRỪ TỒN KHO TRỰC TIẾP TRONG DANH SÁCH PRODUCTS
-        var product = Products.FirstOrDefault(p => p.Id == item.Id);
-        if (product != null)
-        {
-            product.Soluong -= product.SoLuongDat;
+        // var product = Products.FirstOrDefault(p => p.Id == item.Id);
+        // if (product != null)
+        // {
+        //     product.Soluong -= product.SoLuongDat;
 
-            // Nếu hết hàng thì ẩn sản phẩm
-            if (product.Soluong <= 0)
-            {
-                product.Soluong = 0;
-            }
+        //     Nếu hết hàng thì ẩn sản phẩm
+        //     if (product.Soluong <= 0)
+        //     {
+        //         product.Soluong = 0;
+        //     }
 
-            // Reset số lượng đặt cho lần sau
-            product.SoLuongDat = 1;
-        }
+        //     Reset số lượng đặt cho lần sau
+        //     product.SoLuongDat = 1;
+        // }
+        
+        await OnAddProduct.InvokeAsync(item);
 
-        // Cập nhật giao diện
+        item.SoLuongDat = 1;
+        
         StateHasChanged();
 
-        // Đóng popup
         await OnClose.InvokeAsync();
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Visible)
+        {
+            allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
+            var allproduct = await GetChiTietMonAnService.GetAll();
+
+            Products = allproduct
+                ?.Where(p => p.Soluong > 0
+                    && p.TrangThai
+                    && allProducts.Any(m => m.Id == p.MonAnId && m.TrangThai))
+                .ToList() ?? new();
+
+            StateHasChanged();
+        }
     }
 
 

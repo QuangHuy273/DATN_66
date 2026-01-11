@@ -739,7 +739,7 @@ else if (DanhSachHoaDonDayDu?.Count > 0)
             {
                 var mon = chiTietMonAnList.First(x => x.Id == item.ChiTietMonAnId);
                 mon.Soluong -= item.Soluong;
-                await ApiService.PutAsync("ChiTietMonAn", mon);
+                await ApiService.PutAsync($"ChiTietMonAn/GiamSoLuong/{mon.Id}?soLuongTru={item.Soluong}", mon);
             }
         }
 

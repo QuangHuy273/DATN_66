@@ -11,9 +11,9 @@ namespace API.Models
         public bool TrangThai { get; set; } = true;
         public Guid? NguoiDungId { get; set; }
         public Guid? ChiTietMonAnId { get; set; }
-
-
+        public string? MonAnId { get; set; }
         public virtual ChiTietMonAn? ChiTietMonAn { get; set; }
         public virtual NguoiDung? NguoiDung { get; set; }
+        public virtual MonAn? MonAn { get; set; }
     }
 }
