@@ -11,6 +11,15 @@
 <link href="css/QuanLyGiamGia.css" rel="stylesheet" />
 <PageTitle>Quản lý Voucher</PageTitle>
 
+@if (isLoading)
+{
+    <div class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+    </div>
+}
 
 <div class="bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,18 +29,21 @@
                 <p class="text-gray-600">Quản lý và theo dõi các voucher khuyến mãi</p>
             </div>
             <div class="flex space-x-3">
-                <button class="flex items-center px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                        @onclick="ExportToExcel">
+                <button class="flex items-center px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        @onclick="ExportToExcel"
+                        disabled="@isProcessing">
                     <i class="fas fa-download w-4 h-4 mr-2"></i>
                     Xuất Excel
                 </button>
-                <button class="flex items-center px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                        @onclick="ImportFromExcel">
+                <button class="flex items-center px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        @onclick="ImportFromExcel"
+                        disabled="@isProcessing">
                     <i class="fas fa-upload w-4 h-4 mr-2"></i>
                     Nhập Excel
                 </button>
-                <button class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        @onclick="ShowCreateModal">
+                <button class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        @onclick="ShowCreateModal"
+                        disabled="@isProcessing">
                     <i class="fas fa-plus w-4 h-4 mr-2"></i>
                     Tạo voucher
                 </button>
@@ -41,10 +53,11 @@
 </div>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         @foreach (var stat in Stats)
         {
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white rounded-lg shadow p-6 transition-transform hover:scale-105">
                 <div class="flex items-center">
                     <div class="@stat.Color rounded-lg p-3 mr-4">
                         <i class="@stat.Icon w-6 h-6 text-white"></i>
@@ -58,30 +71,46 @@
         }
     </div>
 
-
+    <!-- Filters and Search -->
     <div class="bg-white rounded-lg shadow mb-6">
         <div class="p-6 border-b border-gray-200">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                <div class="flex flex-wrap items-center space-x-1">
+                <div class="flex flex-wrap items-center gap-2">
                     @foreach (var tab in Tabs)
                     {
-                        <button class="px-3 py-1 rounded-md text-sm font-medium transition-colors @(activeTab == tab.Key ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:text-gray-700")"
+                        <button class="px-4 py-2 rounded-md text-sm font-medium transition-all @(activeTab == tab.Key ? "bg-blue-100 text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50")"
                                 @onclick="() => SetActiveTab(tab.Key)">
                             @tab.Label
+                            @if (tab.Key == "all")
+                            {
+                                <span class="ml-1 text-xs">(@vouchers.Count)</span>
+                            }
+                            else if (tab.Key == "active")
+                            {
+                                <span class="ml-1 text-xs">(@vouchers.Count(v => GetVoucherStatus(v) == "active"))</span>
+                            }
+                            else if (tab.Key == "expired")
+                            {
+                                <span class="ml-1 text-xs">(@vouchers.Count(v => GetVoucherStatus(v) == "expired"))</span>
+                            }
+                            else if (tab.Key == "draft")
+                            {
+                                <span class="ml-1 text-xs">(@vouchers.Count(v => GetVoucherStatus(v) == "draft"))</span>
+                            }
                         </button>
                     }
                 </div>
-                
+
                 <div class="flex items-center space-x-3">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"></i>
-                        <input type="text" 
-                               placeholder="Tìm kiếm voucher..." 
-                               @bind="searchTerm" 
+                        <input type="text"
+                               placeholder="Tìm kiếm voucher..."
+                               @bind="searchTerm"
                                @bind:event="oninput"
-                               class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64" />
+                               class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 transition-shadow" />
                     </div>
-                    <button class="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                    <button class="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                             @onclick="ShowFilterModal">
                         <i class="fas fa-filter w-4 h-4 mr-2"></i>
                         Lọc
@@ -92,133 +121,157 @@
 
         <!-- Voucher Table -->
         <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại & Giá trị</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Điều kiện</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sử dụng</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời hạn</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach (var voucher in PagedVouchers)
-                    {
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">@voucher.Id</div>
-                                    <div class="text-sm text-gray-500">@voucher.Ten</div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">
-                                    @if (voucher.PhanTramKhuyenMai.HasValue)
-                                    {
-                                        <span>@voucher.PhanTramKhuyenMai%</span>
-                                    }
-                                    else
-                                    {
-                                        <span>@voucher.SoTienKhuyenMai?.ToString("N0")đ</span>
-                                    }
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                    @(voucher.PhanTramKhuyenMai.HasValue ? "Phần trăm" : "Cố định")
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">
-                                    Tối thiểu: @voucher.SoTienToiThieu?.ToString("N0")đ
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">
-                                    @GetUsedCount(voucher)/@voucher.Soluong
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                                    <div class="bg-blue-600 h-2 rounded-full" 
-                                         style="width: @(GetUsagePercentage(voucher))%"></div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">
-                                    @voucher.NgayBatDau.ToString("dd/MM/yyyy")
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                    @voucher.NgayKetThuc.ToString("dd/MM/yyyy")
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full @GetStatusClass(voucher)">
-                                    @GetStatusText(voucher)
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-900" @onclick="() => ViewVoucher(voucher)">
-                                        <i class="fas fa-eye w-4 h-4"></i>
-                                        Xem
-                                    </button>
-                                    <button class="text-green-600 hover:text-green-900" @onclick="() => EditVoucher(voucher)">
-                                        <i class="fas fa-edit w-4 h-4"></i>
-                                        Sửa
-                                    </button>
-                                    <button class="text-gray-600 hover:text-gray-900" @onclick="() => CopyVoucher(voucher)">
-                                        <i class="fas fa-copy w-4 h-4"></i>
-                                        Copy
-                                    </button>
-                                </div>
-                            </td>
+            @if (PagedVouchers.Any())
+            {
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại & Giá trị</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Điều kiện</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sử dụng</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời hạn</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var voucher in PagedVouchers)
+                        {
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">@voucher.Id</div>
+                                        <div class="text-sm text-gray-500">@voucher.Ten</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        @if (voucher.PhanTramKhuyenMai.HasValue)
+                                        {
+                                            <span class="font-semibold text-green-600">@voucher.PhanTramKhuyenMai%</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="font-semibold text-blue-600">@voucher.SoTienKhuyenMai?.ToString("N0")đ</span>
+                                        }
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        @(voucher.PhanTramKhuyenMai.HasValue ? "Phần trăm" : "Cố định")
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        Tối thiểu: @(voucher.SoTienToiThieu?.ToString("N0") ?? "0")đ
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        @GetUsedCount(voucher)/@voucher.Soluong
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                        <div class="@GetProgressBarColor(voucher) h-2 rounded-full transition-all"
+                                             style="width: @(GetUsagePercentage(voucher))%"></div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        @voucher.NgayBatDau.ToString("dd/MM/yyyy")
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        @voucher.NgayKetThuc.ToString("dd/MM/yyyy")
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full @GetStatusClass(voucher)">
+                                        @GetStatusText(voucher)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                @onclick="() => ViewVoucher(voucher)"
+                                                title="Xem chi tiết">
+                                            👁️ Xem
+                                        </button>
+                                        <button class="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                @onclick="() => EditVoucher(voucher)"
+                                                title="Chỉnh sửa">
+                                            ✏️ Sửa
+                                        </button>
+                                        <button class="px-2 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                                @onclick="() => CopyVoucher(voucher)"
+                                                title="Sao chép">
+                                            📋 Copy
+                                        </button>
+                                        <button class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                @onclick="() => DeleteVoucher(voucher)"
+                                                title="Xóa">
+                                            🗑️ Xóa
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
+                    <p class="text-gray-500 text-lg">Không tìm thấy voucher nào</p>
+                    <p class="text-gray-400 text-sm mt-2">Thử thay đổi bộ lọc hoặc tạo voucher mới</p>
+                </div>
+            }
         </div>
 
-        <div class="px-6 py-4 border-t border-gray-200">
-            <div class="flex items-center justify-between">
-                <div class="text-sm text-gray-700">
-                    Hiển thị <span class="font-medium">@((currentPage - 1) * pageSize + 1)</span> 
-                    đến <span class="font-medium">@Math.Min(currentPage * pageSize, FilteredVouchers.Count())</span> 
-                    trong tổng số <span class="font-medium">@FilteredVouchers.Count()</span> voucher
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button class="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded hover:bg-gray-50"
-                            @onclick="PreviousPage" disabled="@(currentPage == 1)">
-                        Trước
-                    </button>
-                    @for (int i = 1; i <= totalPages; i++)
-                    {
-                        int pageNum = i;
-                        <button class="px-3 py-1 text-sm @(currentPage == pageNum ? "bg-blue-600 text-white" : "text-gray-500 border border-gray-300 hover:bg-gray-50") rounded"
-                                @onclick="() => GoToPage(pageNum)">
-                            @pageNum
+        <!-- Pagination -->
+        @if (PagedVouchers.Any() && totalPages > 1)
+        {
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Hiển thị <span class="font-medium">@((currentPage - 1) * pageSize + 1)</span>
+                        đến <span class="font-medium">@Math.Min(currentPage * pageSize, FilteredVouchers.Count())</span>
+                        trong tổng số <span class="font-medium">@FilteredVouchers.Count()</span> voucher
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                @onclick="PreviousPage"
+                                disabled="@(currentPage == 1)">
+                            Trước
                         </button>
-                    }
-                    <button class="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded hover:bg-gray-50"
-                            @onclick="NextPage" disabled="@(currentPage == totalPages)">
-                        Sau
-                    </button>
+                        @for (int i = GetStartPage(); i <= GetEndPage(); i++)
+                        {
+                            int pageNum = i;
+                            <button class="px-3 py-1 text-sm @(currentPage == pageNum ? "bg-blue-600 text-white" : "text-gray-500 border border-gray-300 hover:bg-gray-50") rounded transition-colors"
+                                    @onclick="() => GoToPage(pageNum)">
+                                @pageNum
+                            </button>
+                        }
+                        <button class="px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                @onclick="NextPage"
+                                disabled="@(currentPage == totalPages)">
+                            Sau
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </div>
 
 @if (showCreateModal)
 {
-    <ThemSuaGiamGia Voucher="selectedVoucher" 
-                  OnClose="CloseCreateModal" 
-                  OnSave="SaveVoucher" 
-                  IsEdit="@(selectedVoucher != null)" />
+    <ThemSuaGiamGia Voucher="selectedVoucher"
+                    OnClose="CloseCreateModal"
+                    OnSave="SaveVoucher"
+                    IsEdit="@(selectedVoucher != null)" />
 }
 
 @code {
     private string activeTab = "all";
-
     private string _searchTerm = "";
     private string searchTerm
     {
@@ -229,16 +282,18 @@
             {
                 _searchTerm = value;
                 currentPage = 1;
-                StateHasChanged();
             }
         }
     }
 
     private bool showCreateModal = false;
+    private bool isLoading = false;
+    private bool isProcessing = false;
     private Voucher? selectedVoucher = null;
 
     private int currentPage = 1;
     private int pageSize = 10;
+    private const int maxVisiblePages = 5;
 
     private List<Voucher> vouchers = new();
     private List<StatCard> Stats = new();
@@ -253,8 +308,30 @@
 
     private async Task LoadData()
     {
-        vouchers = await apiService.GetAsync<List<Voucher>>("GiamGia") ?? new();
+        isLoading = true;
+        StateHasChanged();
 
+        try
+        {
+            vouchers = await apiService.GetAsync<List<Voucher>>("GiamGia") ?? new();
+            CalculateStats();
+            InitializeTabs();
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorMessage("Lỗi tải dữ liệu", $"Không thể tải danh sách voucher: {ex.Message}");
+            vouchers = new();
+        }
+        finally
+        {
+            isLoading = false;
+            currentPage = 1;
+            StateHasChanged();
+        }
+    }
+
+    private void CalculateStats()
+    {
         Stats = new()
         {
             new StatCard
@@ -281,20 +358,28 @@
             new StatCard
             {
                 Label = "Tiết kiệm",
-                Value = vouchers.Sum(v =>
-                {
-                    var used = GetUsedCount(v);
-                    if (v.PhanTramKhuyenMai.HasValue)
-                    {
-                        return used * 100_000 * v.PhanTramKhuyenMai.Value / 100.0m;
-                    }
-                    return used * (v.SoTienKhuyenMai ?? 0);
-                }).ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + "đ",
+                Value = CalculateTotalSavings().ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + "đ",
                 Icon = "fas fa-percent",
                 Color = "bg-orange-500"
             }
         };
+    }
 
+    private decimal CalculateTotalSavings()
+    {
+        return vouchers.Sum(v =>
+        {
+            var used = GetUsedCount(v);
+            if (v.PhanTramKhuyenMai.HasValue)
+            {
+                return used * 100_000 * v.PhanTramKhuyenMai.Value / 100.0m;
+            }
+            return used * (v.SoTienKhuyenMai ?? 0);
+        });
+    }
+
+    private void InitializeTabs()
+    {
         Tabs = new()
         {
             new TabItem { Key = "all", Label = "Tất cả" },
@@ -302,8 +387,6 @@
             new TabItem { Key = "expired", Label = "Hết hạn" },
             new TabItem { Key = "draft", Label = "Nháp" }
         };
-
-        currentPage = 1;
     }
 
     private IEnumerable<Voucher> FilteredVouchers =>
@@ -346,64 +429,145 @@
 
     private async Task SaveVoucher(Voucher voucher)
     {
-        if (selectedVoucher == null)
+        isProcessing = true;
+        StateHasChanged();
+
+        try
         {
-            var result = await apiService.PostAsync<GiamGia, GiamGia>("GiamGia", _mapper.Map<GiamGia>(voucher));
-            if (result != null)
+            if (selectedVoucher == null)
             {
-                vouchers.Add(_mapper.Map<Voucher>(result));
-            }
-        }
-        else
-        {
-            var success = await apiService.PutAsync<GiamGia>("GiamGia", _mapper.Map<GiamGia>(voucher));
-            if (success)
-            {
-                var index = vouchers.FindIndex(v => v.Id == voucher.Id);
-                if (index >= 0)
+                var result = await apiService.PostAsync<GiamGia, GiamGia>("GiamGia", _mapper.Map<GiamGia>(voucher));
+                if (result != null)
                 {
-                    vouchers[index] = voucher;
+                    await ShowSuccessMessage("Thành công", "Tạo voucher mới thành công!");
+                }
+                else
+                {
+                    await ShowErrorMessage("Lỗi", "Không thể tạo voucher mới");
                 }
             }
-        }
+            else
+            {
+                var success = await apiService.PutAsync<GiamGia>("GiamGia", _mapper.Map<GiamGia>(voucher));
+                if (success)
+                {
+                    await ShowSuccessMessage("Thành công", "Cập nhật voucher thành công!");
+                }
+                else
+                {
+                    await ShowErrorMessage("Lỗi", "Không thể cập nhật voucher");
+                }
+            }
 
-        CloseCreateModal();
-        await LoadData(); // cập nhật thống kê và danh sách
+            CloseCreateModal();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorMessage("Lỗi", $"Đã xảy ra lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
     }
 
     private async Task CopyVoucher(Voucher voucher)
     {
-        var newVoucher = new Voucher
-        {
-            Ten = $"Copy { voucher.Ten }",
-            PhanTramKhuyenMai = voucher.PhanTramKhuyenMai,
-            SoTienKhuyenMai = voucher.SoTienKhuyenMai,
-            SoTienToiThieu = voucher.SoTienToiThieu,
-            Soluong = voucher.Soluong,
-            NgayBatDau = voucher.NgayBatDau,
-            NgayKetThuc = voucher.NgayKetThuc,
-            TrangThai = false,
-            ApDungSanPham = voucher.ApDungSanPham,
-            MoTa = voucher.MoTa
-        };
+        var confirm = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc muốn sao chép voucher '{voucher.Ten}'?");
+        if (!confirm) return;
 
-        var result = await apiService.PostAsync<GiamGia, GiamGia>("GiamGia", _mapper.Map<GiamGia>(newVoucher));
-        if (result != null)
+        isProcessing = true;
+        StateHasChanged();
+
+        try
         {
-            vouchers.Add(_mapper.Map<Voucher>(result));
-            await LoadData();
+            var newVoucher = new Voucher
+            {
+                Ten = $"Copy {voucher.Ten}",
+                PhanTramKhuyenMai = voucher.PhanTramKhuyenMai,
+                SoTienKhuyenMai = voucher.SoTienKhuyenMai,
+                SoTienToiThieu = voucher.SoTienToiThieu,
+                Soluong = voucher.Soluong,
+                NgayBatDau = DateTime.Today,
+                NgayKetThuc = voucher.NgayKetThuc,
+                TrangThai = false,
+                ApDungSanPham = voucher.ApDungSanPham,
+                MoTa = voucher.MoTa
+            };
+
+            var result = await apiService.PostAsync<GiamGia, GiamGia>("GiamGia", _mapper.Map<GiamGia>(newVoucher));
+            if (result != null)
+            {
+                await ShowSuccessMessage("Thành công", "Sao chép voucher thành công!");
+                await LoadData();
+            }
+            else
+            {
+                await ShowErrorMessage("Lỗi", "Không thể sao chép voucher");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorMessage("Lỗi", $"Đã xảy ra lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteVoucher(Voucher voucher)
+    {
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<object>("Swal.fire", new
+            {
+                title = "Xác nhận xóa",
+                text = $"Bạn có chắc muốn xóa voucher '{voucher.Ten}'? Hành động này không thể hoàn tác!",
+                icon = "warning",
+                showCancelButton = true,
+                confirmButtonColor = "#d33",
+                cancelButtonColor = "#3085d6",
+                confirmButtonText = "Xóa",
+                cancelButtonText = "Hủy"
+            });
+
+            var resultDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(result.ToString());
+            if (resultDict != null && resultDict.ContainsKey("isConfirmed") && resultDict["isConfirmed"].GetBoolean())
+            {
+                isProcessing = true;
+                StateHasChanged();
+
+                await apiService.DeleteAsync<string>("GiamGia", voucher.Id);
+
+                await ShowSuccessMessage("Thành công", "Xóa voucher thành công!");
+                await LoadData();
+
+                isProcessing = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            isProcessing = false;
+            StateHasChanged();
+            await ShowErrorMessage("Lỗi", $"Không thể xóa voucher: {ex.Message}");
         }
     }
 
     private void ViewVoucher(Voucher voucher)
     {
-        // có thể mở modal chi tiết tại đây
+        EditVoucher(voucher);
     }
 
     private string GetVoucherStatus(Voucher voucher)
     {
         if (!voucher.TrangThai) return "draft";
-        if (voucher.NgayKetThuc < DateTime.Now.ToLocalTime()) return "expired";
+        if (voucher.NgayKetThuc < DateTime.Now) return "expired";
+        if (voucher.NgayBatDau > DateTime.Now) return "draft";
         return "active";
     }
 
@@ -429,9 +593,17 @@
         };
     }
 
+    private string GetProgressBarColor(Voucher voucher)
+    {
+        var percentage = GetUsagePercentage(voucher);
+        if (percentage >= 90) return "bg-red-600";
+        if (percentage >= 70) return "bg-yellow-500";
+        return "bg-blue-600";
+    }
+
     private int GetUsedCount(Voucher voucher)
     {
-        return voucher.DaSuDung ?? 0; 
+        return voucher.DaSuDung ?? 0;
     }
 
     private double GetUsagePercentage(Voucher voucher)
@@ -444,45 +616,86 @@
     private void PreviousPage()
     {
         if (currentPage > 1)
+        {
             currentPage--;
+            StateHasChanged();
+        }
     }
 
     private void NextPage()
     {
         if (currentPage < totalPages)
+        {
             currentPage++;
+            StateHasChanged();
+        }
     }
 
     private void GoToPage(int page)
     {
         currentPage = page;
+        StateHasChanged();
+    }
+
+    private int GetStartPage()
+    {
+        var start = Math.Max(1, currentPage - maxVisiblePages / 2);
+        return Math.Min(start, Math.Max(1, totalPages - maxVisiblePages + 1));
+    }
+
+    private int GetEndPage()
+    {
+        return Math.Min(totalPages, GetStartPage() + maxVisiblePages - 1);
     }
 
     private void ShowFilterModal()
     {
-        // Hiển thị modal lọc nếu có
+        // Hiển thị modal lọc nâng cao
     }
 
-    private async void ExportToExcel()
+    private async Task ExportToExcel()
     {
         await JSRuntime.InvokeVoidAsync("Swal.fire", new
         {
             icon = "info",
-            title = "Tạm thời chưa hỗ trợ",
+            title = "Đang phát triển",
             text = "Chức năng xuất Excel sẽ sớm được cập nhật.",
+            timer = 2000,
+            showConfirmButton = false
         });
     }
 
-    private async void ImportFromExcel()
+    private async Task ImportFromExcel()
     {
         await JSRuntime.InvokeVoidAsync("Swal.fire", new
         {
             icon = "info",
-            title = "Tạm thời chưa hỗ trợ",
+            title = "Đang phát triển",
             text = "Chức năng nhập Excel sẽ sớm được cập nhật.",
+            timer = 2000,
+            showConfirmButton = false
+        });
+    }
+
+    private async Task ShowSuccessMessage(string title, string message)
+    {
+        await JSRuntime.InvokeVoidAsync("Swal.fire", new
+        {
+            icon = "success",
+            title = title,
+            text = message,
+            timer = 2000,
+            showConfirmButton = false
+        });
+    }
+
+    private async Task ShowErrorMessage(string title, string message)
+    {
+        await JSRuntime.InvokeVoidAsync("Swal.fire", new
+        {
+            icon = "error",
+            title = title,
+            text = message
         });
     }
 }
-
-
-

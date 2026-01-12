@@ -59,7 +59,7 @@ namespace API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<TModel>> Create([FromBody] TModelDTO dto)
+        public async Task<ActionResult<TModelDTO>> Create([FromBody] TModelDTO dto)
         {
             if (dto == null)
                 return BadRequest("Dữ liệu không hợp lệ.");
@@ -80,10 +80,23 @@ namespace API.Controllers
                 return BadRequest("Cấu hình tạo ID chưa đầy đủ.");
             }
 
+            // Xử lý Guid Id nếu là Guid.Empty
+            var idProp = typeof(TModelDTO).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
+            if (idProp != null && idProp.PropertyType == typeof(Guid) && idProp.CanWrite)
+            {
+                var currentId = (Guid)idProp.GetValue(dto);
+                if (currentId == Guid.Empty)
+                {
+                    idProp.SetValue(dto, Guid.NewGuid());
+                }
+            }
+
             var model = _mapper.Map<TModel>(dto);
             await _repository.AddAsync(model);
 
-            return Ok(model);
+            // Map lại entity về DTO để trả về đúng định dạng
+            var resultDto = _mapper.Map<TModelDTO>(model);
+            return Ok(resultDto);
         }
 
 

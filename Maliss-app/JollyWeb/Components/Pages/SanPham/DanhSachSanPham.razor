@@ -1,10 +1,10 @@
-﻿ @page "/SanPham"
+﻿@page "/SanPham"
 @using API.Models.DTO
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Nav
 @inject IMonAnService monAnService
-@inject IChiTietMonAnService chiTietMonAnService
-<PageTitle>Jolly - Đồ Ăn Vặt Ngon</PageTitle>
+@inject IApiService apiService
+<PageTitle>Maliss - Đồ Ăn Vặt Ngon</PageTitle>
 
 <link href="css/DanhSachSanPham.css" rel="stylesheet" />
 
@@ -14,196 +14,603 @@
             <div class="product-layout">
                 <!-- Cột trái: Bộ lọc -->
                 <aside class="product-filters">
-                    <h3>Bộ lọc</h3>
+                    <h3> Bộ lọc</h3>
+                    <!-- Ô tìm kiếm -->
                     <div class="filter-group">
-                        <label>🔍 Tìm kiếm</label>
-                        <input type="text" placeholder="Tìm món..." @bind="searchKeyword" @oninput="OnSearchInput" />
+                        <label> 🔍 Tìm kiếm</label>
+                        <input type="text"
+                               placeholder="Tìm món..."
+                               @bind="searchKeyword"
+                               @bind:event="oninput"
+                               @onkeyup="OnSearchKeyUp" />
                     </div>
-
+                    <!-- Sắp xếp -->
                     <div class="filter-group">
-                        <label>🏷️ Thể loại</label>
-                        <select @bind="selectedCategoryValue">
-                            <option value="">Tất cả</option>
+                        <label> 🔄 Sắp xếp</label>
+                        <select @bind="sortBy" @bind:after="OnFilterChanged">
+                            <option value="newest"> Mới nhất</option>
+                            <option value="oldest"> Cũ nhất</option>
+                            <option value="price-asc"> Giá thấp → cao</option>
+                            <option value="price-desc"> Giá cao → thấp</option>
+                        </select>
+                    </div>
+                    <!-- Thể loại -->
+                    <div class="filter-group">
+                        <label> 🏷️ Thể loại</label>
+                        <select @bind="selectedCategoryId" @bind:after="OnFilterChanged">
+                            <option value=""> Tất cả</option>
                             @foreach (var category in categories)
                             {
-                                <option value="@category">@category</option>
+                                <option value="@category.Id">@category.Ten</option>
                             }
+
                         </select>
                     </div>
-
+                    <!-- Thương hiệu -->
                     <div class="filter-group">
-                        <label>🏢 Thương hiệu</label>
-                        <select @bind="selectedBrandValue">
-                            <option value="">Tất cả</option>
+                        <label> 🏢 Thương hiệu</label>
+                        <select @bind="selectedBrandId" @bind:after="OnFilterChanged">
+                            <option value=""> Tất cả</option>
                             @foreach (var brand in brands)
                             {
-                                <option value="@brand">@brand</option>
+                                <option value="@brand.Id">@brand.Ten</option>
                             }
+
                         </select>
                     </div>
-
+                    <!-- Khoảng giá -->
                     <div class="filter-group">
-                        <label>💰 Mức giá</label>
-                        <input type="range" min="@minPrice" max="@maxPrice" step="5000" @bind="priceFilter" @oninput="OnPriceChange" />
-                        <span id="priceLabel">Tối đa: @(priceFilter.ToString("N0"))₫</span>
+                        <label> 💰 Khoảng giá</label>
+                        <div class="price-range-inputs">
+                            <div class="price-input-wrapper">
+                                <label class="price-label"> Từ</label>
+                                <input type="number"
+                                       class="price-input"
+                                       placeholder="0"
+                                       @bind="priceFrom"
+                                       @bind:event="oninput"
+                                       @onchange="OnPriceChanged"
+                                       min="0"
+                                       step="1000" />
+                                <span class="currency"> ₫</span>
+                            </div>
+                            <span class="price-separator"> -</span>
+                            <div class="price-input-wrapper">
+                                <label class="price-label"> Đến</label>
+                                <input type="number"
+                                       class="price-input"
+                                       placeholder="Không giới hạn"
+                                       @bind="priceTo"
+                                       @bind:event="oninput"
+                                       @onchange="OnPriceChanged"
+                                       min="0"
+                                       step="1000" />
+                                <span class="currency"> ₫</span>
+                            </div>
+                        </div>
                     </div>
-                </aside>
-
-                <!-- Cột phải: Danh sách sản phẩm -->
-                <div class="product-grid">
-                    @if (filteredProducts?.Any() == true)
+                    <!-- Nút xóa bộ lọc -->
+                    @if (HasActiveFilters())
                     {
-                        @foreach (var product in filteredProducts)
-                        {
+                        <button class="btn-clear-filter" @onclick="ClearFilters"> <i class="bi bi-x-circle"></i> Xóa bộ lọc </button>
+                    }
 
-                            <SanPham monAn="product"/>
-                            
+                </aside>
+                <!-- Cột phải: Danh sách sản phẩm -->
+                <div class="product-content">
+                    @if (isLoading)
+                    {
+                        <div class="loading-container"> <div class="loading-spinner"></div> <p>Đang tải sản phẩm...</p> </div>
+                    }
+
+                    else if (filterResponse?.MonAns?.Any() == true)
+                    {
+                        <!-- Grid sản phẩm -->
+                        <div class="product-grid">
+                            @foreach (var item in filterResponse.MonAns)
+
+                            {
+                                <SanPham monAn="item.MonAn" />
+                            }
+
+                        </div>
+                        <!-- PHÂN TRANG -->
+                        @if (filterResponse.TotalPages > 1)
+                        {
+                            <div class="pagination-section">
+                                <div class="pagination-controls">
+                                    <!-- Nút Trang đầu -->
+                                    <button class="btn-pagination btn-nav" @onclick="() => GoToPage(1)" disabled="@(currentPage <= 1)" title="Trang đầu"> <span>Trang đầu</span> <i class="bi bi-chevron-double-left"></i> <span class="btn-text">Đầu</span> </button>
+                                    <!-- Nút Trang trước -->
+                                    <button class="btn-pagination btn-nav" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage <= 1)" title="Trang trước"> <span>Trang trước</span> <i class="bi bi-chevron-left"></i> <span class="btn-text">Trước</span> </button>
+                                    <!-- Hiển thị các số trang -->
+                                    @foreach (var pageNum in GetPageNumbers())
+
+                                    {
+                                        if (pageNum == -1)
+
+                                        {
+                                            <span class="pagination-ellipsis">...</span>
+                                        }
+
+                                        else
+                                        {
+                                            <button class="btn-pagination btn-page @(pageNum == currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)" disabled="@(pageNum == currentPage)"> @pageNum </button>
+                                        }
+
+                                    }
+
+                                    <!-- Nút Trang tiếp -->
+                                    <button class="btn-pagination btn-nav"
+                                            @onclick="() => GoToPage(currentPage + 1)"
+                                            disabled="@(currentPage >= filterResponse.TotalPages)"
+                                            title="Trang tiếp">
+                                        <span> Trang tiếp</span>
+                                        <span class="btn-text"> Tiếp</span>
+                                        <i class="bi bi-chevron-right"> </i>
+                                    </button>
+                                    <!-- Nút Trang cuối -->
+                                    <button class="btn-pagination btn-nav"
+                                            @onclick="() => GoToPage(filterResponse.TotalPages)"
+                                            disabled="@(currentPage >= filterResponse.TotalPages)"
+                                            title="Trang cuối">
+                                        <span> Trang cuối</span>
+                                        <span class="btn-text"> Cuối</span>
+                                        <i class="bi bi-chevron-double-right"> </i>
+                                    </button>
+                                </div>
+                                <!-- Thông tin tổng quan -->
+                                <div class="pagination-info">
+                                    <span>
+                                        Trang <strong> @filterResponse.PageIndex</strong> / <strong> @filterResponse.TotalPages</strong>
+                                        <span class="text-muted ms-2"> (@filterResponse.TotalCount sản phẩm)</span>
+                                    </span>
+                                </div>
+                            </div>
                         }
                     }
                     else
                     {
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                            <p style="font-size: 1.5rem; color: #666;">Không tìm thấy sản phẩm nào phù hợp</p>
+                        <div class="empty-state">
+                            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc; display: block; margin-bottom: 20px;"></i> <p style="font-size: 1.2rem; color: #666;">
+                                @(HasActiveFilters()
+                                                            ? "Không tìm thấy sản phẩm phù hợp với bộ lọc"
+                                                            : "Chưa có sản phẩm nào")
+                        </p> @if (HasActiveFilters()){
+                                <button class="btn btn-primary" style="margin-top: 20px;" @onclick="ClearFilters"> <i class="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc </button>
+                            }
+
                         </div>
                     }
+
                 </div>
             </div>
         </div>
     </section>
 </main>
-
 @code {
-    private List<MonAnDTO> products = new();
-    private List<MonAnDTO> filteredProducts = new();
+    // ===== STATE VARIABLES =====
+    private MonAnFilterResponse? filterResponse;
+    private bool isLoading = true;
+    private int currentPage = 1;
+    private int pageSize = 12;
 
-    // Filter properties
+    // ===== FILTER PARAMETERS =====
     private string searchKeyword = "";
-    private string selectedCategory = "";
-    private string selectedBrand = "";
-    private string selectedSupplier = "";
-    private string selectedPackaging = "";
-    private decimal priceFilter = 100000;
-    private decimal minPrice = 10000;
-    private decimal maxPrice = 100000;
+    private string selectedCategoryId = "";
+    private string selectedBrandId = "";
+    private string sortBy = "newest"; // Sắp xếp mặc định: mới nhất
+    private decimal? priceFrom = null; // Giá từ
+    private decimal? priceTo = null;   // Giá đến
 
-    // Filter options
-    private List<string> categories = new();
-    private List<string> brands = new();
-    private List<string> packagings = new();
+    // Debounce timer cho search
+    private System.Threading.Timer? _searchTimer;
 
+    // ===== FILTER OPTIONS (Dropdown data) =====
+    private List<TheLoaiDTO> categories = new();
+    private List<ThuongHieuDTO> brands = new();
+
+    // ===== LIFECYCLE METHODS =====
     protected override async Task OnInitializedAsync()
     {
+        await LoadFilterOptions();
         await LoadProducts();
     }
 
+    // ===== LOAD DROPDOWN OPTIONS =====
+    private async Task LoadFilterOptions()
+    {
+        try
+        {
+            // Load danh mục
+            var categoriesResult = await apiService.GetAsync<List<TheLoaiDTO>>("TheLoai");
+            categories = categoriesResult ?? new();
+
+            // Load thương hiệu
+            var brandsResult = await apiService.GetAsync<List<ThuongHieuDTO>>("ThuongHieu");
+            brands = brandsResult ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading filter options: {ex.Message}");
+        }
+    }
+
+    // ===== LOAD PRODUCTS WITH FILTER & PAGINATION =====
     private async Task LoadProducts()
     {
-        var monAns = await monAnService.GetAll() ?? new();
-        var ctma = await chiTietMonAnService.GetAll() ?? new();
-
-
-        products = monAns
-            .Where(mon => mon.TrangThai == true &&
-                        ctma.Any(c => c.MonAnId == mon.Id 
-                                    && c.TrangThai == true 
-                                    && c.Soluong > 0))
-            .ToList();
-
-        InitializeFilterOptions();
-        ApplyFilters();
-    }
-
-    private void InitializeFilterOptions()
-    {
-        categories = products.Where(p => !string.IsNullOrEmpty(p.TheLoai))
-                           .Select(p => p.TheLoai!)
-                           .Distinct()
-                           .OrderBy(c => c)
-                           .ToList();
-
-        brands = products.Where(p => !string.IsNullOrEmpty(p.ThuongHieu))
-                        .Select(p => p.ThuongHieu!)
-                        .Distinct()
-                        .OrderBy(b => b)
-                        .ToList();
-    }
-
-    private void ApplyFilters()
-    {
-        filteredProducts = products.Where(product =>
+        try
         {
+            isLoading = true;
+            StateHasChanged();
 
-            if (!string.IsNullOrEmpty(searchKeyword) &&
-                !product.Ten.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase))
-                return false;
+            // Tạo filter request - Dùng MonAnFilterRequest (DTO chung)
+            var filterRequest = new MonAnFilterRequest
+            {
+                PageIndex = currentPage,
+                PageSize = pageSize,
+                Keyword = string.IsNullOrWhiteSpace(searchKeyword) ? null : searchKeyword.Trim(),
+                
+                // Chỉ dùng các filter cơ bản cho khách hàng
+                TrangThaiMonAn = true, // Chỉ sản phẩm đang hoạt động
+                TheLoaiId = string.IsNullOrEmpty(selectedCategoryId) ? null : Guid.Parse(selectedCategoryId),
+                ThuongHieuId = string.IsNullOrEmpty(selectedBrandId) ? null : Guid.Parse(selectedBrandId),
+                
+                // Lọc theo giá
+                GiaFrom = priceFrom,
+                GiaTo = priceTo,
+                
+                // Sắp xếp
+                SortBy = sortBy
+                
+                // Các trường khác để null (không dùng cho khách hàng)
+            };
 
-            if (!string.IsNullOrEmpty(selectedCategory) &&
-                product.TheLoai != selectedCategory)
-                return false;
+            // Gọi API filter-customer (server-side pagination + validation HSD >= 7 ngày)
+            filterResponse = await monAnService.FilterForCustomer(filterRequest);
 
-            if (!string.IsNullOrEmpty(selectedBrand) &&
-                product.ThuongHieu != selectedBrand)
-                return false;
-
-            if (product.Gia > priceFilter)
-                return false;
-
-            return true;
-        }).ToList();
-
-        StateHasChanged();
-    }
-
-
-    private async Task OnSearchInput(ChangeEventArgs e)
-    {
-        searchKeyword = e.Value?.ToString() ?? "";
-        ApplyFilters();
-    }
-
-    private async Task OnPriceChange(ChangeEventArgs e)
-    {
-        if (decimal.TryParse(e.Value?.ToString(), out decimal newPrice))
+            // Nếu không có kết quả và đang ở trang > 1, quay về trang 1
+            if (filterResponse != null && filterResponse.MonAns.Count == 0 && currentPage > 1)
+            {
+                currentPage = 1;
+                filterRequest.PageIndex = currentPage;
+                filterResponse = await monAnService.FilterForCustomer(filterRequest);
+            }
+        }
+        catch (Exception ex)
         {
-            priceFilter = newPrice;
-            ApplyFilters();
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            filterResponse = null;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
-
-    private string _selectedCategory = "";
-    private string selectedCategoryValue
+    // ===== EVENT HANDLERS =====
+    private void OnSearchKeyUp(KeyboardEventArgs e)
     {
-        get => _selectedCategory;
-        set
+        // Debounce search: chỉ search sau 500ms không gõ phím
+        _searchTimer?.Dispose();
+        _searchTimer = new System.Threading.Timer(async _ =>
         {
-            _selectedCategory = value;
-            selectedCategory = value;
-            ApplyFilters();
-        }
+            await InvokeAsync(async () =>
+            {
+                currentPage = 1; // Reset về trang 1 khi search
+                await LoadProducts();
+            });
+        }, null, 500, Timeout.Infinite);
     }
 
-    private string _selectedBrand = "";
-    private string selectedBrandValue
+    private async Task OnFilterChanged()
     {
-        get => _selectedBrand;
-        set
-        {
-            _selectedBrand = value;
-            selectedBrand = value;
-            ApplyFilters();
-        }
+        currentPage = 1; // Reset về trang 1 khi thay đổi filter
+        await LoadProducts();
     }
 
-    private string _selectedPackaging = "";
-    private string selectedPackagingValue
+    private async Task OnPriceChanged()
     {
-        get => _selectedPackaging;
-        set
+        currentPage = 1; // Reset về trang 1 khi thay đổi giá
+        await LoadProducts();
+    }
+
+    private async Task ClearFilters()
+    {
+        searchKeyword = "";
+        selectedCategoryId = "";
+        selectedBrandId = "";
+        sortBy = "newest";
+        priceFrom = null;
+        priceTo = null;
+        currentPage = 1;
+        await LoadProducts();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrWhiteSpace(searchKeyword)
+            || !string.IsNullOrEmpty(selectedCategoryId)
+            || !string.IsNullOrEmpty(selectedBrandId)
+            || sortBy != "newest"
+            || priceFrom.HasValue
+            || priceTo.HasValue;
+    }
+
+    // ===== PAGINATION METHODS =====
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || filterResponse == null || page > filterResponse.TotalPages)
+            return;
+
+        currentPage = page;
+        await LoadProducts();
+        
+        // Scroll to top
+        await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+    }
+
+    private List<int> GetPageNumbers()
+    {
+        if (filterResponse == null || filterResponse.TotalPages <= 1)
+            return new List<int>();
+
+        var pageNumbers = new List<int>();
+        var totalPages = filterResponse.TotalPages;
+
+        // Nếu tổng số trang <= 7, hiển thị tất cả
+        if (totalPages <= 7)
         {
-            _selectedPackaging = value;
-            selectedPackaging = value;
-            ApplyFilters();
+            for (int i = 1; i <= totalPages; i++)
+            {
+                pageNumbers.Add(i);
+            }
+            return pageNumbers;
         }
+
+        // Luôn hiển thị trang 1
+        pageNumbers.Add(1);
+
+        // Tính toán các trang xung quanh trang hiện tại
+        var start = Math.Max(2, currentPage - 1);
+        var end = Math.Min(totalPages - 1, currentPage + 1);
+
+        // Thêm dấu ... nếu cần
+        if (start > 2)
+        {
+            pageNumbers.Add(-1); // -1 đại diện cho dấu ...
+        }
+
+        // Thêm các trang xung quanh
+        for (int i = start; i <= end; i++)
+        {
+            if (!pageNumbers.Contains(i))
+            {
+                pageNumbers.Add(i);
+            }
+        }
+
+        // Thêm dấu ... nếu cần
+        if (end < totalPages - 1)
+        {
+            pageNumbers.Add(-1);
+        }
+
+        // Luôn hiển thị trang cuối
+        if (!pageNumbers.Contains(totalPages))
+        {
+            pageNumbers.Add(totalPages);
+        }
+
+        return pageNumbers;
+    }
+
+    // ===== CLEANUP =====
+    public void Dispose()
+    {
+        _searchTimer?.Dispose();
     }
 }
+<style>
+    /* =========================================================
+       PRODUCT FILTERS – MODERN PREMIUM STYLE
+    ========================================================= */
+    .product-filters {
+        flex: 0 0 320px;
+        background: linear-gradient( 180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92) );
+        backdrop-filter: blur(18px);
+        padding: 28px 26px;
+        border-radius: 24px;
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 30px 60px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.7);
+        position: sticky;
+        top: 96px;
+    }
+
+        /* =========================================================
+       TITLE
+    ========================================================= */
+        .product-filters h3 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .product-filters h3::before {
+                content: "";
+                width: 8px;
+                height: 28px;
+                border-radius: 6px;
+                background: linear-gradient(180deg,#ee4d2d,#ff784e);
+            }
+
+    /* =========================================================
+       FILTER CARD
+    ========================================================= */
+    .filter-card {
+        margin-bottom: 22px;
+        padding: 16px 18px 20px;
+        border-radius: 18px;
+        background: linear-gradient(180deg,#ffffff,#f8fafc);
+        border: 1px solid #edf1f7;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+        /* Hover */
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0,0,0,0.12);
+        }
+
+        /* Active filter */
+        .filter-card.has-value {
+            border-color: #ee4d2d;
+            background: linear-gradient(180deg,#fff7f4,#ffffff);
+            box-shadow: 0 18px 40px rgba(238,77,45,0.28);
+        }
+
+            .filter-card.has-value::after {
+                content: "Đang lọc";
+                position: absolute;
+                top: -10px;
+                right: 14px;
+                font-size: 0.7rem;
+                font-weight: 700;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: linear-gradient(135deg,#ee4d2d,#ff784e);
+                color: #fff;
+            }
+
+        /* =========================================================
+       LABEL
+    ========================================================= */
+        .filter-card label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #334155;
+            letter-spacing: 0.2px;
+        }
+
+        .filter-card.has-value label {
+            color: #ee4d2d;
+        }
+
+    /* =========================================================
+       INPUT & SELECT
+    ========================================================= */
+    .filter-input,
+    .filter-select,
+    .price-input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1.5px solid #e5e7eb;
+        background: #ffffff;
+        font-size: 0.95rem;
+        transition: all 0.25s ease;
+    }
+
+        .filter-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus,
+        .price-input:focus {
+            outline: none;
+            border-color: #ee4d2d;
+            box-shadow: 0 0 0 4px rgba(238,77,45,0.18);
+        }
+
+    /* Active filled */
+    .filter-card.has-value .filter-input,
+    .filter-card.has-value .filter-select,
+    .filter-card.has-value .price-input {
+        background: #fff7f4;
+        border-color: #ee4d2d;
+    }
+
+    /* =========================================================
+       PRICE RANGE
+    ========================================================= */
+    .price-range-inputs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .price-input-wrapper {
+        position: relative;
+        flex: 1;
+    }
+
+    .price-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        display: block;
+        color: #64748b;
+    }
+
+    .currency {
+        position: absolute;
+        right: 12px;
+        bottom: 14px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    .price-separator {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-top: 18px;
+    }
+
+    /* =========================================================
+       CLEAR FILTER BUTTON
+    ========================================================= */
+    .btn-clear-filter {
+        margin-top: 8px;
+        width: 100%;
+        padding: 16px;
+        border-radius: 18px;
+        background: linear-gradient(135deg,#ef4444,#dc2626);
+        color: #fff;
+        font-weight: 800;
+        border: none;
+        cursor: pointer;
+        letter-spacing: 0.3px;
+        box-shadow: 0 16px 38px rgba(239,68,68,0.45);
+        transition: all 0.3s ease;
+    }
+
+        .btn-clear-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 50px rgba(239,68,68,0.55);
+        }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+    @@media (max-width: 992px) {
+        .product-filters
+
+    {
+        width: 100%;
+        position: static;
+        margin-bottom: 24px;
+    }
+
+    }
+</style>

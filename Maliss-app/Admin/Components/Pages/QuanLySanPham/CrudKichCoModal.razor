@@ -1,0 +1,231 @@
+@using Admin.Service.IService
+@using API.Models.DTO
+@inject IApiService ApiService
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+@if (Show)
+{
+    <div class="modal-backdrop fade show" style="display: block;" @onclick="CloseModal"></div>
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h5 class="modal-title">Quản Lý Kích Cỡ</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <button class="btn btn-primary" @onclick="ShowAddForm">
+                            <i class="bi bi-plus"></i> Thêm Mới
+                        </button>
+                    </div>
+
+                    @if (showAddForm)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6>@(editingItem?.Id == Guid.Empty ? "Thêm Mới" : "Sửa") Kích Cỡ</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Tên Kích Cỡ <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" @bind="editingItem.Ten" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Mô Tả</label>
+                                    <textarea class="form-control" rows="3" @bind="editingItem.Mota"></textarea>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success" @onclick="SaveItem">
+                                        <i class="bi bi-check"></i> Lưu
+                                    </button>
+                                    <button class="btn btn-secondary" @onclick="CancelEdit">
+                                        <i class="bi bi-x"></i> Hủy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>Mô Tả</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (items == null || !items.Any())
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-center">Chưa có dữ liệu</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var item in items)
+                                    {
+                                        <tr>
+                                            <td>@item.Ten</td>
+                                            <td>@(string.IsNullOrEmpty(item.Mota) ? "-" : item.Mota)</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" @onclick="() => EditItem(item)" title="Sửa">
+                                                    <i class="bi bi-pencil"></i> Sửa
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item.Id)" title="Xóa">
+                                                    <i class="bi bi-trash"></i> Xóa
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public EventCallback OnSuccess { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private List<KichCoDTO> items = new();
+    private KichCoDTO editingItem = new() { Id = Guid.Empty, Ten = string.Empty };
+    private bool showAddForm = false;
+    private bool isLoading = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Show)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            items = await ApiService.GetAsync<List<KichCoDTO>>("KichCo") ?? new List<KichCoDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+            items = new List<KichCoDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        editingItem = new KichCoDTO { Id = Guid.Empty, Ten = string.Empty };
+        showAddForm = true;
+    }
+
+    private void EditItem(KichCoDTO item)
+    {
+        editingItem = new KichCoDTO
+        {
+            Id = item.Id,
+            Ten = item.Ten,
+            Mota = item.Mota
+        };
+        showAddForm = true;
+    }
+
+    private void CancelEdit()
+    {
+        editingItem = new KichCoDTO { Id = Guid.Empty, Ten = string.Empty };
+        showAddForm = false;
+    }
+
+    private async Task SaveItem()
+    {
+        if (string.IsNullOrWhiteSpace(editingItem.Ten))
+        {
+            await JS.InvokeVoidAsync("alert", "Vui lòng nhập tên kích cỡ!");
+            return;
+        }
+
+        try
+        {
+            bool result;
+            if (editingItem.Id == Guid.Empty)
+            {
+                var created = await ApiService.PostAsync<KichCoDTO, KichCoDTO>("KichCo", editingItem);
+                result = created != null;
+            }
+            else
+            {
+                result = await ApiService.PutAsync("KichCo", editingItem);
+            }
+
+            if (result)
+            {
+                var isNew = editingItem.Id == Guid.Empty;
+                await LoadData();
+                showAddForm = false;
+                editingItem = new KichCoDTO { Id = Guid.Empty, Ten = string.Empty };
+                await OnSuccess.InvokeAsync();
+                await JS.InvokeVoidAsync("alert", isNew ? "Thêm thành công!" : "Cập nhật thành công!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Lưu thất bại!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi!");
+        }
+    }
+
+    private async Task DeleteItem(Guid id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa không?"))
+        {
+            try
+            {
+                var result = await ApiService.DeleteAsync<Guid>("KichCo", id);
+                if (result)
+                {
+                    await LoadData();
+                    await OnSuccess.InvokeAsync();
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Xóa thất bại!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi xóa!");
+            }
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        showAddForm = false;
+        editingItem = new KichCoDTO { Id = Guid.Empty, Ten = string.Empty };
+        await OnCancel.InvokeAsync();
+    }
+}
+

@@ -6,7 +6,7 @@ namespace Admin.Service
     public class VnPayService : IVnPayService
     {
         private const string tmnCode = "E3QQUILQ";
-        private const string hashSecret = "FCS5AI4QIUIDM1RPYKZ6NOMC4XGYGKAE";
+        private const string hashSecret = "R5VLRHTQY4PXHRKKR530F36FVEV4JS19";
         private const string baseUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         private const string returnUrl = "https://localhost:6006/payment-result";
 

@@ -1,5 +1,55 @@
-﻿@inject IJSRuntime JS
+﻿
+@inject IJSRuntime JS
+<style>
+    .user-dropdown-wrapper {
+        position: relative;
+        display: inline-block;
+    }
 
+    .user-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 6px 10px;
+    }
+
+    .user-dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        width: 200px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        list-style: none;
+        padding: 8px 0;
+        margin-top: 6px;
+        z-index: 1000;
+    }
+
+        .user-dropdown-menu li {
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .user-dropdown-menu li:hover {
+                background: #f5f5f5;
+            }
+
+        .user-dropdown-menu .divider {
+            height: 1px;
+            background: #eee;
+            margin: 6px 0;
+        }
+
+        .user-dropdown-menu .logout {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+</style>
 <div class="navbar-content">
     <div class="navbar-left">
         <div class="logo" @onclick='() => Navigation.NavigateTo("/")'><img src="https://github.com/khai520/SD_47_Jolly/blob/main/Img/logo_DoAnVat.png?raw=true" width="50px" alt="Alternate Text" /></div>
@@ -14,17 +64,38 @@
         <input type="text" placeholder="🔍 Tìm sản phẩm..." class="search-box" />
     </div>
     <div class="navbar-right">
+        @* menu tai khoan *@
         @if (!string.IsNullOrWhiteSpace(username))
         {
-            @username
-            <button class="auth-btn logout" @onclick="Logout">Đăng xuất</button>
-        } 
+            <div class="user-dropdown-wrapper">
+                <button class="user-btn" @onclick="ToggleUserMenu">
+                    👤 @username ▾
+                </button>
+
+                @if (showUserMenu)
+                {
+                    <ul class="user-dropdown-menu">
+                        <li @onclick="GoToProfile">
+                            👤 Thông tin khách hàng
+                        </li>
+                        <li @onclick="GoToOrders">
+                            📦 Đơn hàng của tôi
+                        </li>
+                        <li class="divider"></li>
+                        <li class="logout" @onclick="Logout">
+                            🚪 Đăng xuất
+                        </li>
+                    </ul>
+                }
+            </div>
+        }
+
         else
         {
             <button class="auth-btn" @onclick='() => { initialAuthTab = "login"; showAuthModal = true; }'>Đăng nhập</button>
             <button class="auth-btn register" @onclick='() => { initialAuthTab = "register"; showAuthModal = true; }'>Đăng ký</button>
         }
-        
+
 
         <div class="cart-icon" @onclick="GoToCart">
             🛒
@@ -37,7 +108,7 @@
 </div>
 
 <JollyWeb.Components.Pages.Account.AuthModal Visible="showAuthModal"
-                                             OnClose="() => Close()"  
+                                             OnClose="() => Close()"
                                              InitialTab="@initialAuthTab" />
 @code {
     [Inject] NavigationManager Navigation { get; set; }
@@ -51,7 +122,7 @@
         showAuthModal = true;
     }
     private bool _hasInitialized = false;
-    public string username  = "";
+    public string username = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -69,7 +140,8 @@
     {
         showAuthModal = false;
     }
-    private void GoToCart() {
+    private void GoToCart()
+    {
         if (string.IsNullOrWhiteSpace(username))
         {
             ShowAuthModal("login");
@@ -81,7 +153,7 @@
     }
     private async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangId" );
+        await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangId");
         await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangRole");
         await JS.InvokeVoidAsync("localStorage.removeItem", "KhachHangUserName");
 
@@ -95,7 +167,27 @@
         {
             Navigation.NavigateTo("/", forceLoad: true);
         }
-        
+
     }
+
+    // menu tài khoản
+    private bool showUserMenu = false;
+
+    private void ToggleUserMenu()
+    {
+        showUserMenu = !showUserMenu;
+    }
+
+    private void GoToOrders()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/donhang"); // trang đơn hàng người dùng
+    }
+    private void GoToProfile()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/hoso");
+    }
+
 
 }

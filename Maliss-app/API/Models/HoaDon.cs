@@ -24,6 +24,7 @@ namespace API.Models
         public virtual HinhThucThanhToan HinhThucThanhToan { get; set; }
         public virtual KhachHang KhachHang { get; set; }
         public virtual NhanVien NhanVien { get; set; }
+        public bool DaGuiYeuCauXacNhan { get; set; }
         public virtual GiamGia GiamGia { get; set; }
         [JsonIgnore]
         public virtual ICollection<HoaDonChiTiet> hoaDonChiTiets { get; set; }

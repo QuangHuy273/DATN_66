@@ -1,1 +1,882 @@
-﻿
+ @page "/quan-ly-san-pham/them-chi-tiet-mon-an/{MonAnId}"
+@page "/quan-ly-san-pham/them-chi-tiet-mon-an/{MonAnId}/{Id}"
+@page "/quanlysanpham/them-chi-tiet-mon-an/{MonAnId}"
+@page "/quanlysanpham/them-chi-tiet-mon-an/{MonAnId}/{Id}"
+@using Admin.Service.IService
+@using API.Models.DTO
+@using Microsoft.AspNetCore.Components.Forms
+@inject IChiTietMonAnService ChiTietMonAnService
+@inject IMonAnService MonAnService
+@inject IApiService ApiService
+@inject IUploadService UploadService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>@(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Sửa Chi Tiết Món Ăn")</PageTitle>
+
+<link href="css/ThemMonAn.css" rel="stylesheet" />
+
+<div class="them-chi-tiet-mon-an-container">
+    <div class="header-section">
+        <h2>
+            <i class="bi bi-@(string.IsNullOrEmpty(Id) ? "plus-circle-fill" : "pencil-square")"></i>
+            @(string.IsNullOrEmpty(Id) ? "Thêm Chi Tiết Món Ăn" : "Chỉnh Sửa Chi Tiết Món Ăn")
+        </h2>
+        <button class="btn btn-secondary" @onclick="QuayLai" type="button">
+            <i class="bi bi-arrow-left"></i> Quay Lại
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading" style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 60px 20px;">
+            <span class="spinner-border" role="status" style="width: 3rem; height: 3rem; color: #4f46e5; border-width: 3px;"></span>
+            <div style="text-align: center;">
+                <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                    Đang tải dữ liệu...
+                </p>
+                <p style="margin: 8px 0 0; font-size: 14px; color: #64748b;">Vui lòng chờ trong giây lát</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="@chiTietMonAn" OnValidSubmit="@LuuChiTietMonAn">
+            <DataAnnotationsValidator />
+            <div class="form-container">
+                <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="background: #4f46e5; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">
+                            <i class="bi bi-info-circle-fill"></i>
+                        </span>
+                        <h5 style="margin: 0; font-weight: 600; color: #1e293b; font-size: 16px;">Thông Tin Món Ăn</h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="monAnId">
+                                    <i class="bi bi-upc-scan"></i>
+                                    Mã Món Ăn
+                                </label>
+                                <InputText id="monAnId" class="form-control" @bind-Value="chiTietMonAn.MonAnId" disabled style="background: #f1f5f9; cursor: not-allowed; color: #64748b;" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="ten">
+                                    <i class="bi bi-card-heading"></i>
+                                    Tên Món Ăn
+                                </label>
+                                <InputText id="ten" class="form-control" @bind-Value="chiTietMonAn.Ten" disabled style="background: #f1f5f9; cursor: not-allowed; color: #64748b;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="gia">
+                                <i class="bi bi-cash-stack"></i>
+                                Giá <span class="text-danger">*</span>
+                            </label>
+                            <InputNumber id="gia" class="form-control" @bind-Value="chiTietMonAn.Gia" />
+                            <ValidationMessage For="@(() => chiTietMonAn.Gia)" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="soLuong">
+                                <i class="bi bi-box-seam"></i>
+                                Số Lượng <span class="text-danger">*</span>
+                            </label>
+                            <InputNumber id="soLuong" class="form-control" @bind-Value="chiTietMonAn.Soluong" />
+                            <ValidationMessage For="@(() => chiTietMonAn.Soluong)" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="ngaySanXuat">
+                                <i class="bi bi-calendar-plus"></i>
+                                Ngày Sản Xuất <span class="text-danger">*</span>
+                            </label>
+                            <InputDate id="ngaySanXuat" class="form-control" @bind-Value="chiTietMonAn.NgaySanXuat" />
+                            <ValidationMessage For="@(() => chiTietMonAn.NgaySanXuat)" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="hanSuDung">
+                                <i class="bi bi-calendar-check"></i>
+                                Hạn Sử Dụng <span class="text-danger">*</span>
+                            </label>
+                            <InputDate id="hanSuDung" class="form-control" @bind-Value="chiTietMonAn.HanSuDung" />
+                            <ValidationMessage For="@(() => chiTietMonAn.HanSuDung)" />
+                            @if (!string.IsNullOrEmpty(hanSuDungError))
+                            {
+                                <div class="text-danger small mt-1">
+                                    <i class="bi bi-exclamation-triangle"></i> @hanSuDungError
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>
+                                <i class="bi bi-hourglass-split"></i>
+                                Thời Hạn Sử Dụng
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control fw-bold text-center" disabled 
+                                       value="@GetThoiHanSuDungText()"
+                                       style="@GetThoiHanSuDungStyle()" />
+                                <span class="input-group-text">@GetThoiHanSuDungIcon()</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="trangThai">
+                                <i class="bi bi-toggle-on"></i>
+                                Trạng Thái
+                            </label>
+                            <InputSelect id="trangThai" class="form-select" @bind-Value="trangThaiString" @bind-Value:after="OnTrangThaiChanged">
+                                <option value="true">✓ Hoạt động</option>
+                                <option value="false">⊗ Tạm dừng</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="nguyenLieu">
+                                <i class="bi bi-egg-fried"></i>
+                                Nguyên Liệu
+                            </label>
+                            <InputSelect id="nguyenLieu" class="form-select" @bind-Value="selectedNguyenLieuId">
+                                <option value="">🥚 Chọn Nguyên Liệu</option>
+                                @foreach (var nl in nguyenLieus)
+                                {
+                                    <option value="@nl.Id">@nl.Ten</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="nhaCungCap">
+                                <i class="bi bi-truck-front-fill"></i>
+                                Nhà Cung Cấp
+                            </label>
+                            <InputSelect id="nhaCungCap" class="form-select" @bind-Value="selectedNhaCungCapId">
+                                <option value="">🚚 Chọn Nhà Cung Cấp</option>
+                                @foreach (var ncc in nhaCungCaps)
+                                {
+                                    <option value="@ncc.Id">@ncc.Ten</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="loaiVi">
+                                <i class="bi bi-cup-hot-fill"></i>
+                                Loại Vị
+                            </label>
+                            <InputSelect id="loaiVi" class="form-select" @bind-Value="selectedLoaiViId">
+                                <option value="">☕ Chọn Loại Vị</option>
+                                @foreach (var lv in loaiVis)
+                                {
+                                    <option value="@lv.Id">@lv.Ten</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="kichCo">
+                                <i class="bi bi-rulers"></i>
+                                Kích Cỡ
+                            </label>
+                            <InputSelect id="kichCo" class="form-select" @bind-Value="selectedKichCoId">
+                                <option value="">📏 Chọn Kích Cỡ</option>
+                                @foreach (var kc in kichCos)
+                                {
+                                    <option value="@kc.Id">@kc.Ten</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mota">
+                        <i class="bi bi-file-text"></i>
+                        Mô Tả
+                    </label>
+                    <InputTextArea id="mota" class="form-control" rows="4" @bind-Value="chiTietMonAn.Mota" placeholder="Nhập mô tả chi tiết về sản phẩm..." />
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="bi bi-images-fill"></i>
+                        Ảnh Chi Tiết Món Ăn
+                    </label>
+                    <InputFile class="form-control" OnChange="OnAnhChiTietSelected" accept="image/*" multiple />
+                    <small class="form-text text-muted">Chọn nhiều ảnh (JPG, PNG, tối đa 5MB mỗi ảnh)</small>
+                    @if (chiTietMonAn.DanhSachAnh != null && chiTietMonAn.DanhSachAnh.Any())
+                    {
+                        <div class="mt-3 d-flex flex-wrap gap-3" style="padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                            <div style="width: 100%; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+                                <span style="background: #4f46e5; color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                    <i class="bi bi-collection-fill" style="margin-right: 6px;"></i>@chiTietMonAn.DanhSachAnh.Count ảnh
+                                </span>
+                            </div>
+                            @for (int imgIndex = 0; imgIndex < chiTietMonAn.DanhSachAnh.Count; imgIndex++)
+                            {
+                                var anh = chiTietMonAn.DanhSachAnh[imgIndex];
+                                var imageNumber = imgIndex + 1;
+                                <div class="position-relative" style="width: 140px; height: 140px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+                                    <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" alt="@anh.Ten" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover; border: 2px solid #e2e8f0;" title="Click để xem ảnh lớn" />
+                                    <div style="position: absolute; bottom: 6px; left: 6px; background: rgba(79, 70, 229, 0.95); color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+                                        #@imageNumber
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="margin: 6px; border-radius: 6px; padding: 5px 8px;" @onclick="async () => await XoaAnhChiTiet(anh.Id)" title="Xóa ảnh này">
+                                        <i class="bi bi-trash-fill"></i> Xóa
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (isUploadingAnh)
+                    {
+                        <div class="mt-3 d-flex align-items-center gap-3" style="padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <span class="spinner-border spinner-border-sm" role="status" style="color: #4f46e5;"></span>
+                            <span style="color: #1e293b; font-weight: 600; font-size: 14px;">Đang tải ảnh lên...</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            <span>Đang Lưu...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Lưu Thông Tin</span>
+                        }
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="QuayLai" disabled="@isSaving">
+                        <i class="bi bi-x-circle-fill"></i>
+                        Hủy Bỏ
+                    </button>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    
+    // Parameters
+    
+    [Parameter] public string MonAnId { get; set; } = string.Empty;
+    [Parameter] public string? Id { get; set; }
+
+    
+    // State
+    
+    private ChiTietMonAnDTO chiTietMonAn = new ChiTietMonAnDTO
+    {
+        MonAnId = string.Empty,
+        Ten = string.Empty,
+        Gia = 0,
+        Soluong = 0,
+        NgaySanXuat = DateTime.Now,
+        HanSuDung = DateTime.Now.AddDays(7),
+        TrangThai = false,
+        DanhSachAnh = new List<AnhDTO>()
+    };
+
+    private List<DongGoiDTO> nguyenLieus = new();
+    private List<NhaCungCapDTO> nhaCungCaps = new();
+    private List<LoaiViDTO> loaiVis = new();
+    private List<KichCoDTO> kichCos = new();
+
+    private Guid? selectedNguyenLieuId;
+    private Guid? selectedNhaCungCapId;
+    private Guid? selectedLoaiViId;
+    private Guid? selectedKichCoId;
+
+    private bool isSaving = false;
+    private bool isLoading = true;
+    private bool isUploadingAnh = false;
+    private string hanSuDungError = string.Empty;
+
+    
+    // Computed properties
+    
+    private string trangThaiString
+    {
+        get => chiTietMonAn.TrangThai.ToString().ToLower();
+        set => chiTietMonAn.TrangThai = bool.Parse(value);
+    }
+
+    private void OnTrangThaiChanged()
+    {
+        StateHasChanged();
+    }
+
+    
+    // Lifecycle
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdownData();
+        await LoadMonAnInfo();
+
+        if (!string.IsNullOrEmpty(Id) && Guid.TryParse(Id, out var chiTietId))
+        {
+            await LoadChiTietMonAn(chiTietId);
+        }
+
+        isLoading = false;
+    }
+
+    
+    // Data loading
+    
+    private async Task LoadDropdownData()
+    {
+        try
+        {
+            var tasks = new List<Task>
+            {
+                LoadNguyenLieu(),
+                LoadNhaCungCap(),
+                LoadLoaiVi(),
+                LoadKichCo()
+            };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dropdown data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadNguyenLieu()
+    {
+        try
+        {
+            nguyenLieus = await ChiTietMonAnService.GetAsync<List<DongGoiDTO>>("NguyenLieu") ?? new List<DongGoiDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NguyenLieu: {ex.Message}");
+            nguyenLieus = new List<DongGoiDTO>();
+        }
+    }
+
+    private async Task LoadNhaCungCap()
+    {
+        try
+        {
+            nhaCungCaps = await ChiTietMonAnService.GetAsync<List<NhaCungCapDTO>>("NhaCungCap") ?? new List<NhaCungCapDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading NhaCungCap: {ex.Message}");
+            nhaCungCaps = new List<NhaCungCapDTO>();
+        }
+    }
+
+    private async Task LoadLoaiVi()
+    {
+        try
+        {
+            loaiVis = await ChiTietMonAnService.GetAsync<List<LoaiViDTO>>("LoaiVi") ?? new List<LoaiViDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading LoaiVi: {ex.Message}");
+            loaiVis = new List<LoaiViDTO>();
+        }
+    }
+
+    private async Task LoadKichCo()
+    {
+        try
+        {
+            kichCos = await ChiTietMonAnService.GetAsync<List<KichCoDTO>>("KichCo") ?? new List<KichCoDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading KichCo: {ex.Message}");
+            kichCos = new List<KichCoDTO>();
+        }
+    }
+
+    private async Task LoadMonAnInfo()
+    {
+        if (string.IsNullOrEmpty(MonAnId)) return;
+
+        try
+        {
+            var monAn = await MonAnService.GetById(MonAnId);
+            if (monAn != null)
+            {
+                chiTietMonAn.MonAnId = monAn.Id ?? string.Empty;
+                chiTietMonAn.Ten = monAn.Ten;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading MonAn: {ex.Message}");
+        }
+    }
+
+    private async Task LoadChiTietMonAn(Guid id)
+    {
+        try
+        {
+            var loaded = await ChiTietMonAnService.GetById(id);
+            if (loaded != null)
+            {
+                chiTietMonAn = loaded;
+                selectedNguyenLieuId = chiTietMonAn.NguyenLieuId;
+                selectedNhaCungCapId = chiTietMonAn.NhaCungCapId;
+                selectedLoaiViId = chiTietMonAn.LoaiViId;
+                selectedKichCoId = chiTietMonAn.KichCoId;
+                chiTietMonAn.DanhSachAnh ??= new List<AnhDTO>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading ChiTietMonAn: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Không thể tải thông tin chi tiết món ăn!");
+        }
+    }
+
+    
+    // Validation
+    
+    private bool ValidateHanSuDung()
+    {
+        hanSuDungError = string.Empty;
+
+        if (chiTietMonAn.HanSuDung <= chiTietMonAn.NgaySanXuat)
+        {
+            hanSuDungError = "Hạn sử dụng phải lớn hơn ngày sản xuất";
+            return false;
+        }
+
+        if (chiTietMonAn.NgaySanXuat > DateTime.Now)
+        {
+            hanSuDungError = "Ngày sản xuất không được là ngày tương lai";
+            return false;
+        }
+
+        return true;
+    }
+
+    
+    // Save logic
+    
+    private async Task LuuChiTietMonAn()
+    {
+        isSaving = true;
+        try
+        {
+            // Validate ngày trước khi lưu
+            if (!ValidateHanSuDung())
+            {
+                await JS.InvokeVoidAsync("alert", hanSuDungError);
+                return;
+            }
+
+            chiTietMonAn.MonAnId = MonAnId;
+            chiTietMonAn.NguyenLieuId = selectedNguyenLieuId;
+            chiTietMonAn.NhaCungCapId = selectedNhaCungCapId;
+            chiTietMonAn.LoaiViId = selectedLoaiViId;
+            chiTietMonAn.KichCoId = selectedKichCoId;
+
+            bool isNewChiTiet = string.IsNullOrEmpty(Id) || chiTietMonAn.Id == Guid.Empty;
+            bool result = false;
+
+            if (isNewChiTiet)
+            {
+                Console.WriteLine("[DEBUG] Đang tạo chi tiết món ăn mới...");
+                var createdChiTiet = await ChiTietMonAnService.Create(chiTietMonAn);
+                result = createdChiTiet != null && createdChiTiet.Id != Guid.Empty;
+                
+                if (result)
+                {
+                    chiTietMonAn.Id = createdChiTiet.Id;
+                    Console.WriteLine($"[SUCCESS] Đã tạo chi tiết món ăn với Id: {chiTietMonAn.Id}");
+                }
+                else
+                {
+                    Console.WriteLine("[ERROR] Không thể tạo chi tiết món ăn");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[DEBUG] Đang cập nhật chi tiết món ăn (Id: {chiTietMonAn.Id})...");
+                
+                // Tạo DTO clean để update
+                var updateDto = new ChiTietMonAnDTO
+                {
+                    Id = chiTietMonAn.Id,
+                    MonAnId = chiTietMonAn.MonAnId,
+                    Ten = chiTietMonAn.Ten,
+                    Gia = chiTietMonAn.Gia,
+                    Soluong = chiTietMonAn.Soluong,
+                    NgaySanXuat = chiTietMonAn.NgaySanXuat,
+                    HanSuDung = chiTietMonAn.HanSuDung,
+                    TrangThai = chiTietMonAn.TrangThai,
+                    Mota = chiTietMonAn.Mota,
+                    LoaiViId = chiTietMonAn.LoaiViId,
+                    KichCoId = chiTietMonAn.KichCoId,
+                    NguyenLieuId = chiTietMonAn.NguyenLieuId,
+                    NhaCungCapId = chiTietMonAn.NhaCungCapId,
+                    DanhSachAnh = null
+                };
+                
+                result = await ChiTietMonAnService.Update(updateDto);
+                
+                if (result)
+                {
+                    Console.WriteLine("[SUCCESS] Đã cập nhật chi tiết món ăn");
+                }
+                else
+                {
+                    Console.WriteLine("[ERROR] Không thể cập nhật chi tiết món ăn");
+                }
+            }
+
+            if (result)
+            {
+                await LuuAnhChiTiet();
+                await JS.InvokeVoidAsync("alert", isNewChiTiet ? "Thêm chi tiết món ăn thành công!" : "Cập nhật chi tiết món ăn thành công!");
+                Navigation.NavigateTo("/quanlysanpham");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Lưu chi tiết món ăn thất bại! Vui lòng kiểm tra dữ liệu và thử lại.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Exception khi lưu chi tiết món ăn: {ex.Message}");
+            Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+            await JS.InvokeVoidAsync("alert", $"Đã xảy ra lỗi khi lưu chi tiết món ăn: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    
+    // Image upload & delete
+    
+    private async Task OnAnhChiTietSelected(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles();
+        if (files == null || files.Count == 0)
+        {
+            return;
+        }
+
+        isUploadingAnh = true;
+        try
+        {
+            var anhList = EnsureDanhSachAnh();
+            var chiTietDescriptor = BuildChiTietAnhDescriptor();
+            var maMonAnDescriptor = BuildMaMonAnDescriptor();
+            var startIndex = anhList.Count;
+            var offset = 0;
+
+            foreach (var file in files)
+            {
+                if (file.Size > 5 * 1024 * 1024)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Ảnh {file.Name} vượt quá dung lượng tối đa 5MB!");
+                    continue;
+                }
+
+                // Upload ảnh chi tiết với định dạng {MaMonAn}_{CT + số thứ tự chi tiết}_{index}_{timestamp}.ext
+                var uploadResult = await UploadService.UploadImageAsync(
+                    file,
+                    maMonAnDescriptor,
+                    chiTietDescriptor,
+                    startIndex + offset);
+                if (uploadResult == null)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Không thể tải ảnh {file.Name}, vui lòng thử lại!");
+                    continue;
+                }
+
+                anhList.Add(new AnhDTO
+                {
+                    Id = Guid.NewGuid(),
+                    Ten = uploadResult.FileName,
+                    DuongDan = uploadResult.Url
+                });
+
+                offset++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading detail images: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Đã xảy ra lỗi khi tải ảnh!");
+        }
+        finally
+        {
+            isUploadingAnh = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task XoaAnhChiTiet(Guid anhId)
+    {
+        if (chiTietMonAn.DanhSachAnh == null || !chiTietMonAn.DanhSachAnh.Any())
+        {
+            return;
+        }
+
+        var anh = chiTietMonAn.DanhSachAnh.FirstOrDefault(a => a.Id == anhId);
+        if (anh == null)
+        {
+            return;
+        }
+
+        var fileName = GetFileNameFromAnh(anh);
+        if (!string.IsNullOrWhiteSpace(fileName))
+        {
+            await DeletePhysicalImageAsync(fileName);
+        }
+
+        if (anh.ChiTietMonAnId != null && anh.ChiTietMonAnId != Guid.Empty)
+        {
+            try
+            {
+                await ApiService.DeleteAsync<Guid>("Anh", anh.Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting image record: {ex.Message}");
+            }
+        }
+
+        chiTietMonAn.DanhSachAnh.Remove(anh);
+        StateHasChanged();
+    }
+
+    private List<AnhDTO> EnsureDanhSachAnh()
+    {
+        chiTietMonAn.DanhSachAnh ??= new List<AnhDTO>();
+        return chiTietMonAn.DanhSachAnh;
+    }
+
+    private async Task LuuAnhChiTiet()
+    {
+        if (chiTietMonAn.DanhSachAnh == null || !chiTietMonAn.DanhSachAnh.Any())
+        {
+            return;
+        }
+
+        var anhMoi = chiTietMonAn.DanhSachAnh
+            .Where(a => a.ChiTietMonAnId == null || a.ChiTietMonAnId == Guid.Empty)
+            .ToList();
+
+        if (!anhMoi.Any())
+        {
+            return;
+        }
+
+        foreach (var anh in anhMoi)
+        {
+            anh.ChiTietMonAnId = chiTietMonAn.Id;
+        }
+
+        var savedAnhs = await ApiService.PostAsync<List<AnhDTO>, List<AnhDTO>>("Anh/upload-many", anhMoi);
+        if (savedAnhs == null || !savedAnhs.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Không thể lưu ảnh chi tiết, vui lòng thử lại!");
+            return;
+        }
+
+        foreach (var savedAnh in savedAnhs)
+        {
+            var localAnh = chiTietMonAn.DanhSachAnh.FirstOrDefault(a => a.DuongDan == savedAnh.DuongDan);
+            if (localAnh != null)
+            {
+                localAnh.Id = savedAnh.Id;
+                localAnh.ChiTietMonAnId = savedAnh.ChiTietMonAnId;
+            }
+        }
+    }
+
+    // Helpers
+    
+    private int GetSoNgayThoiHanSuDung()
+    {
+        if (chiTietMonAn.HanSuDung <= chiTietMonAn.NgaySanXuat)
+            return 0;
+        
+        return (chiTietMonAn.HanSuDung - chiTietMonAn.NgaySanXuat).Days + 1;
+    }
+    
+    private string GetThoiHanSuDungText()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        if (soNgay <= 0)
+            return "Không hợp lệ";
+        
+        return $"{soNgay} ngày";
+    }
+    
+    private string GetThoiHanSuDungStyle()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        
+        if (soNgay <= 0)
+            return "background-color: #f8f9fa; color: #6c757d;";
+        
+        if (soNgay > 14)
+            return "background-color: #d4edda; color: #155724; border-color: #28a745;"; // Xanh
+        
+        if (soNgay >= 8)
+            return "background-color: #fff3cd; color: #856404; border-color: #ffc107;"; // Vàng
+        
+        if (soNgay >= 4)
+            return "background-color: #ffe5d0; color: #8b4513; border-color: #fd7e14;"; // Cam
+        
+        // <= 3 ngày
+        return "background-color: #f8d7da; color: #721c24; border-color: #dc3545;"; // Đỏ
+    }
+    
+    private string GetThoiHanSuDungIcon()
+    {
+        var soNgay = GetSoNgayThoiHanSuDung();
+        
+        if (soNgay <= 0)
+            return "❌";
+        
+        if (soNgay > 14)
+            return "🟢"; // Xanh
+        
+        if (soNgay >= 8)
+            return "🟡"; // Vàng
+        
+        if (soNgay >= 4)
+            return "🟠"; // Cam
+        
+        return "🔴"; // Đỏ
+    }
+    
+    private string? GetFileNameFromAnh(AnhDTO? anh)
+    {
+        if (anh == null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(anh.Ten))
+        {
+            return anh.Ten;
+        }
+
+        return ExtractFileName(anh.DuongDan);
+    }
+
+    private static string? ExtractFileName(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return System.IO.Path.GetFileName(uri.LocalPath);
+        }
+
+        return System.IO.Path.GetFileName(url);
+    }
+
+    private async Task DeletePhysicalImageAsync(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return;
+        }
+
+        try
+        {
+            await UploadService.DeleteImageAsync(fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file {fileName}: {ex.Message}");
+        }
+    }
+
+    private string? BuildMaMonAnDescriptor()
+    {
+        if (!string.IsNullOrWhiteSpace(chiTietMonAn.MonAnId))
+        {
+            return chiTietMonAn.MonAnId.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(chiTietMonAn.Ten))
+        {
+            return chiTietMonAn.Ten.Trim();
+        }
+
+        return null;
+    }
+
+    private string BuildChiTietAnhDescriptor()
+    {
+        // Mặc định chi tiết đầu tiên là CT1, các chi tiết sau tăng dần
+        // Trang thêm/sửa chi tiết đơn lẻ nên ta đánh số 1
+        return "CT1";
+    }
+
+    private string GetImageUrlWithCacheBusting(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return string.Empty;
+        }
+
+        // Thêm timestamp để tránh cache ảnh cũ
+        var separator = imageUrl.Contains('?') ? '&' : '?';
+        return $"{imageUrl}{separator}v={DateTime.UtcNow.Ticks}";
+    }
+
+    
+    // Navigation
+    
+    private void QuayLai()
+    {
+        Navigation.NavigateTo("/quanlysanpham");
+    }
+}

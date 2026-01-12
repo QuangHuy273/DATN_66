@@ -8,5 +8,13 @@
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DefaultConnection": "Data Source=HUY;Initial Catalog=Maliss_app;Trusted_Connection=True;Integrated Security=True;TrustServerCertificate=True"
+  },
+
+  "VnPay": {
+    "TmnCode": "E3QQUILQ",
+    "HashSecret": "R5VLRHTQY4PXHRKKR530F36FVEV4JS19",
+    "BaseUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+    "ReturnUrl": "https://hungry-numbers-post.loca.lt/vnpay_return"
   }
+
 }

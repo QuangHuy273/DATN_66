@@ -52,26 +52,46 @@
                         .Where(p => IsMatchAllFilters(p))
                         .GroupBy(p => p.Ten))
                 {
+                    var tongTonKho = monAnGroup.Sum(x => x.Soluong);
+
+                    // Nếu muốn ẩn món đã hết hàng hoàn toàn thì mở dòng này
+                    // if (tongTonKho <= 0) { continue; }
+
                     <div class="product-group">
-                        <h4 class="product-title">@monAnGroup.Key</h4>
+                        <h4 class="product-title">
+                            @monAnGroup.Key
+                            <span class="stock-info">(Còn: @tongTonKho)</span>
+                        </h4>
 
                         @foreach (var product in monAnGroup)
                         {
                             <div class="product-select-item">
-                                <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")" class="order-img" alt="@product.Ten" />
+                                <img src="@(product.DanhSachAnh?.FirstOrDefault()?.DuongDan ?? "")"
+                                     class="order-img"
+                                     alt="@product.Ten" />
+
                                 <div class="item-info">
                                     <div class="order-size">Vị: <strong>@product.LoaiVi</strong></div>
                                     <div class="order-size">Cỡ: <strong>@product.KichCo</strong></div>
                                     <div class="order-size">Nguyên Liệu: <strong>@product.NguyenLieu</strong></div>
                                     <div class="order-price">Giá: <strong>@FormatMoney(product.Gia)</strong></div>
                                 </div>
+
                                 <div class="order-qty">
                                     <button @onclick="@(() => ChangeQty(product, -1))">-</button>
                                     <input type="number" value="@product.SoLuongDat" readonly />
                                     <button @onclick="@(() => ChangeQty(product, 1))">+</button>
                                 </div>
-                                <div class="order-total">@FormatMoney(product.Gia * product.SoLuongDat)</div>
-                                <button class="add-btn" @onclick="@(() => AddToOrder(product))">Thêm</button>
+
+                                <div class="order-total">
+                                    @FormatMoney(product.Gia * product.SoLuongDat)
+                                </div>
+
+                                <button class="add-btn"
+                                        disabled="@(product.Soluong <= 0)"
+                                        @onclick="@(() => AddToOrder(product))">
+                                    Thêm
+                                </button>
                             </div>
                         }
                     </div>
@@ -100,7 +120,12 @@
     {
         allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
         var allproduct = await GetChiTietMonAnService.GetAll();
+      // lọc theo trạng thái chỉ hoạt động thì mở cái này ra
         Products = allproduct?.Where(p => p.Soluong >= 1 && p.TrangThai == true && allProducts.FirstOrDefault(m => m.Id == p.MonAnId && m.TrangThai == true) != null).ToList() ?? new();
+        // Products = allproduct?
+        // .Where(p => p.Soluong >= 1)
+        // .ToList()
+        //   ?? new();
 
         allKichCo = Products.Select(p => p.KichCo)
                             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -163,11 +188,57 @@
 
 
 
+    // private async Task AddToOrder(ChiTietMonAnDTO item)
+    // {
+    //     await OnAddProduct.InvokeAsync(item);
+    //     await OnClose.InvokeAsync();
+    // }
     private async Task AddToOrder(ChiTietMonAnDTO item)
     {
+        // Gửi item ra ngoài để thêm vào hóa đơn
+        // await OnAddProduct.InvokeAsync(item);
+
+        // TRỪ TỒN KHO TRỰC TIẾP TRONG DANH SÁCH PRODUCTS
+        // var product = Products.FirstOrDefault(p => p.Id == item.Id);
+        // if (product != null)
+        // {
+        //     product.Soluong -= product.SoLuongDat;
+
+        //     Nếu hết hàng thì ẩn sản phẩm
+        //     if (product.Soluong <= 0)
+        //     {
+        //         product.Soluong = 0;
+        //     }
+
+        //     Reset số lượng đặt cho lần sau
+        //     product.SoLuongDat = 1;
+        // }
+        
         await OnAddProduct.InvokeAsync(item);
+
+        item.SoLuongDat = 1;
+        
+        StateHasChanged();
+
         await OnClose.InvokeAsync();
     }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Visible)
+        {
+            allProducts = await apiService.GetAsync<List<MonAnDTO>>("MonAn") ?? new();
+            var allproduct = await GetChiTietMonAnService.GetAll();
+
+            Products = allproduct
+                ?.Where(p => p.Soluong > 0
+                    && p.TrangThai
+                    && allProducts.Any(m => m.Id == p.MonAnId && m.TrangThai))
+                .ToList() ?? new();
+
+            StateHasChanged();
+        }
+    }
+
 
     private void Close()
     {

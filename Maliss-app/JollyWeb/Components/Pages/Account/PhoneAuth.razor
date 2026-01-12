@@ -1,15 +1,15 @@
-﻿@inject IJSRuntime JS
-@inject NavigationManager Navigation
-<link href="css/PhoneAuth.css" rel="stylesheet" />  
+﻿@inject NavigationManager Navigation
+<link href="css/PhoneAuth.css" rel="stylesheet" />
+
 <div class="otp-container">
     <h3>Xác minh số điện thoại</h3>
 
     <div class="phone-info">
-        <p>📱 OTP đã gửi đến: <strong>@PhoneNumber</strong></p>
+        <p>📱 OTP mặc định: <strong>123456</strong></p>
     </div>
 
     <div class="otp-input-container">
-        <input @bind="otpCode"
+        <input value="@otpCode"
                @oninput="OnOtpInput"
                class="otp-input @(GetInputClass())"
                placeholder="Nhập mã OTP"
@@ -20,130 +20,59 @@
     <button @onclick="VerifyOtp"
             class="verify-button"
             disabled="@(isLoading || string.IsNullOrWhiteSpace(otpCode))">
-        @if (isLoading)
-        {
-            <span class="loading-spinner"></span>
-        }
         Xác minh OTP
     </button>
 
     <div class="status-message @GetStatusClass()">
         <p>@status</p>
     </div>
-
-    <div id="recaptcha-container"></div>
 </div>
-
 @code {
     [Parameter] public string PhoneNumber { get; set; } = "";
     [Parameter] public EventCallback<string> OnTabChanged { get; set; }
 
     private string otpCode = "";
     private string status = "";
-    private bool isInitialized = false;
     private bool isLoading = false;
     private bool isValidOtp = false;
     private bool isInvalidOtp = false;
 
-    private string FormatPhoneNumber(string rawPhone)
-    {
-        // Nếu số bắt đầu bằng "0" thì bỏ số 0 và thêm +84 (cho Việt Nam)
-        if (rawPhone.StartsWith("0"))
-        {
-            return "+84" + rawPhone.Substring(1);
-        }
-        // Nếu đã có +84 thì giữ nguyên
-        if (rawPhone.StartsWith("+"))
-        {
-            return rawPhone;
-        }
-        // fallback
-        return rawPhone;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !isInitialized)
-        {
-            isInitialized = true;
-            await JS.InvokeVoidAsync("setupRecaptcha");
-            var formattedPhone = FormatPhoneNumber(PhoneNumber);
-            status = await JS.InvokeAsync<string>("sendOTP", formattedPhone);
-            StateHasChanged();
-        }
-    }
+    private const string FIXED_OTP = "123456";
 
     private void OnOtpInput(ChangeEventArgs e)
     {
         var value = e.Value?.ToString() ?? "";
-        // Chỉ cho phép số
-        var numericValue = new string(value.Where(char.IsDigit).ToArray());
+        otpCode = new string(value.Where(char.IsDigit).ToArray());
 
-        if (numericValue.Length <= 6)
-        {
-            otpCode = numericValue;
-
-            // Validate OTP length
-            if (otpCode.Length == 6)
-            {
-                isValidOtp = true;
-                isInvalidOtp = false;
-            }
-            else if (otpCode.Length > 0)
-            {
-                isValidOtp = false;
-                isInvalidOtp = false;
-            }
-            else
-            {
-                isValidOtp = false;
-                isInvalidOtp = false;
-            }
-        }
+        if (otpCode.Length > 6)
+            otpCode = otpCode.Substring(0, 6);
     }
 
     private async Task VerifyOtp()
     {
-        if (string.IsNullOrWhiteSpace(otpCode) || otpCode.Length != 6)
+        if (otpCode.Length != 6)
         {
-            status = "Vui lòng nhập mã OTP 6 số";
+            status = "Vui lòng nhập đủ 6 số";
             isInvalidOtp = true;
             return;
         }
 
-        isLoading = true;
-        status = "Đang xác minh...";
-        StateHasChanged();
-
-        try
+        if (otpCode != FIXED_OTP)
         {
-            status = await JS.InvokeAsync<string>("verifyOTP", otpCode);
-
-            if (status.StartsWith("Verified"))
-            {
-                isValidOtp = true;
-                isInvalidOtp = false;
-
-                if (OnTabChanged.HasDelegate)
-                {
-                    await OnTabChanged.InvokeAsync("registerthongtin");
-                }
-            }
-            else
-            {
-                isValidOtp = false;
-                isInvalidOtp = true;
-            }
-        }
-        catch (Exception ex)
-        {
-            status = "Có lỗi xảy ra. Vui lòng thử lại.";
+            status = "OTP không đúng";
             isInvalidOtp = true;
+            isValidOtp = false;
+            return;
         }
-        finally
+
+        // ✅ OTP đúng
+        status = "Xác minh thành công";
+        isValidOtp = true;
+        isInvalidOtp = false;
+
+        if (OnTabChanged.HasDelegate)
         {
-            isLoading = false;
-            StateHasChanged();
+            await OnTabChanged.InvokeAsync("registerthongtin");
         }
     }
 
@@ -156,14 +85,8 @@
 
     private string GetStatusClass()
     {
-        if (status.StartsWith("Verified") || status.Contains("thành công"))
-            return "status-success";
-        if (status.Contains("lỗi") || status.Contains("sai") || status.Contains("thất bại"))
-            return "status-error";
-        if (status.Contains("Đang"))
-            return "status-loading";
-        if (!string.IsNullOrWhiteSpace(status))
-            return "status-info";
+        if (isValidOtp) return "status-success";
+        if (isInvalidOtp) return "status-error";
         return "";
     }
 }

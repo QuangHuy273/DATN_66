@@ -52,7 +52,7 @@
     height: 100%;
     overflow: auto;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px) brightness(0.9);
     -webkit-backdrop-filter: blur(8px);
     opacity: 0;
     visibility: hidden;
@@ -72,15 +72,16 @@
 
 /* Modal Content */
 .modal-content {
-    /* background: var(--bg-primary); */
+    background: var(--bg-primary);
     border-radius: var(--border-radius-xl);
     box-shadow: var(--shadow-xl);
     position: relative;
     transform: scale(0.9) translateY(-20px);
-    transition: all var(--transition-base);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    max-width: 1000px;
-    max-height: 85vh;
+    max-width: 1100px;
+    max-height: 90vh;
+    padding: var(--spacing-lg) var(--spacing-2xl);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -111,7 +112,10 @@
     line-height: 1;
 }
 
-    .close:hover,
+    .close:hover {
+        transform: scale(1.2) rotate(90deg); /* sửa từ scale(1.1) */
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2); /* sửa từ var(--shadow-md) */
+    }
     .close:focus {
         color: var(--error-color);
         background: rgba(255, 255, 255, 1);
@@ -130,6 +134,9 @@
 
     .product-detail::-webkit-scrollbar {
         width: 6px;
+    }
+    .product-detail::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-color);
     }
 
     .product-detail::-webkit-scrollbar-track {
@@ -187,17 +194,19 @@
 }
 
     .product-image .main-image {
+        border: 2px solid transparent;
+        border-image: linear-gradient(45deg, var(--primary-color), var(--secondary-color)) 1;
         width: 100%;
         height: 320px;
         object-fit: cover;
         border-radius: var(--border-radius-lg);
         box-shadow: var(--shadow-md);
-        transition: all var(--transition-base);
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         cursor: zoom-in;
     }
 
         .product-image .main-image:hover {
-            transform: scale(1.02);
+            transform: scale(1.05);
             box-shadow: var(--shadow-lg);
         }
 
@@ -228,11 +237,12 @@
     .thumbnail.active {
         opacity: 1;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+        box-shadow: 0 0 12px rgba(255, 107, 53, 0.4);
     }
 
 /* Product Info */
 .product-info {
+    animation-delay: 0.1s;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -334,7 +344,7 @@
 }
 
     .custom-select:focus {
-        ring: 4px;
+        box-shadow: 0 0 8px rgba(255, 107, 53, 0.2);
         animation: pulse-glow 2s infinite;
     }
 
@@ -583,8 +593,8 @@
     font-size: var(--font-size-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-base);
-    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
     position: relative;
     overflow: hidden;
     text-transform: uppercase;
@@ -608,8 +618,8 @@
     }
 
     .add-to-cart:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4)
     }
 
         .add-to-cart:hover:not(:disabled)::before {
@@ -621,10 +631,11 @@
     }
 
     .add-to-cart:disabled {
-        background: linear-gradient(135deg, var(--text-muted), #aaa);
+        background: linear-gradient(135deg, #ccc, #aaa);
         cursor: not-allowed;
         transform: none;
         box-shadow: var(--shadow-sm);
+
     }
 
 /* Loading and Error States */
@@ -659,7 +670,7 @@
 
 @media (max-width: 768px) {
     .modal {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-lg);
     }
 
     .content-container {
@@ -676,6 +687,7 @@
 
     .detail-title {
         font-size: var(--font-size-xl);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
 
     .options-container {

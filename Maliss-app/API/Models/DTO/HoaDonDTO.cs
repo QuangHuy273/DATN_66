@@ -12,6 +12,7 @@
         public string? GiamGiaId { get; set; }
         public string? NhanVienId { get; set; }
         public string? KhachHangId { get; set; }
+        public bool DaGuiYeuCauXacNhan { get; set; }
         public Guid? HinhThucThanhToanId { get; set; }
         public string? DiaChi { get; set; }
     }

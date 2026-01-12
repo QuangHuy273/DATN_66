@@ -40,5 +40,18 @@ namespace API.Repository
                 .ToListAsync();
         }
 
+        //public override async Task<ChiTietMonAn?> GetByIdAsync(Guid id)
+        //{
+        //    return await _context.chiTietMonAns
+        //        .Include(c => c.MonAn)
+        //        .Include(c => c.LoaiVi)
+        //        .Include(c => c.NguyenLieu)
+        //        .Include(c => c.KichCo)
+        //        .Include(c => c.NhaCungCap)
+        //        .Include(c => c.Anhs)
+        //        .AsNoTracking()
+        //        .FirstOrDefaultAsync(c => c.Id == id);
+        //}
+
     }
 }

@@ -23,5 +23,6 @@ namespace API.Repository
                 .AsNoTracking()
                 .ToListAsync();
         }
+        
     }
 }

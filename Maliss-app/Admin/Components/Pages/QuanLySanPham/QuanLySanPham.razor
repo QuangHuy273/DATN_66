@@ -1,1 +1,1476 @@
-﻿
+@page "/quan-ly-san-pham"
+@page "/quanlysanpham"
+@using Admin.Service.IService
+@using API.Models.DTO
+@inject IMonAnService MonAnService
+@inject IChiTietMonAnService ChiTietMonAnService
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Quản Lý Sản Phẩm</PageTitle>
+
+<link href="css/QuanLySanPham.css" rel="stylesheet" />
+
+<div class="quan-ly-san-pham-container">
+    <div class="header-section">
+        <h2><i class="bi bi-box-seam"></i> Quản Lý Sản Phẩm</h2>
+        <button class="btn btn-primary" @onclick="ThemMonAnMoi">
+            <i class="bi bi-plus-circle"></i> Thêm Món Ăn Mới
+        </button>
+    </div>
+
+    <!-- KHU VỰC TÌM KIẾM + BỘ LỌC -->
+    <div class="search-filter-section">
+        <div class="search-filter-row">
+
+            <!-- Ô tìm kiếm -->
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text"
+                       placeholder="Tìm kiếm sản phẩm..."
+                       @bind="filterRequest.Keyword"
+                       @oninput="OnKeywordChange"
+                       class="search-input" />
+            </div>
+
+            <!-- CỤM NÚT (đẩy về phải) -->
+            <div class="filter-actions ms-auto">
+
+                <!-- Nút xóa bộ lọc (bên trái) -->
+                @if (HasActiveFilters())
+                {
+                    <button class="btn-filter btn-clear"
+                            @onclick="ClearFilters"
+                            title="Xóa tất cả bộ lọc">
+                            <span>Xóa tất cả bộ lọc</span>
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                }
+
+                <!-- Nút bộ lọc -->
+                <button class="btn-filter btn-main"
+                        @onclick="OpenFilterModal">
+                    <i class="bi bi-funnel-fill"></i>
+                    <span>Bộ lọc</span>
+
+                    @if (HasActiveFilters())
+                    {
+                        <span class="badge">@CountActiveFilters()</span>
+                    }
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Tổng Sản Phẩm</div>
+                <div class="stat-value">@totalProducts</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon active">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Đang Hoạt Động</div>
+                <div class="stat-value">@activeProducts</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon inactive">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Tạm Dừng</div>
+                <div class="stat-value">@inactiveProducts</div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    }
+    else if (filterResponse == null || !filterResponse.MonAns.Any())
+    {
+        <div class="empty-state">
+            <p>@(HasActiveFilters() ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc." : "Chưa có món ăn nào. Hãy thêm món ăn mới!")</p>
+        </div>
+    }
+    else
+    {
+        <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-4 g-4">
+            @foreach (var item in filterResponse.MonAns)
+            {
+                var monAn = item.MonAn;
+                <div class="col">
+                    <div class="card product-card h-100 shadow-sm">
+                        @if (!string.IsNullOrWhiteSpace(monAn.AnhDaTai))
+                        {
+                            <img src="@GetImageUrlWithCacheBusting(monAn.AnhDaTai)"
+                                 alt="Ảnh @monAn.Ten"
+                                 class="card-img-top product-cover" />
+                        }
+                        else
+                        {
+                            <div class="product-cover placeholder d-flex flex-column justify-content-center align-items-center text-muted">
+                                <i class="bi bi-image fs-1 mb-2"></i>
+                                <span>Chưa có ảnh</span>
+                            </div>
+                        }
+
+                        <div class="card-body d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="text-muted small d-block mb-1" style="font-weight: 600; letter-spacing: 0.5px;">#@monAn.Id</span>
+                                    <h5 class="card-title mb-0 text-truncate" style="max-width: 180px;" title="@monAn.Ten">@monAn.Ten</h5>
+                                </div>
+                                <span class="badge status-badge @(monAn.TrangThai ? "bg-success" : "bg-secondary")">
+                                    @(monAn.TrangThai ? "Hoạt động" : "Tạm dừng")
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-column gap-2 text-muted small">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-semibold text-dark">Danh mục</span>
+                                    <span>@(monAn.TheLoai ?? "Chưa có danh mục")</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold text-dark">Số lượng chi tiết</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span>@item.TotalVariantCount biến thể</span>
+                                        @if (item.MatchingVariantCount > 0 && filterRequest.HasChiTietFilter())
+                                        {
+                                            <span class="badge bg-primary" style="font-size: 10px;" title="Số biến thể phù hợp với bộ lọc">
+                                                @item.MatchingVariantCount phù hợp
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-auto">
+                                <button class="btn btn-sm btn-info flex-fill" @onclick="() => OpenViewDetailModal(item)">
+                                    <i class="bi bi-eye"></i> Xem Chi Tiết
+                                </button>
+                                <button class="btn btn-sm btn-warning flex-fill" @onclick="() => SuaMonAn(monAn.Id)">
+                                    <i class="bi bi-pencil"></i> Chỉnh Sửa
+                                </button>
+                                <button class="btn btn-sm btn-danger flex-fill" @onclick="() => XoaMonAn(monAn.Id)">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- PHÂN TRANG -->
+        @if (filterResponse.TotalPages > 1)
+        {
+            <div class="pagination-section mt-4">
+                <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                    <!-- Nút Trang đầu -->
+                    <button class="btn btn-pagination btn-nav" 
+                            @onclick="() => GoToPage(1)" 
+                            disabled="@(filterRequest.PageIndex <= 1)"
+                            title="Trang đầu">
+                        <i class="bi bi-chevron-double-left"></i>
+                        <span class="btn-text">Trang đầu</span>
+                    </button>
+                    
+                    <!-- Nút Trang trước -->
+                    <button class="btn btn-pagination btn-nav" 
+                            @onclick="() => GoToPage((filterRequest.PageIndex ?? 1) - 1)" 
+                            disabled="@(filterRequest.PageIndex <= 1)"
+                            title="Trang trước">
+                        <i class="bi bi-chevron-left"></i>
+                        <span class="btn-text">Trang trước</span>
+                    </button>
+
+                    <!-- Hiển thị các số trang -->
+                    @{
+                        var currentPage = filterRequest.PageIndex ?? 1;
+                        var totalPages = filterResponse.TotalPages;
+                        var pageNumbers = GetPageNumbers(currentPage, totalPages);
+                    }
+
+                    @foreach (var pageNum in pageNumbers)
+                    {
+                        if (pageNum == -1)
+                        {
+                            <!-- Hiển thị dấu ... -->
+                            <span class="pagination-ellipsis">...</span>
+                        }
+                        else
+                        {
+                            <!-- Hiển thị số trang -->
+                            <button class="btn btn-pagination btn-page @(pageNum == currentPage ? "active" : "")" 
+                                    @onclick="() => GoToPage(pageNum)"
+                                    disabled="@(pageNum == currentPage)">
+                                @pageNum
+                            </button>
+                        }
+                    }
+
+                    <!-- Nút Trang tiếp -->
+                    <button class="btn btn-pagination btn-nav" 
+                            @onclick="() => GoToPage((filterRequest.PageIndex ?? 1) + 1)" 
+                            disabled="@(filterRequest.PageIndex >= filterResponse.TotalPages)"
+                            title="Trang tiếp">
+                        <span class="btn-text">Trang tiếp</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Nút Trang cuối -->
+                    <button class="btn btn-pagination btn-nav" 
+                            @onclick="() => GoToPage(filterResponse.TotalPages)" 
+                            disabled="@(filterRequest.PageIndex >= filterResponse.TotalPages)"
+                            title="Trang cuối">
+                        <span class="btn-text">Trang cuối</span>
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Thông tin tổng quan -->
+                <div class="text-center mt-3">
+                    <span class="pagination-info">
+                        Trang <strong>@filterResponse.PageIndex</strong> / <strong>@filterResponse.TotalPages</strong>
+                        <span class="text-muted ms-2">(@filterResponse.TotalCount món ăn)</span>
+                    </span>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- MODAL BỘ LỌC -->
+@if (isFilterModalOpen)
+{
+    <div class="modal-backdrop show" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1040;"></div>
+
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050; overflow-y: auto;">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #4f46e5; color: white;">
+                    <h5 class="modal-title"><i class="bi bi-funnel-fill me-2"></i>Bộ Lọc Nâng Cao</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseFilterModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- LỌC THEO MÓN ĂN -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: #f8fafc; font-weight: 600;">
+                            <i class="bi bi-box-seam me-2" style="color: #4f46e5;"></i>Lọc Theo Món Ăn
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Trạng thái món ăn</label>
+                                    <select class="form-select" @onchange="@((e) => OnTrangThaiMonAnChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.TrangThaiMonAn.HasValue)">-- Tất cả --</option>
+                                        <option value="true" selected="@(tempFilter.TrangThaiMonAn == true)">Hoạt động</option>
+                                        <option value="false" selected="@(tempFilter.TrangThaiMonAn == false)">Tạm dừng</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Thể loại</label>
+                                    <select class="form-select" @onchange="@((e) => OnTheLoaiChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.TheLoaiId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var tl in theLoais)
+                                        {
+                                            <option value="@tl.Id" selected="@(tempFilter.TheLoaiId == tl.Id)">@tl.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Thương hiệu</label>
+                                    <select class="form-select" @onchange="@((e) => OnThuongHieuChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.ThuongHieuId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var th in thuongHieus)
+                                        {
+                                            <option value="@th.Id" selected="@(tempFilter.ThuongHieuId == th.Id)">@th.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LỌC THEO CHI TIẾT MÓN ĂN -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: #f8fafc; font-weight: 600;">
+                            <i class="bi bi-list-ul me-2" style="color: #4f46e5;"></i>Lọc Theo Chi Tiết Món Ăn
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Trạng thái chi tiết</label>
+                                    <select class="form-select" @onchange="@((e) => OnTrangThaiChiTietChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.TrangThaiChiTiet.HasValue)">-- Tất cả --</option>
+                                        <option value="true" selected="@(tempFilter.TrangThaiChiTiet == true)">Hoạt động</option>
+                                        <option value="false" selected="@(tempFilter.TrangThaiChiTiet == false)">Tạm dừng</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Loại vị</label>
+                                    <select class="form-select" @onchange="@((e) => OnLoaiViChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.LoaiViId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var lv in loaiVis)
+                                        {
+                                            <option value="@lv.Id" selected="@(tempFilter.LoaiViId == lv.Id)">@lv.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Kích cỡ</label>
+                                    <select class="form-select" @onchange="@((e) => OnKichCoChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.KichCoId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var kc in kichCos)
+                                        {
+                                            <option value="@kc.Id" selected="@(tempFilter.KichCoId == kc.Id)">@kc.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Nhà cung cấp</label>
+                                    <select class="form-select" @onchange="@((e) => OnNhaCungCapChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.NhaCungCapId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var ncc in nhaCungCaps)
+                                        {
+                                            <option value="@ncc.Id" selected="@(tempFilter.NhaCungCapId == ncc.Id)">@ncc.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Nguyên liệu</label>
+                                    <select class="form-select" @onchange="@((e) => OnNguyenLieuChange(e.Value?.ToString()))">
+                                        <option value="" selected="@(!tempFilter.NguyenLieuId.HasValue)">-- Tất cả --</option>
+                                        @foreach (var nl in nguyenLieus)
+                                        {
+                                            <option value="@nl.Id" selected="@(tempFilter.NguyenLieuId == nl.Id)">@nl.Ten</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Lọc theo giá -->
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label fw-bold">Khoảng giá</label>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="number" class="form-control" placeholder="Từ (VNĐ)" @bind="tempFilter.GiaFrom" min="0" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="number" class="form-control" placeholder="Đến (VNĐ)" @bind="tempFilter.GiaTo" min="0" />
+                                </div>
+                            </div>
+
+                            <!-- Lọc theo số lượng -->
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label fw-bold">Khoảng số lượng</label>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="number" class="form-control" placeholder="Từ" @bind="tempFilter.SoLuongFrom" min="0" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="number" class="form-control" placeholder="Đến" @bind="tempFilter.SoLuongTo" min="0" />
+                                </div>
+                            </div>
+
+                            <!-- Lọc theo ngày sản xuất -->
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label fw-bold">Ngày sản xuất</label>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="date" class="form-control" @bind="tempFilter.NgaySanXuatFrom" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="date" class="form-control" @bind="tempFilter.NgaySanXuatTo" />
+                                </div>
+                            </div>
+
+                            <!-- Lọc theo hạn sử dụng -->
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label fw-bold">Hạn sử dụng</label>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="date" class="form-control" @bind="tempFilter.HanSuDungFrom" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <input type="date" class="form-control" @bind="tempFilter.HanSuDungTo" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8fafc;">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseFilterModal">
+                        <i class="bi bi-x-lg"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" @onclick="ClearTempFilters">
+                        <i class="bi bi-arrow-counterclockwise"></i> Đặt Lại
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="ApplyFilters">
+                        <i class="bi bi-check-lg"></i> Áp Dụng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL XEM CHI TIẾT (MỚI - MỞ RỘNG) -->
+@if (isViewDetailModalOpen && selectedMonAnItem != null)
+{
+    <!-- Backdrop -->
+    <div class="modal-backdrop show" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1040;"></div>
+
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050; overflow-y: auto;">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #4f46e5; color: white;">
+                    <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Chi Tiết Món Ăn</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseViewDetailModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+                    <!-- ===== PHẦN 1: THÔNG TIN CHUNG MÓN ĂN ===== -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <h6 class="mb-0 fw-bold" style="color: #1e293b;"><i class="bi bi-info-circle me-2" style="color: #4f46e5;"></i>Thông Tin Món Ăn</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Cột ảnh món ăn chính -->
+                                <div class="col-md-4 text-center mb-3 mb-md-0">
+                                    @if (!string.IsNullOrWhiteSpace(selectedMonAnItem.MonAn.AnhDaTai))
+                                    {
+                                        <img src="@GetImageUrlWithCacheBusting(selectedMonAnItem.MonAn.AnhDaTai)" 
+                                             class="img-fluid rounded shadow-sm" 
+                                             alt="Ảnh món ăn" 
+                                             style="max-height: 250px; object-fit: cover; width: 100%;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="height: 250px;">
+                                            <div class="text-center">
+                                                <i class="bi bi-image fs-1 text-muted"></i>
+                                                <p class="text-muted mt-2 mb-0">Không có ảnh</p>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Cột thông tin chi tiết -->
+                                <div class="col-md-8">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-tag me-1"></i>Tên món ăn</label>
+                                            <input type="text" class="form-control" disabled value="@selectedMonAnItem.MonAn.Ten" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-collection me-1"></i>Danh mục</label>
+                                            <input type="text" class="form-control" disabled value="@(selectedMonAnItem.MonAn.TheLoai ?? "N/A")" />
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-award me-1"></i>Thương hiệu</label>
+                                            <input type="text" class="form-control" disabled value="@(selectedMonAnItem.MonAn.ThuongHieu ?? "N/A")" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-toggle-on me-1"></i>Trạng thái</label>
+                                            <input type="text" class="form-control" disabled 
+                                                   value="@(selectedMonAnItem.MonAn.TrangThai ? "Đang hoạt động" : "Tạm dừng")"
+                                                   style="@(selectedMonAnItem.MonAn.TrangThai ? "color: #28a745; font-weight: 600;" : "color: #6c757d; font-weight: 600;")" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-file-text me-1"></i>Mô tả</label>
+                                        <textarea class="form-control" disabled rows="4" style="resize: none;">@(selectedMonAnItem.MonAn.Mota ?? "Chưa có mô tả")</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== PHẦN 2: DANH SÁCH BIẾN THỂ ===== -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <h6 class="mb-0 fw-bold" style="color: #1e293b;">
+                                <i class="bi bi-list-ul me-2" style="color: #4f46e5;"></i>Danh Sách Biến Thể Chi Tiết
+                                @if (selectedMonAnItem.MatchingVariantCount > 0)
+                                {
+                                    <span class="badge bg-primary ms-2">@selectedMonAnItem.MatchingVariantCount / @selectedMonAnItem.TotalVariantCount phù hợp</span>
+                                }
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @if (selectedMonAnDetails != null && selectedMonAnDetails.Any())
+                            {
+                                var detailIndex = 0;
+                                @foreach (var ct in selectedMonAnDetails)
+                                {
+                                    detailIndex++;
+                                    var isMatching = selectedMonAnItem.MatchingVariantIds.Contains(ct.Id);
+                                    var cardStyle = isMatching ? "border-primary shadow-lg" : "border shadow-sm";
+                                    var headerStyle = isMatching ? "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" : "background: #4f46e5; color: white;";
+                                    
+                                    <div class="card mb-3 @cardStyle" style="@(isMatching ? "border-width: 3px;" : "")">
+                                        <div class="card-header" style="@headerStyle">
+                                            <h6 class="mb-0 fw-bold d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <i class="bi bi-box-seam me-2"></i>Biến Thể: @ct.Ten
+                                                    @if (isMatching)
+                                                    {
+                                                        <span class="badge bg-warning text-dark ms-2">
+                                                            <i class="bi bi-star-fill"></i> Phù hợp bộ lọc
+                                                        </span>
+                                                    }
+                                                </span>
+                                                <span class="badge @(ct.TrangThai ? "bg-success" : "bg-secondary")">
+                                                    @(ct.TrangThai ? "Hoạt Động" : "Tạm Dừng")
+                                                </span>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body" style="@(isMatching ? "background: #f0f9ff;" : "")">
+                                            <!-- Hiển thị danh sách ảnh của biến thể (nếu có) -->
+                                            @if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any())
+                                            {
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold mb-2" style="color: #475569;"><i class="bi bi-images me-1" style="color: #4f46e5;"></i>Danh Sách Ảnh Biến Thể</label>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        @foreach (var anh in ct.DanhSachAnh)
+                                                        {
+                                                            @if (!string.IsNullOrWhiteSpace(anh.DuongDan))
+                                                            {
+                                                                <div class="border rounded" style="width: 120px; height: 120px; border: 2px solid #e2e8f0 !important; overflow: hidden;">
+                                                                    <img src="@GetImageUrlWithCacheBusting(anh.DuongDan)" 
+                                                                         alt="Ảnh biến thể" 
+                                                                         class="img-fluid" 
+                                                                         style="width: 100%; height: 100%; object-fit: cover;" />
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <div class="row">
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-cup-straw me-1"></i>Loại vị</label>
+                                                    <input type="text" class="form-control" disabled value="@(ct.LoaiVi ?? "N/A")" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-rulers me-1"></i>Kích cỡ</label>
+                                                    <input type="text" class="form-control" disabled value="@(ct.KichCo ?? "N/A")" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-building me-1"></i>Nhà cung cấp</label>
+                                                    <input type="text" class="form-control" disabled value="@(ct.NhaCungCap ?? "N/A")" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-egg-fried me-1"></i>Nguyên liệu</label>
+                                                    <input type="text" class="form-control" disabled value="@(ct.NguyenLieu ?? "N/A")" />
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-currency-dollar me-1"></i>Giá bán</label>
+                                                    <input type="text" class="form-control fw-bold text-primary" disabled 
+                                                           value="@ct.Gia.ToString("N0") đ" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-box me-1"></i>Số lượng tồn</label>
+                                                    <input type="text" class="form-control fw-bold" disabled 
+                                                           value="@ct.Soluong"
+                                                           style="@(ct.Soluong > 0 ? "color: #28a745;" : "color: #dc3545;")" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-calendar-plus me-1"></i>Ngày sản xuất</label>
+                                                    <input type="text" class="form-control" disabled value="@ct.NgaySanXuat.ToString("dd/MM/yyyy")" />
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-calendar-check me-1"></i>Hạn sử dụng</label>
+                                                    <input type="text" class="form-control" disabled 
+                                                           value="@ct.HanSuDung.ToString("dd/MM/yyyy")"
+                                                           style="@(ct.HanSuDung < DateTime.Now ? "color: #dc3545; font-weight: 600;" : "color: #28a745; font-weight: 600;")" />
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+
+                                                    <!-- A. Tổng thời gian sử dụng -->
+                                                    <label class="form-label fw-bold text-secondary mb-1">
+                                                        <i class="bi bi-calendar-range me-1"></i>Tổng thời gian sử dụng
+                                                    </label>
+                                                    <div class="input-group mb-2">
+                                                        <input type="text"
+                                                               class="form-control fw-bold text-center"
+                                                               disabled
+                                                               value="@GetTongSoNgaySuDung(ct) ngày" />
+                                                        <span class="input-group-text fs-5">📦</span>
+                                                    </div>
+
+                                                    <!-- B. Số ngày còn lại -->
+                                                    <label class="form-label fw-bold text-secondary mb-1">
+                                                        <i class="bi bi-hourglass-split me-1"></i>Số ngày còn lại
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <input type="text"
+                                                               class="form-control fw-bold text-center"
+                                                               disabled
+                                                               value="@GetThoiHanSuDung(ct)"
+                                                               style="@GetThoiHanSuDungStyle(ct)" />
+                                                        <span class="input-group-text fs-5">
+                                                            @GetThoiHanSuDungIcon(ct)
+                                                        </span>
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-percent me-1"></i>Giá giảm</label>
+                                                    <input type="text" class="form-control text-danger fw-bold" disabled 
+                                                           value="@(ct.GiaGiam > 0 ? ct.GiaGiam.ToString("N0") + " đ" : "Không có")" />
+                                                </div>
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(ct.Mota))
+                                            {
+                                                <div class="mb-0">
+                                                    <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-chat-left-text me-1"></i>Mô tả biến thể</label>
+                                                    <textarea class="form-control" disabled rows="2" style="resize: none;">@ct.Mota</textarea>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-4 rounded" style="background: #f8fafc; color: #64748b;">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    <p class="mb-0">Món ăn này chưa có chi tiết biến thể nào.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-secondary px-4" @onclick="CloseViewDetailModal">
+                        <i class="bi bi-x-lg"></i> Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // ============================
+    // State
+    // ============================
+    private MonAnFilterResponse? filterResponse;
+    private MonAnFilterRequest filterRequest = new() { PageIndex = 1, PageSize = 12 };
+    private MonAnFilterRequest tempFilter = new();
+
+    private bool isLoading = true;
+    private bool isFilterModalOpen = false;
+
+    // State cho Modal Xem Chi Tiết
+    private bool isViewDetailModalOpen = false;
+    private MonAnWithMatchingVariants? selectedMonAnItem;
+    private List<ChiTietMonAnDTO>? selectedMonAnDetails;
+
+    // Dropdown data
+    private List<TheLoaiDTO> theLoais = new();
+    private List<ThuongHieuDTO> thuongHieus = new();
+    private List<LoaiViDTO> loaiVis = new();
+    private List<KichCoDTO> kichCos = new();
+    private List<NhaCungCapDTO> nhaCungCaps = new();
+    private List<DongGoiDTO> nguyenLieus = new();
+
+    // Computed properties
+    private int totalProducts => filterResponse?.TotalCount ?? 0;
+    private int activeProducts => 0; // Tính sau nếu cần
+    private int inactiveProducts => 0; // Tính sau nếu cần
+
+
+    // Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdowns();
+        await LoadData();
+    }
+
+
+    // Data loading
+    private async Task LoadDropdowns()
+    {
+        try
+        {
+            var tasks = new List<Task>
+            {
+                LoadTheLoai(),
+                LoadThuongHieu(),
+                LoadLoaiVi(),
+                LoadKichCo(),
+                LoadNhaCungCap(),
+                LoadNguyenLieu()
+            };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dropdowns: {ex.Message}");
+        }
+    }
+
+    private async Task LoadTheLoai()
+    {
+        try
+        {
+            theLoais = await ApiService.GetAsync<List<TheLoaiDTO>>("TheLoai") ?? new();
+        }
+        catch { theLoais = new(); }
+    }
+
+    private async Task LoadThuongHieu()
+    {
+        try
+        {
+            thuongHieus = await ApiService.GetAsync<List<ThuongHieuDTO>>("ThuongHieu") ?? new();
+        }
+        catch { thuongHieus = new(); }
+    }
+
+    private async Task LoadLoaiVi()
+    {
+        try
+        {
+            loaiVis = await ApiService.GetAsync<List<LoaiViDTO>>("LoaiVi") ?? new();
+        }
+        catch { loaiVis = new(); }
+    }
+
+    private async Task LoadKichCo()
+    {
+        try
+        {
+            kichCos = await ApiService.GetAsync<List<KichCoDTO>>("KichCo") ?? new();
+        }
+        catch { kichCos = new(); }
+    }
+
+    private async Task LoadNhaCungCap()
+    {
+        try
+        {
+            nhaCungCaps = await ApiService.GetAsync<List<NhaCungCapDTO>>("NhaCungCap") ?? new();
+        }
+        catch { nhaCungCaps = new(); }
+    }
+
+    private async Task LoadNguyenLieu()
+    {
+        try
+        {
+            nguyenLieus = await ApiService.GetAsync<List<DongGoiDTO>>("NguyenLieu") ?? new();
+        }
+        catch { nguyenLieus = new(); }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            filterResponse = await MonAnService.Filter(filterRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Lỗi khi tải dữ liệu!");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+    // Event handlers
+    private async Task OnKeywordChange(ChangeEventArgs e)
+    {
+        filterRequest.Keyword = e.Value?.ToString();
+        filterRequest.PageIndex = 1; // Reset về trang 1
+        await LoadData();
+    }
+
+    private void ThemMonAnMoi()
+    {
+        Navigation.NavigateTo("/quanlysanpham/them-mon-an");
+    }
+
+    private void SuaMonAn(string? id)
+    {
+        if (!string.IsNullOrEmpty(id))
+        {
+            Navigation.NavigateTo($"/quanlysanpham/them-mon-an/{id}");
+        }
+    }
+
+    private async Task XoaMonAn(string? id)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa món ăn này không?"))
+        {
+            var result = await MonAnService.Delete(id);
+            if (result)
+            {
+                await LoadData();
+                await JS.InvokeVoidAsync("alert", "Xóa món ăn thành công!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Xóa món ăn thất bại!");
+            }
+        }
+    }
+
+    // ============================
+    // Filter Modal
+    // ============================
+    private void OpenFilterModal()
+    {
+        // Copy filter hiện tại sang tempFilter
+        tempFilter = new MonAnFilterRequest
+        {
+            TrangThaiMonAn = filterRequest.TrangThaiMonAn,
+            TheLoaiId = filterRequest.TheLoaiId,
+            ThuongHieuId = filterRequest.ThuongHieuId,
+            TrangThaiChiTiet = filterRequest.TrangThaiChiTiet,
+            LoaiViId = filterRequest.LoaiViId,
+            KichCoId = filterRequest.KichCoId,
+            NhaCungCapId = filterRequest.NhaCungCapId,
+            NguyenLieuId = filterRequest.NguyenLieuId,
+            GiaFrom = filterRequest.GiaFrom,
+            GiaTo = filterRequest.GiaTo,
+            SoLuongFrom = filterRequest.SoLuongFrom,
+            SoLuongTo = filterRequest.SoLuongTo,
+            NgaySanXuatFrom = filterRequest.NgaySanXuatFrom,
+            NgaySanXuatTo = filterRequest.NgaySanXuatTo,
+            HanSuDungFrom = filterRequest.HanSuDungFrom,
+            HanSuDungTo = filterRequest.HanSuDungTo
+        };
+        isFilterModalOpen = true;
+    }
+
+    // Handlers cho nullable bool
+    private void OnTrangThaiMonAnChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.TrangThaiMonAn = null;
+        else
+            tempFilter.TrangThaiMonAn = bool.Parse(value);
+    }
+
+    private void OnTrangThaiChiTietChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.TrangThaiChiTiet = null;
+        else
+            tempFilter.TrangThaiChiTiet = bool.Parse(value);
+    }
+
+    // Handlers cho nullable Guid
+    private void OnTheLoaiChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.TheLoaiId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.TheLoaiId = guid;
+    }
+
+    private void OnThuongHieuChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.ThuongHieuId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.ThuongHieuId = guid;
+    }
+
+    private void OnLoaiViChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.LoaiViId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.LoaiViId = guid;
+    }
+
+    private void OnKichCoChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.KichCoId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.KichCoId = guid;
+    }
+
+    private void OnNhaCungCapChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.NhaCungCapId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.NhaCungCapId = guid;
+    }
+
+    private void OnNguyenLieuChange(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            tempFilter.NguyenLieuId = null;
+        else if (Guid.TryParse(value, out var guid))
+            tempFilter.NguyenLieuId = guid;
+    }
+
+    private void CloseFilterModal()
+    {
+        isFilterModalOpen = false;
+    }
+
+    private async Task ApplyFilters()
+    {
+        // Copy tempFilter sang filterRequest
+        filterRequest.TrangThaiMonAn = tempFilter.TrangThaiMonAn;
+        filterRequest.TheLoaiId = tempFilter.TheLoaiId;
+        filterRequest.ThuongHieuId = tempFilter.ThuongHieuId;
+        filterRequest.TrangThaiChiTiet = tempFilter.TrangThaiChiTiet;
+        filterRequest.LoaiViId = tempFilter.LoaiViId;
+        filterRequest.KichCoId = tempFilter.KichCoId;
+        filterRequest.NhaCungCapId = tempFilter.NhaCungCapId;
+        filterRequest.NguyenLieuId = tempFilter.NguyenLieuId;
+        filterRequest.GiaFrom = tempFilter.GiaFrom;
+        filterRequest.GiaTo = tempFilter.GiaTo;
+        filterRequest.SoLuongFrom = tempFilter.SoLuongFrom;
+        filterRequest.SoLuongTo = tempFilter.SoLuongTo;
+        filterRequest.NgaySanXuatFrom = tempFilter.NgaySanXuatFrom;
+        filterRequest.NgaySanXuatTo = tempFilter.NgaySanXuatTo;
+        filterRequest.HanSuDungFrom = tempFilter.HanSuDungFrom;
+        filterRequest.HanSuDungTo = tempFilter.HanSuDungTo;
+
+        filterRequest.PageIndex = 1; // Reset về trang 1
+
+        CloseFilterModal();
+        await LoadData();
+    }
+
+    private void ClearTempFilters()
+    {
+        tempFilter = new MonAnFilterRequest();
+    }
+
+    private async Task ClearFilters()
+    {
+        filterRequest = new MonAnFilterRequest { PageIndex = 1, PageSize = 12 };
+        await LoadData();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return filterRequest.TrangThaiMonAn.HasValue
+            || filterRequest.TheLoaiId.HasValue
+            || filterRequest.ThuongHieuId.HasValue
+            || filterRequest.HasChiTietFilter();
+    }
+
+    private int CountActiveFilters()
+    {
+        int count = 0;
+        if (filterRequest.TrangThaiMonAn.HasValue) count++;
+        if (filterRequest.TheLoaiId.HasValue) count++;
+        if (filterRequest.ThuongHieuId.HasValue) count++;
+        if (filterRequest.TrangThaiChiTiet.HasValue) count++;
+        if (filterRequest.LoaiViId.HasValue) count++;
+        if (filterRequest.KichCoId.HasValue) count++;
+        if (filterRequest.NhaCungCapId.HasValue) count++;
+        if (filterRequest.NguyenLieuId.HasValue) count++;
+        if (filterRequest.GiaFrom.HasValue) count++;
+        if (filterRequest.GiaTo.HasValue) count++;
+        if (filterRequest.SoLuongFrom.HasValue) count++;
+        if (filterRequest.SoLuongTo.HasValue) count++;
+        if (filterRequest.NgaySanXuatFrom.HasValue) count++;
+        if (filterRequest.NgaySanXuatTo.HasValue) count++;
+        if (filterRequest.HanSuDungFrom.HasValue) count++;
+        if (filterRequest.HanSuDungTo.HasValue) count++;
+        return count;
+    }
+
+    // ============================
+    // Pagination
+    // ============================
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || filterResponse == null || page > filterResponse.TotalPages)
+            return;
+
+        filterRequest.PageIndex = page;
+        await LoadData();
+    }
+
+    /// <summary>
+    /// Tính toán danh sách số trang cần hiển thị
+    /// Quy tắc:
+    /// - Chỉ hiển thị tối đa 3 trang liên tiếp
+    /// - Trang hiện tại luôn nằm ở vị trí đầu tiên trong dãy 3 trang
+    /// - Luôn hiển thị ... và trang cuối nếu còn nhiều trang phía sau
+    /// - Giá trị -1 trong danh sách đại diện cho dấu "..."
+    /// </summary>
+    private List<int> GetPageNumbers(int currentPage, int totalPages)
+    {
+        var pageNumbers = new List<int>();
+
+        if (totalPages <= 1)
+            return pageNumbers;
+
+        // Nếu tổng số trang <= 5, hiển thị tất cả
+        if (totalPages <= 5)
+        {
+            for (int i = 1; i <= totalPages; i++)
+            {
+                pageNumbers.Add(i);
+            }
+            return pageNumbers;
+        }
+
+        // Tính toán dãy 3 trang liên tiếp (trang hiện tại ở vị trí đầu tiên)
+        int startPage = currentPage;
+        int endPage = Math.Min(currentPage + 2, totalPages);
+
+        // Nếu trang hiện tại là 1 hoặc 2, hiển thị trang 1, 2, 3
+        if (currentPage <= 2)
+        {
+            startPage = 1;
+            endPage = 3;
+        }
+
+        // Thêm các trang vào danh sách
+        for (int i = startPage; i <= endPage; i++)
+        {
+            pageNumbers.Add(i);
+        }
+
+        // Nếu endPage không phải là trang cuối, thêm ... và trang cuối
+        if (endPage < totalPages)
+        {
+            pageNumbers.Add(-1); // Dấu ...
+            pageNumbers.Add(totalPages);
+        }
+
+        return pageNumbers;
+    }
+
+    // ============================
+    // View Detail Modal
+    // ============================
+    private async Task OpenViewDetailModal(MonAnWithMatchingVariants item)
+    {
+        selectedMonAnItem = item;
+
+        // Load chi tiết từ API
+        try
+        {
+            selectedMonAnDetails = await ChiTietMonAnService.GetChiTiet(item.MonAn.Id ?? "");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading details: {ex.Message}");
+            selectedMonAnDetails = new List<ChiTietMonAnDTO>();
+        }
+
+        isViewDetailModalOpen = true;
+    }
+
+    private void CloseViewDetailModal()
+    {
+        isViewDetailModalOpen = false;
+        selectedMonAnItem = null;
+        selectedMonAnDetails = null;
+    }
+
+    // ============================
+    // Helpers
+    // ============================
+
+    private string GetImageUrlWithCacheBusting(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return string.Empty;
+        }
+
+        // Thêm timestamp để tránh cache ảnh cũ
+        var separator = imageUrl.Contains('?') ? '&' : '?';
+        return $"{imageUrl}{separator}v={DateTime.UtcNow.Ticks}";
+    }
+
+    // A. TỔNG THỜI GIAN SỬ DỤNG (CỐ ĐỊNH)
+    // Ngày sản xuất -> Hạn sử dụng
+    private int GetTongSoNgaySuDung(ChiTietMonAnDTO ct)
+    {
+        if (ct == null || ct.HanSuDung <= ct.NgaySanXuat)
+            return 0;
+
+        return (ct.HanSuDung.Date - ct.NgaySanXuat.Date).Days + 1;
+    }
+    // B. SỐ NGÀY CÒN LẠI (ĐỘNG - CHUẨN TMĐT)
+    // Hôm nay -> Hạn sử dụng (bao gồm hôm nay)
+    private int GetSoNgayThoiHanSuDung(ChiTietMonAnDTO ct)
+    {
+        if (ct == null)
+            return -1;
+
+        var homNay = DateTime.Today;
+        var han = ct.HanSuDung.Date;
+
+        return (han - homNay).Days + 1;
+    }
+    // TEXT HIỂN THỊ
+    private string GetThoiHanSuDungText(ChiTietMonAnDTO ct)
+    {
+        var soNgay = GetSoNgayThoiHanSuDung(ct);
+
+        if (soNgay < 0)
+            return "Đã hết hạn";
+
+        if (soNgay == 0)
+            return "Hết hạn hôm nay";
+
+        if (soNgay == 1)
+            return "Còn 1 ngày";
+
+        return $"Còn {soNgay} ngày";
+    }
+    // STYLE THEO THỜI HẠN
+    private string GetThoiHanSuDungStyle(ChiTietMonAnDTO ct)
+    {
+        var soNgay = GetSoNgayThoiHanSuDung(ct);
+
+        if (soNgay <= 0)
+            return "background-color: #f8f9fa; color: #6c757d;";
+
+        if (soNgay > 14)
+            return "background-color: #d4edda; color: #155724; border-color: #28a745;";
+
+        if (soNgay >= 8)
+            return "background-color: #fff3cd; color: #856404; border-color: #ffc107;";
+
+        if (soNgay >= 4)
+            return "background-color: #ffe5d0; color: #8b4513; border-color: #fd7e14;";
+
+        return "background-color: #f8d7da; color: #721c24; border-color: #dc3545;";
+    }
+    // ICON THEO THỜI HẠN
+    private string GetThoiHanSuDungIcon(ChiTietMonAnDTO ct)
+    {
+        var soNgay = GetSoNgayThoiHanSuDung(ct);
+
+        if (soNgay <= 0)
+            return "❌";
+
+        if (soNgay > 14)
+            return "🟢";
+
+        if (soNgay >= 8)
+            return "🟡";
+
+        if (soNgay >= 4)
+            return "🟠";
+
+        return "🔴";
+    }
+    private int GetSoNgayCon(ChiTietMonAnDTO ct)
+    {
+        return GetSoNgayThoiHanSuDung(ct);
+    }
+
+    private string GetThoiHanSuDung(ChiTietMonAnDTO ct)
+    {
+        return GetThoiHanSuDungText(ct);
+    }
+}
+<style>
+
+    .search-filter-section {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: transparent;
+        padding: 16px 0;
+    }
+
+    .search-filter-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+    }
+    /* ====== SEARCH (GIỐNG BUTTON FILTER) ====== */
+    .search-box {
+        position: relative;
+        overflow: hidden;
+        flex: 0 1 420px;
+        max-width: 420px;
+        min-width: 280px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        gap: 10px;
+        background: linear-gradient(135deg, #dbeafe, #eff6ff);
+        border: 1.5px solid #93c5fd;
+        border-radius: 24px;
+        color: #1e3a8a;
+        transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.4s ease;
+    }
+
+        /* Icon */
+        .search-box i {
+            font-size: 16px;
+            color: #1e40af;
+            transition: color 0.3s ease;
+        }
+
+    /* Input */
+    .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 15px;
+        font-weight: 500;
+        color: #1e3a8a;
+    }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+    /* ====== GIỌT NƯỚC ====== */
+    .search-box::after {
+        content: "";
+        position: absolute;
+        width: 120%;
+        height: 120%;
+        top: 50%;
+        left: 50%;
+        background: radial-gradient( circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.25) 40%, transparent 70% );
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.6s ease, opacity 0.6s ease;
+    }
+
+    /* ====== HOVER / FOCUS ====== */
+    .search-box:hover,
+    .search-box:focus-within {
+        background: linear-gradient(135deg, #e0f2ff, #f0f9ff);
+        box-shadow: 0 12px 28px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        transform: translateY(-3px);
+    }
+
+        .search-box:hover::after,
+        .search-box:focus-within::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .search-box:hover i,
+        .search-box:focus-within i {
+            color: #2563eb;
+        }
+
+    /* ====== ACTIONS ====== */
+    .filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ====== BUTTON BASE ====== */
+    .btn-filter {
+        position: relative;
+        overflow: hidden;
+        height: 48px;
+        padding: 0 16px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #dbeafe, #eff6ff);
+        border: 1.5px solid #93c5fd;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        color: #1e3a8a;
+        cursor: pointer;
+        transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.4s ease;
+    }
+
+        /* ====== HIỆU ỨNG GIỌT NƯỚC ====== */
+        .btn-filter::after {
+            content: "";
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            top: 50%;
+            left: 50%;
+            background: radial-gradient( circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.25) 40%, transparent 70% );
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.6s ease, opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        /* ====== HOVER: NỔI + NHẠT HƠN ====== */
+        .btn-filter:hover {
+            background: linear-gradient(135deg, #e0f2ff, #f0f9ff);
+            box-shadow: 0 12px 28px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            transform: translateY(-3px);
+        }
+
+            /* ====== GIỌT NƯỚC HIỆN ====== */
+            .btn-filter:hover::after {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+
+        /* ====== ACTIVE (NHẤN) ====== */
+        .btn-filter:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+        }
+    /* ====== CLEAR BUTTON ====== */
+    .btn-clear {
+        padding: 0 14px;
+    }
+
+    /* ====== BADGE ====== */
+    .btn-main .badge {
+        background: #e53e3e;
+        color: white;
+        border-radius: 10px;
+        font-size: 12px;
+        padding: 2px 6px;
+    }
+
+    /* ============================
+           PAGINATION STYLES
+           ============================ */
+    .pagination-section {
+        margin-top: 2rem;
+    }
+
+    .btn-pagination {
+        min-width: 44px;
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        color: #475569;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+        .btn-pagination:hover:not(:disabled) {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-pagination:disabled {
+            background: #f1f5f9;
+            color: #cbd5e1;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-pagination.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+            cursor: default;
+        }
+
+        .btn-pagination.btn-page {
+            min-width: 44px;
+            padding: 0 12px;
+        }
+
+        .btn-pagination.btn-nav {
+            padding: 0 18px;
+        }
+
+        .btn-pagination i {
+            font-size: 14px;
+        }
+
+    .pagination-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 18px;
+        user-select: none;
+    }
+
+    .pagination-info {
+        font-size: 15px;
+        color: #475569;
+    }
+
+        .pagination-info strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .btn-pagination .btn-text {
+            display: none;
+        }
+
+        .btn-pagination.btn-nav {
+            min-width: 44px;
+            padding: 0 12px;
+        }
+    }
+</style>

@@ -1,1 +1,529 @@
-﻿
+﻿@page "/quanlykhachhang"
+@layout Layout.MainLayout
+@inject IHoaDonChiTietService ChiTietHoaDonService
+@inject IChiTietMonAnService GetChiTietMonAnService
+@inject IHoaDonService HoaDonService
+@inject IApiService ApiService
+@inject IJSRuntime JS
+@inject IKhachHangService KhachHangService
+
+<link href="css/HoaDon.css" rel="stylesheet" />
+
+<h2 class="text-xl font-semibold mb-4">Quản lý khách hàng</h2>
+
+<!-- Hàng nút -->
+<div class="mb-3 d-flex justify-content-between align-items-center">
+    <!-- Trái -->
+    <button class="btn btn-primary" @onclick="ToggleFilter">
+        🔍 Lọc
+    </button>
+
+    <!-- Phải -->
+    <button class="btn-action" @onclick="() => showAdd = true">
+        + Thêm khách hàng
+    </button>
+</div>
+
+@if (showFilter)
+{
+    <div class="search-row row g-2 p-3 border rounded bg-light mb-3">
+        <div class="col">
+            <input class="form-control" placeholder="Tên" @bind="FilterTen" />
+        </div>
+        <div class="col">
+            <input class="form-control" placeholder="SĐT" @bind="FilterSdt" />
+        </div>
+        <div class="col">
+            <input class="form-control" placeholder="Email" @bind="FilterEmail" />
+        </div>
+        <div class="col">
+            <input class="form-control" placeholder="Mã KH" @bind="FilterMa" />
+        </div>
+        <div class="col">
+            <input type="date" class="form-control" @bind="FilterNgaySinh" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" @onclick="TaiLai">Áp dụng</button>
+            <button class="btn btn-warning ms-2" @onclick="ResetFilter">Reset</button>
+        </div>
+    </div>
+}
+
+
+
+
+
+
+
+
+@* <div class="tabs">
+    @foreach (var trangThaiItem in TrangThaiList)
+    {
+        <button class="@(TrangThai == trangThaiItem ? "active" : "")"
+                @onclick='() => LocTheoTrangThai(trangThaiItem)'>
+            @trangThaiItem
+        </button>
+    }
+</div> *@
+
+
+<table class="table-auto w-full text-sm">
+    <thead>
+        <tr class="bg-gray-100">
+            <th class="p-2">STT</th>
+            <th class="p-2">Họ tên</th>
+            <th class="p-2">Ngày sinh</th>
+            <th class="p-2">Số điện thoại</th>
+            <th class="p-2">Email</th>
+            <th class="p-2">Trạng thái</th>
+            <th class="p-2">Ghi chú</th>
+            <th class="p-2">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (DanhSachKhachHang?.Any() == true)
+        {
+            var stt = 1;
+            foreach (var kh in DanhSachKhachHang)
+            {
+                <tr class="border-b">
+                    <td class="p-2">@stt</td>
+                    <td class="p-2">@($"{kh.Ho} {kh.Ten}")</td>
+                    <td class="p-2">@kh.NgaySinh.ToString("dd/MM/yyyy")</td>
+                    <td class="p-2">@kh.Sdt</td>
+                    <td class="p-2">@kh.Gmail</td>
+                    <td class="p-2">
+                        <span class="badge @(kh.TrangThai ? "badge-green" : "badge-red")">
+                            @(kh.TrangThai ? "Hoạt động" : "Ngừng")
+                        </span>
+                    </td>
+                    <td class="p-2">@kh.GhiChu</td>
+
+                    <td class="p-2 space-x-1">
+
+                        <button @onclick="() => SuaKhachHang(kh.Id)" class="btn-danger">Sửa</button>
+                        <button @onclick="() => XemKhachHang(kh.Id)" class="btn-view">Xem</button>
+                        <button @onclick="() => DoiTrangThai(kh.Id)" class="btn-danger">Đổi trạng thái</button>
+                        <button @onclick="() => XoaKhachHang(kh.Id)" class="btn-danger">Xóa</button>
+                    </td>
+                </tr>
+                stt++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="text-center text-gray-500 p-4">Chưa có dữ liệu khách hàng</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (showAdd)
+{
+    <div class="modal fade show" style="display:block; z-index:9999;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm khách hàng mới</h5>
+                    <button type="button" class="btn-close" @onclick="() => showAdd = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Họ *</label>
+                            <input type="text" class="form-control" placeholder="Nhập họ"
+                                   @bind="addModel.Ho" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tên *</label>
+                            <input type="text" class="form-control" placeholder="Nhập tên"
+                                   @bind="addModel.Ten" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Số điện thoại *</label>
+                            <input type="text" class="form-control" placeholder="Nhập số điện thoại"
+                                   @bind="addModel.Sdt" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" placeholder="Nhập email"
+                                   @bind="addModel.Gmail" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh</label>
+                            <input type="date" class="form-control"
+                                   @bind="addModel.NgaySinh" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox"
+                                       @bind="addModel.TrangThai" />
+                                <label class="form-check-label">
+                                    Trạng thái hoạt động
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea rows="3" class="form-control"
+                                  @bind="addModel.GhiChu"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button class="btn btn-primary" @onclick="SaveCustomer">Lưu</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop fade show" style="z-index:9998;"></div>
+}
+
+
+@if (showView)
+{
+    <div class="modal fade show" style="display:block; z-index:9999;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Thông tin khách hàng</h5>
+                    <button type="button" class="btn-close" @onclick="() => showView = false"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Họ</label>
+                            <input class="form-control" @bind="viewModel.Ho" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Tên</label>
+                            <input class="form-control" @bind="viewModel.Ten" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Số điện thoại</label>
+                            <input class="form-control" @bind="viewModel.Sdt" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input class="form-control" @bind="viewModel.Gmail" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Ngày sinh</label>
+                            <input type="date" class="form-control" @bind="viewModel.NgaySinh" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Trạng thái</label>
+                            <input class="form-control" value="@(viewModel.TrangThai ? "Hoạt động" : "Ngừng")" readonly />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Ghi chú</label>
+                        <textarea rows="3" class="form-control" @bind="viewModel.GhiChu" readonly></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="() => showView = false">Đóng</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop fade show" style="z-index:9998;"></div>
+}
+
+@if (showEdit)
+{
+    <div class="modal fade show" style="display:block; z-index:9999;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Sửa khách hàng</h5>
+                    <button type="button" class="btn-close" @onclick="() => showEdit = false"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Họ *</label>
+                            <input class="form-control" @bind="editModel.Ho" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Tên *</label>
+                            <input class="form-control" @bind="editModel.Ten" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Số điện thoại *</label>
+                            <input class="form-control" @bind="editModel.Sdt" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input class="form-control" @bind="editModel.Gmail" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Ngày sinh</label>
+                            <input type="date" class="form-control" @bind="editModel.NgaySinh" />
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div>
+                                <input type="checkbox" class="form-check-input" @bind="editModel.TrangThai" />
+                                <label class="form-check-label">Hoạt động</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Ghi chú</label>
+                        <textarea rows="3" class="form-control" @bind="editModel.GhiChu"></textarea>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showEdit = false">Hủy</button>
+                    <button class="btn btn-primary" @onclick="UpdateCustomer">Cập nhật</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop fade show" style="z-index:9998;"></div>
+}
+
+
+
+
+
+@code {
+    private List<HoaDon> DanhSachHoaDon;
+    private List<KhachHangDTO> DanhSachKhachHang = new();
+    private List<HoaDonChiTietDTO> DanhSachChiTiet;
+    private Dictionary<string, List<HoaDonChiTietDTO>> ChiTietTheoHoaDon = new();
+    private HoaDon selectedHoaDon;
+    private List<HoaDonChiTietDTO> selectedChiTiet;
+    private List<ChiTietMonAnDTO> ChiTietMonAnDTOs = new();
+    private string TuKhoa;
+    private string TrangThai;
+    private bool showEdit = false;
+    private KhachHangDTO editModel = new();
+
+    private bool showView = false;
+    private KhachHangDTO viewModel = new();
+    private bool showFilter = false;
+
+    private string FilterTen;
+    private string FilterSdt;
+    private string FilterEmail;
+    private string FilterMa;
+    private DateTime? FilterNgaySinh;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TaiLai();
+    }
+
+    private async Task TaiLai()
+    {
+        DanhSachKhachHang = await KhachHangService.GetAll();
+
+        if (!string.IsNullOrWhiteSpace(FilterTen))
+        {
+            DanhSachKhachHang = DanhSachKhachHang
+                .Where(kh => ($"{kh.Ho} {kh.Ten}")
+                    .Contains(FilterTen, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(FilterSdt))
+        {
+            DanhSachKhachHang = DanhSachKhachHang
+                .Where(kh => kh.Sdt != null &&
+                             kh.Sdt.Contains(FilterSdt))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(FilterEmail))
+        {
+            DanhSachKhachHang = DanhSachKhachHang
+                .Where(kh => kh.Gmail != null &&
+                             kh.Gmail.Contains(FilterEmail, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(FilterMa))
+        {
+            DanhSachKhachHang = DanhSachKhachHang
+                .Where(kh => kh.Id.Contains(FilterMa))
+                .ToList();
+        }
+
+        if (FilterNgaySinh.HasValue)
+        {
+            DanhSachKhachHang = DanhSachKhachHang
+                .Where(kh => kh.NgaySinh.Date == FilterNgaySinh.Value.Date)
+                .ToList();
+        }
+    }
+
+    private KhachHangDTO selectedCustomer;
+
+    private void XemKhachHang(string id)
+    {
+        viewModel = DanhSachKhachHang.FirstOrDefault(x => x.Id == id);
+        showView = true;
+    }
+    private void SuaKhachHang(string id)
+    {
+        var kh = DanhSachKhachHang.FirstOrDefault(x => x.Id == id);
+
+        if (kh != null)
+        {
+            editModel = new KhachHangDTO
+            {
+                Id = kh.Id,
+                Ho = kh.Ho,
+                Ten = kh.Ten,
+                Sdt = kh.Sdt,
+                Gmail = kh.Gmail,
+                NgaySinh = kh.NgaySinh,
+                TrangThai = kh.TrangThai,
+                GhiChu = kh.GhiChu
+            };
+
+            showEdit = true;
+        }
+    }
+    private async Task UpdateCustomer()
+    {
+        var ok = await KhachHangService.Update(editModel);
+
+        if (ok)
+        {
+            showEdit = false;
+            await TaiLai();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Cập nhật khách hàng thất bại!");
+        }
+    }
+
+    private async Task DoiTrangThai(string id)
+    {
+        bool xacNhan = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn đổi trạng thái khách hàng này?");
+        if (!xacNhan) return;
+
+        var ok = await KhachHangService.ChangeStatus(id);
+
+        if (ok)
+            await TaiLai();
+        else
+            await JS.InvokeVoidAsync("alert", "Đổi trạng thái thất bại!");
+    }
+
+    private async Task LocTheoTrangThai(string tt)
+    {
+        TrangThai = tt;
+        await TaiLai();
+    }
+
+
+
+
+
+    private bool showAdd = false;
+
+    private KhachHangDTO addModel = new KhachHangDTO
+    {
+        TrangThai = true
+    };
+
+    private async Task SaveCustomer()
+    {
+        var ok = await KhachHangService.Create(addModel);
+
+        if (ok)
+        {
+            showAdd = false;
+            await TaiLai();
+            addModel = new KhachHangDTO
+            {
+                TrangThai = true,
+                NgaySinh = DateTime.Today
+            };
+        }
+        else
+        {
+            Console.WriteLine("Thêm khách hàng thất bại");
+        }
+    }
+    private async Task XoaKhachHang(string id)
+    {
+        bool xacNhan = await JS.InvokeAsync<bool>("confirm",
+            "Bạn có chắc chắn muốn xóa khách hàng này?");
+
+        if (!xacNhan) return;
+
+        var ok = await KhachHangService.Delete(id);
+
+        if (ok)
+        {
+            await TaiLai();
+            await JS.InvokeVoidAsync("alert", "Xóa khách hàng thành công!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Xóa khách hàng thất bại!");
+        }
+    }
+    private async Task ResetFilter()
+    {
+        FilterTen = null;
+        FilterSdt = null;
+        FilterEmail = null;
+        FilterMa = null;
+        FilterNgaySinh = null;
+
+        await TaiLai();
+    }
+    private void ToggleFilter()
+    {
+        showFilter = !showFilter;
+    }
+
+
+}

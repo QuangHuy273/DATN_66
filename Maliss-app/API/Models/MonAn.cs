@@ -19,7 +19,9 @@ namespace API.Models
         public Guid? ThuongHieuId { get; set; }
         public virtual ThuongHieu? ThuongHieu { get; set; }
         public virtual TheLoai? TheLoai { get; set; }
+        public string? AnhDaTai { get; set; }
         [JsonIgnore]
+        public virtual ICollection<Anh>? Anhs { get; set; } = new List<Anh>();
         public virtual ICollection<ChiTietMonAn>? ChiTietMonAns { get; set; }
     }
 }

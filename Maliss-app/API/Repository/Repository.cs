@@ -28,8 +28,28 @@ namespace API.Repository
 
         public virtual async Task Update(T entity)
         {
-            _dbSet.Update(entity);
+            // Detach any existing tracked entity with the same key
+            var local = _context.Set<T>().Local
+                .FirstOrDefault(e => GetEntityKey(e).Equals(GetEntityKey(entity)));
+            if (local != null)
+            {
+                _context.Entry(local).State = EntityState.Detached;
+            }
+
+            _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+        }
+
+        private object GetEntityKey(T entity)
+        {
+            var keyName = _context.Model.FindEntityType(typeof(T))?.FindPrimaryKey()?.Properties
+                .Select(x => x.Name).FirstOrDefault();
+            
+            if (keyName == null)
+                return entity.GetHashCode();
+
+            var propertyInfo = typeof(T).GetProperty(keyName);
+            return propertyInfo?.GetValue(entity) ?? entity.GetHashCode();
         }
 
         public virtual async Task Delete(TKey id)
